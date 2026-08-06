@@ -1,0 +1,17 @@
+# Local planning and temporary working files
+.temp/
+
+# Python virtual environments
+.venv/
+
+# Python caches and generated artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
