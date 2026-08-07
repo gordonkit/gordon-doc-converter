@@ -59,3 +59,6 @@ ignore_missing_imports = true
 minversion = "8.0"
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: tests requiring an installed external conversion engine",
+]

@@ -1,0 +1,33 @@
+name: LibreOffice integration
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/integration/libreoffice/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/integration-libreoffice.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install LibreOffice Writer
+        run: sudo apt-get update && sudo apt-get install --yes libreoffice-writer
+      - run: uv sync --dev --locked
+      - run: uv run pytest -m integration tests/integration/libreoffice

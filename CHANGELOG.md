@@ -10,3 +10,6 @@ All notable changes to this project will be documented in this file. The format 
 - Initial package, tooling, governance, and bilingual documentation baseline.
 - Engine-neutral conversion contracts, engine policy, protocol, and fake engine.
 - PDF existence, parseability, encryption, and page-count validation.
+- Isolated LibreOffice probing and DOCX-to-PDF conversion with bounded subprocess execution,
+  stable error mapping, output validation, and cleanup.
+- Generated CJK LibreOffice integration coverage and a dedicated Linux workflow.

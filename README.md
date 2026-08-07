@@ -4,10 +4,10 @@ GordonKit Document Converter is a Python 3.12+ orchestration library for diagnos
 multi-engine DOCX-to-PDF conversion. It delegates rendering to Microsoft Word, LibreOffice,
 or (in a later release) Gotenberg; it does not implement a document layout engine.
 
-The current development iteration establishes the cross-platform request/result contracts,
-engine-selection policy, and PDF validation. Word COM, LibreOffice execution, orchestration,
-and the `gordon-doc` CLI are scheduled for the following v0.1 iterations and are not yet
-available.
+The current development state includes the cross-platform request/result contracts,
+engine-selection policy, PDF validation, and an isolated LibreOffice adapter. The adapter
+can be used as a library primitive when LibreOffice is installed. Word COM, the complete
+orchestration service, and the `gordon-doc` CLI are not yet available.
 
 ## Development setup
 
@@ -19,6 +19,10 @@ uv run mypy src
 uv run pytest
 uv build
 ```
+
+The real LibreOffice integration test is skipped when `soffice` is unavailable. Run it on
+a host with LibreOffice installed using
+`uv run pytest -m integration tests/integration/libreoffice`.
 
 ## Contract example
 

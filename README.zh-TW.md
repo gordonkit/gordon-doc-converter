@@ -4,8 +4,9 @@ GordonKit Document Converter 是適用於 Python 3.12 以上的可診斷、多�
 DOCX 轉 PDF 協調函式庫。實際排版會委派給 Microsoft Word、LibreOffice，或後續版本的
 Gotenberg；本專案本身不實作文書排版引擎。
 
-目前的開發迭代先建立跨平台請求／結果契約、引擎選擇政策及 PDF 驗證。Word COM、
-LibreOffice 執行、完整協調服務與 `gordon-doc` CLI 將在後續 v0.1 迭代提供，目前尚不可用。
+目前已完成跨平台請求／結果契約、引擎選擇政策、PDF 驗證及具隔離機制的 LibreOffice
+adapter。安裝 LibreOffice 後，可將 adapter 當作底層 Library 元件使用；Word COM、完整
+協調服務與 `gordon-doc` CLI 尚未提供。
 
 ## 開發環境
 
@@ -17,6 +18,9 @@ uv run mypy src
 uv run pytest
 uv build
 ```
+
+系統找不到 `soffice` 時，真實 LibreOffice 整合測試會略過。已安裝 LibreOffice 的環境可用
+`uv run pytest -m integration tests/integration/libreoffice` 執行該測試。
 
 ## 契約範例
 
