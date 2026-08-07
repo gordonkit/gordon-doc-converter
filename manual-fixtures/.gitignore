@@ -1,0 +1,3 @@
+# Private manual-test documents and generated outputs must not be committed.
+*
+!.gitignore
