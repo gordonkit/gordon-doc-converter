@@ -13,3 +13,7 @@ All notable changes to this project will be documented in this file. The format 
 - Isolated LibreOffice probing and DOCX-to-PDF conversion with bounded subprocess execution,
   stable error mapping, output validation, and cleanup.
 - Generated CJK LibreOffice integration coverage and a dedicated Linux workflow.
+- Isolated Microsoft Word COM activation and conversion with explicit revision/comment
+  display modes, bounded worker execution, stable errors, and deterministic COM cleanup.
+- Mock COM lifecycle coverage plus a controlled Windows Word integration workflow.
+- Shared cross-platform process runner for bounded engine subprocess execution.

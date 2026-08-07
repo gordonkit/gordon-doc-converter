@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 import sys
-from collections.abc import Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import perf_counter
@@ -30,22 +27,16 @@ from gordon_doc_converter.models import (
     EngineProbeResult,
     RevisionMode,
 )
+from gordon_doc_converter.process.runner import (
+    ProcessStartError,
+    ProcessTimeoutError,
+    run_process,
+)
 from gordon_doc_converter.validation import validate_pdf
 
 _ENGINE = EngineName.LIBREOFFICE
 _DEFAULT_PROBE_TIMEOUT_SECONDS = 10.0
 _EXECUTABLE_NAMES = ("soffice", "libreoffice")
-
-
-@dataclass(frozen=True, slots=True)
-class _ProcessResult:
-    returncode: int
-    stdout: str
-    stderr: str
-
-
-class _ProcessTimedOut(Exception):
-    """Internal timeout signal that preserves the subprocess failure as its cause."""
 
 
 def _find_executable() -> Path | None:
@@ -66,64 +57,6 @@ def _find_executable() -> Path | None:
         if candidate.is_file():
             return candidate.resolve()
     return None
-
-
-def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        return
-    command: tuple[str, ...]
-    try:
-        if os.name == "nt":
-            command = ("taskkill", "/PID", str(process.pid), "/T", "/F")
-        else:
-            # A negative PID targets the isolated process group created below.
-            command = ("kill", "-KILL", f"-{process.pid}")
-        subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=10.0,
-        )
-    except (OSError, subprocess.SubprocessError):
-        try:
-            process.kill()
-        except OSError:
-            return
-
-
-def _run_process(arguments: Sequence[str], timeout_seconds: float) -> _ProcessResult:
-    try:
-        process = subprocess.Popen(
-            tuple(arguments),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            shell=False,
-            start_new_session=os.name != "nt",
-        )
-    except OSError as exc:
-        raise EngineUnavailableError(
-            "LibreOffice could not be started",
-            engine=_ENGINE.value,
-        ) from exc
-    try:
-        stdout, stderr = process.communicate(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as exc:
-        _terminate_process_tree(process)
-        try:
-            process.communicate(timeout=10.0)
-        except subprocess.TimeoutExpired as cleanup_exc:
-            process.kill()
-            try:
-                process.communicate(timeout=10.0)
-            except subprocess.TimeoutExpired as final_exc:
-                raise _ProcessTimedOut from final_exc
-            raise _ProcessTimedOut from cleanup_exc
-        raise _ProcessTimedOut from exc
-    return _ProcessResult(process.returncode, stdout, stderr)
 
 
 def _parse_version(output: str) -> str | None:
@@ -173,23 +106,23 @@ class LibreOfficeEngine:
                 reason="LibreOffice executable was not found",
             )
         try:
-            result = _run_process(
+            result = run_process(
                 (str(executable), "--headless", "--version"),
                 self._probe_timeout_seconds,
             )
-        except _ProcessTimedOut:
+        except ProcessTimeoutError:
             return EngineProbeResult(
                 engine=self.name,
                 available=False,
                 executable=executable,
                 reason="LibreOffice version probe timed out",
             )
-        except EngineUnavailableError as exc:
+        except ProcessStartError:
             return EngineProbeResult(
                 engine=self.name,
                 available=False,
                 executable=executable,
-                reason=exc.message,
+                reason="LibreOffice could not be started",
             )
         if result.returncode != 0:
             return EngineProbeResult(
@@ -259,8 +192,13 @@ class LibreOfficeEngine:
                 str(source_path.resolve()),
             )
             try:
-                result = _run_process(arguments, timeout_seconds)
-            except _ProcessTimedOut as exc:
+                result = run_process(arguments, timeout_seconds)
+            except ProcessStartError as exc:
+                raise EngineUnavailableError(
+                    "LibreOffice could not be started",
+                    engine=self.name.value,
+                ) from exc
+            except ProcessTimeoutError as exc:
                 raise ConversionTimeoutError(
                     "LibreOffice conversion exceeded its timeout",
                     engine=self.name.value,

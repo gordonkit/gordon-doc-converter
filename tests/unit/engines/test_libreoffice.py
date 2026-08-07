@@ -20,6 +20,7 @@ from gordon_doc_converter.exceptions import (
     UnsupportedAnnotationModeError,
 )
 from gordon_doc_converter.models import CommentMode, EngineName, RevisionMode
+from gordon_doc_converter.process.runner import ProcessResult, ProcessTimeoutError
 
 
 def _write_pdf(path: Path) -> None:
@@ -55,38 +56,6 @@ def test_find_executable_checks_standard_windows_installation(
     assert libreoffice_module._find_executable() == executable.resolve()
 
 
-def test_process_timeout_terminates_tree_and_preserves_cause(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    timeout_type = libreoffice_module.subprocess.TimeoutExpired
-
-    class FakeProcess:
-        returncode = 0
-        calls = 0
-
-        def communicate(self, timeout: float) -> tuple[str, str]:
-            self.calls += 1
-            if self.calls == 1:
-                raise timeout_type(("soffice",), timeout)
-            return ("partial output", "")
-
-    process = FakeProcess()
-    terminated: list[object] = []
-    monkeypatch.setattr(libreoffice_module.subprocess, "Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr(
-        libreoffice_module,
-        "_terminate_process_tree",
-        lambda running_process: terminated.append(running_process),
-    )
-
-    with pytest.raises(libreoffice_module._ProcessTimedOut) as raised:
-        libreoffice_module._run_process(("soffice", "--version"), 1)
-
-    assert isinstance(raised.value.__cause__, timeout_type)
-    assert terminated == [process]
-    assert process.calls == 2
-
-
 def test_probe_reports_version_path_and_conservative_capabilities(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -96,9 +65,9 @@ def test_probe_reports_version_path_and_conservative_capabilities(
 
     def fake_run(arguments: Sequence[str], timeout_seconds: float) -> object:
         calls.append((tuple(arguments), timeout_seconds))
-        return libreoffice_module._ProcessResult(0, "LibreOffice 24.8.1.2\n", "")
+        return ProcessResult(0, "LibreOffice 24.8.1.2\n", "")
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     result = LibreOfficeEngine(executable, probe_timeout_seconds=3).probe()
 
@@ -125,10 +94,10 @@ def test_probe_reports_missing_executable(monkeypatch: pytest.MonkeyPatch) -> No
     ("process_result", "expected_reason"),
     [
         (
-            libreoffice_module._ProcessResult(7, "", "failure"),
+            ProcessResult(7, "", "failure"),
             "LibreOffice version probe exited with code 7",
         ),
-        (libreoffice_module._ProcessTimedOut(), "LibreOffice version probe timed out"),
+        (ProcessTimeoutError(), "LibreOffice version probe timed out"),
     ],
 )
 def test_probe_reports_process_failure(
@@ -143,7 +112,7 @@ def test_probe_reports_process_failure(
             raise process_result
         return process_result
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     result = LibreOfficeEngine(tmp_path / "soffice").probe()
 
@@ -164,16 +133,16 @@ def test_conversion_uses_isolated_profile_validates_and_moves_pdf(
     def fake_run(
         arguments: Sequence[str],
         timeout_seconds: float,
-    ) -> libreoffice_module._ProcessResult:
+    ) -> ProcessResult:
         nonlocal temporary_root
         assert timeout_seconds == 9
         captured_calls.append(tuple(arguments))
         output_directory = _output_directory(arguments)
         temporary_root = output_directory.parent
         _write_pdf(output_directory / f"{source.stem}.pdf")
-        return libreoffice_module._ProcessResult(0, "converted", "")
+        return ProcessResult(0, "converted", "")
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     result = LibreOfficeEngine(executable).convert(
         source,
@@ -208,13 +177,13 @@ def test_nonzero_conversion_maps_error_and_cleans_workspace(
     def fake_run(
         arguments: Sequence[str],
         timeout_seconds: float,
-    ) -> libreoffice_module._ProcessResult:
+    ) -> ProcessResult:
         nonlocal temporary_root
         del timeout_seconds
         temporary_root = _output_directory(arguments).parent
-        return libreoffice_module._ProcessResult(5, "", "private diagnostic")
+        return ProcessResult(5, "", "private diagnostic")
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     with pytest.raises(EngineFailedError, match="code 5") as raised:
         LibreOfficeEngine(tmp_path / "soffice").convert(
@@ -238,8 +207,8 @@ def test_missing_generated_pdf_maps_to_not_created(
     source = _source(tmp_path)
     monkeypatch.setattr(
         libreoffice_module,
-        "_run_process",
-        lambda arguments, timeout_seconds: libreoffice_module._ProcessResult(0, "", ""),
+        "run_process",
+        lambda arguments, timeout_seconds: ProcessResult(0, "", ""),
     )
 
     with pytest.raises(PdfNotCreatedError):
@@ -261,12 +230,12 @@ def test_invalid_generated_pdf_maps_to_validation_failure(
     def fake_run(
         arguments: Sequence[str],
         timeout_seconds: float,
-    ) -> libreoffice_module._ProcessResult:
+    ) -> ProcessResult:
         del timeout_seconds
         (_output_directory(arguments) / f"{source.stem}.pdf").write_bytes(b"invalid")
-        return libreoffice_module._ProcessResult(0, "", "")
+        return ProcessResult(0, "", "")
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     with pytest.raises(PdfValidationError):
         LibreOfficeEngine(tmp_path / "soffice").convert(
@@ -289,9 +258,9 @@ def test_timeout_maps_error_and_cleans_workspace(
         nonlocal temporary_root
         del timeout_seconds
         temporary_root = _output_directory(arguments).parent
-        raise libreoffice_module._ProcessTimedOut
+        raise ProcessTimeoutError
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", fake_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
 
     with pytest.raises(ConversionTimeoutError) as raised:
         LibreOfficeEngine(tmp_path / "soffice").convert(
@@ -302,7 +271,7 @@ def test_timeout_maps_error_and_cleans_workspace(
             comment_mode=CommentMode.OMIT,
         )
 
-    assert isinstance(raised.value.__cause__, libreoffice_module._ProcessTimedOut)
+    assert isinstance(raised.value.__cause__, ProcessTimeoutError)
     assert temporary_root is not None
     assert not temporary_root.exists()
 
@@ -316,7 +285,7 @@ def test_conversion_rejects_unsupported_modes_before_starting_process(
     def unexpected_run(arguments: Sequence[str], timeout_seconds: float) -> object:
         raise AssertionError((arguments, timeout_seconds))
 
-    monkeypatch.setattr(libreoffice_module, "_run_process", unexpected_run)
+    monkeypatch.setattr(libreoffice_module, "run_process", unexpected_run)
 
     with pytest.raises(UnsupportedAnnotationModeError):
         LibreOfficeEngine(tmp_path / "soffice").convert(

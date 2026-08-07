@@ -1,0 +1,1 @@
+"""LibreOffice integration coverage."""

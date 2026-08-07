@@ -5,9 +5,10 @@ multi-engine DOCX-to-PDF conversion. It delegates rendering to Microsoft Word, L
 or (in a later release) Gotenberg; it does not implement a document layout engine.
 
 The current development state includes the cross-platform request/result contracts,
-engine-selection policy, PDF validation, and an isolated LibreOffice adapter. The adapter
-can be used as a library primitive when LibreOffice is installed. Word COM, the complete
-orchestration service, and the `gordon-doc` CLI are not yet available.
+engine-selection policy, PDF validation, and isolated LibreOffice and Microsoft Word COM
+adapters. The adapters can be used as library primitives when their external applications
+are installed. The complete orchestration service and the `gordon-doc` CLI are not yet
+available.
 
 ## Development setup
 
@@ -23,6 +24,11 @@ uv build
 The real LibreOffice integration test is skipped when `soffice` is unavailable. Run it on
 a host with LibreOffice installed using
 `uv run pytest -m integration tests/integration/libreoffice`.
+
+The Microsoft Word integration test requires Windows, licensed Microsoft Word, and the
+`word` optional dependency. Run it only in a controlled interactive environment using
+`uv sync --dev --extra word --locked` followed by
+`uv run pytest -m integration tests/integration/word_com`.
 
 ## Contract example
 
