@@ -103,4 +103,3 @@ Library / CLI / future API
 - 新增 production dependency 前，必須檢查必要性、授權、維護狀態及安全影響。
 - Commit message 遵循 Conventional Commits：
   `<type>(<scope>): <imperative summary>`，使用簡潔英文且不超過 72 字元。
-

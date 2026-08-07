@@ -11,9 +11,15 @@ uv run pytest
 uv build
 ```
 
-Add tests for public behavior and regression tests for fixes. Unit tests must mock external
-renderers. Do not commit customer documents, licensed fonts, credentials, or generated build
-output. Commit messages use Conventional Commits in the form
+Add tests for public behavior and regression tests for fixes.
+Unit tests must mock external renderers. Do not commit customer documents or licensed fonts.
+Do not commit credentials or generated build output.
+Commit messages use Conventional Commits
+in the form
 `<type>(<scope>): <imperative summary>` and stay within 72 characters.
+
+Follow the [Git branching and integration workflow](docs/development/git-branching.md).
+Use it for branch names, pull requests, merges, and releases.
+See the [Traditional Chinese version](docs/development/git-branching.zh-TW.md).
 
 By participating, you agree to follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
