@@ -17,3 +17,7 @@ All notable changes to this project will be documented in this file. The format 
   display modes, bounded worker execution, stable errors, and deterministic COM cleanup.
 - Mock COM lifecycle coverage plus a controlled Windows Word integration workflow.
 - Shared cross-platform process runner for bounded engine subprocess execution.
+- Public single and batch conversion service with policy-driven engine probing, strict-mode
+  enforcement, automatic fallback diagnostics, staged validation, and safe overwrite.
+- End-to-end public API coverage producing the same result contract through Word and
+  LibreOffice.

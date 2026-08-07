@@ -19,6 +19,12 @@ from gordon_doc_converter.models import (
     RevisionMode,
     SourceFormat,
 )
+from gordon_doc_converter.service import (
+    DocumentConversionService,
+    convert,
+    convert_batch,
+    probe_engines,
+)
 
 __all__ = [
     "AnnotationAnchor",
@@ -32,6 +38,7 @@ __all__ = [
     "ConversionRequest",
     "ConversionResult",
     "DeploymentMode",
+    "DocumentConversionService",
     "EngineName",
     "EngineProbeResult",
     "ErrorCode",
@@ -39,6 +46,9 @@ __all__ = [
     "PdfValidationResult",
     "RevisionMode",
     "SourceFormat",
+    "convert",
+    "convert_batch",
+    "probe_engines",
 ]
 
 __version__ = "0.1.0"

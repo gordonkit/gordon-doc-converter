@@ -5,10 +5,8 @@ multi-engine DOCX-to-PDF conversion. It delegates rendering to Microsoft Word, L
 or (in a later release) Gotenberg; it does not implement a document layout engine.
 
 The current development state includes the cross-platform request/result contracts,
-engine-selection policy, PDF validation, and isolated LibreOffice and Microsoft Word COM
-adapters. The adapters can be used as library primitives when their external applications
-are installed. The complete orchestration service and the `gordon-doc` CLI are not yet
-available.
+engine-selection policy, PDF validation, isolated LibreOffice and Microsoft Word COM
+adapters, and the public conversion service. The `gordon-doc` CLI is not yet available.
 
 ## Development setup
 
@@ -30,16 +28,24 @@ The Microsoft Word integration test requires Windows, licensed Microsoft Word, a
 `uv sync --dev --extra word --locked` followed by
 `uv run pytest -m integration tests/integration/word_com`.
 
-## Contract example
+## Conversion example
 
 ```python
 from pathlib import Path
 
-from gordon_doc_converter import ConversionRequest
+from gordon_doc_converter import ConversionRequest, convert
 
 request = ConversionRequest.from_source(Path("example.docx"))
-assert request.to_dict()["artifacts"] == ["pdf"]
+result = convert(request)
+if not result.success:
+    raise RuntimeError(result.error.message if result.error else "conversion failed")
+print(result.artifacts[0].path)
 ```
+
+`convert()` selects an engine according to the deployment policy, validates staged output,
+and publishes the PDF only after validation succeeds. Use `DocumentConversionService` for
+engine injection, `convert_batch()` for sequential failure-isolated batches, and
+`probe_engines()` for capability diagnostics.
 
 Microsoft Word and LibreOffice can render the same document differently. The project will
 report the selected engine and fallback reason; it will never promise identical output or

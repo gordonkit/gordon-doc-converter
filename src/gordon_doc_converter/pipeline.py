@@ -1,0 +1,366 @@
+"""Engine-neutral DOCX-to-PDF orchestration pipeline."""
+
+from __future__ import annotations
+
+import os
+import shutil
+from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from time import perf_counter
+
+from gordon_doc_converter.engines.base import ConverterEngine, EngineExecutionResult
+from gordon_doc_converter.environment import EnvironmentInfo
+from gordon_doc_converter.exceptions import (
+    ConversionError,
+    EngineFailedError,
+    ErrorCode,
+    InvalidInputError,
+    OutputExistsError,
+    PdfNotCreatedError,
+    PdfValidationError,
+)
+from gordon_doc_converter.models import (
+    ArtifactResult,
+    ArtifactStatus,
+    ArtifactType,
+    ConversionFailure,
+    ConversionRequest,
+    ConversionResult,
+    ConversionWarning,
+    EngineName,
+    EngineProbeResult,
+    SourceFormat,
+)
+from gordon_doc_converter.policies import EngineRejection, engine_order, select_engines
+from gordon_doc_converter.validation import validate_pdf
+
+
+def _failure_from_exception(error: ConversionError) -> ConversionFailure:
+    engine: EngineName | None = None
+    if error.engine is not None:
+        try:
+            engine = EngineName(error.engine)
+        except ValueError:
+            engine = None
+    return ConversionFailure(
+        code=error.code,
+        message=error.message,
+        engine=engine,
+        retryable=error.retryable,
+    )
+
+
+def _fallback_warning(rejection: EngineRejection) -> ConversionWarning:
+    return ConversionWarning(
+        code="ENGINE_FALLBACK",
+        message=f"{rejection.engine.value}: {rejection.reason}",
+        engine=rejection.engine,
+    )
+
+
+def _exception_warning(error: ConversionError, engine: EngineName) -> ConversionWarning:
+    return ConversionWarning(
+        code="ENGINE_FALLBACK",
+        message=f"{engine.value}: {error.message}",
+        engine=engine,
+    )
+
+
+def _publish_pdf(source: Path, target: Path, *, overwrite: bool) -> None:
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise EngineFailedError(
+            "requested PDF output directory could not be created",
+            engine="orchestrator",
+        ) from exc
+    if not overwrite:
+        target_created = False
+        try:
+            with source.open("rb") as source_stream, target.open("xb") as target_stream:
+                target_created = True
+                shutil.copyfileobj(source_stream, target_stream)
+        except FileExistsError as exc:
+            raise OutputExistsError("PDF output already exists") from exc
+        except OSError as exc:
+            if target_created:
+                target.unlink(missing_ok=True)
+            raise EngineFailedError(
+                "validated PDF could not be written to the requested output",
+                engine="orchestrator",
+            ) from exc
+        return
+
+    temporary_path: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            mode="wb",
+            prefix=".gordon-doc-",
+            suffix=".pdf",
+            dir=target.parent,
+            delete=False,
+        ) as target_stream:
+            temporary_path = Path(target_stream.name)
+            with source.open("rb") as source_stream:
+                shutil.copyfileobj(source_stream, target_stream)
+            target_stream.flush()
+            os.fsync(target_stream.fileno())
+        os.replace(temporary_path, target)
+    except OSError as exc:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        raise EngineFailedError(
+            "validated PDF could not replace the requested output",
+            engine="orchestrator",
+        ) from exc
+
+
+class ConversionPipeline:
+    """Coordinate engine probing, selection, fallback, validation, and publication."""
+
+    def __init__(
+        self,
+        engines: Iterable[ConverterEngine],
+        environment: EnvironmentInfo,
+    ) -> None:
+        registry: dict[EngineName, ConverterEngine] = {}
+        for engine in engines:
+            if engine.name in registry:
+                raise InvalidInputError(f"duplicate engine registration: {engine.name.value}")
+            registry[engine.name] = engine
+        self._engines: Mapping[EngineName, ConverterEngine] = registry
+        self._environment = environment
+
+    def probe_engines(self, names: Sequence[EngineName]) -> tuple[EngineProbeResult, ...]:
+        """Probe requested engines while mapping adapter failures to safe results."""
+        results: list[EngineProbeResult] = []
+        for name in names:
+            engine = self._engines.get(name)
+            if engine is None:
+                results.append(
+                    EngineProbeResult(
+                        engine=name,
+                        available=False,
+                        reason="engine adapter is not configured",
+                    )
+                )
+                continue
+            try:
+                result = engine.probe()
+            except Exception:
+                result = EngineProbeResult(
+                    engine=name,
+                    available=False,
+                    reason="engine probe failed",
+                )
+            if result.engine is not name:
+                result = EngineProbeResult(
+                    engine=name,
+                    available=False,
+                    reason="engine returned a mismatched probe identity",
+                )
+            results.append(result)
+        return tuple(results)
+
+    def _failure_result(
+        self,
+        request: ConversionRequest,
+        error: ConversionError,
+        *,
+        output_path: Path | None,
+        attempted_engines: tuple[EngineName, ...] = (),
+        warnings: tuple[ConversionWarning, ...] = (),
+        fallback_reason: str | None = None,
+        selected_engine: EngineName | None = None,
+        started: float,
+    ) -> ConversionResult:
+        failure = _failure_from_exception(error)
+        artifacts = tuple(
+            ArtifactResult(
+                artifact_type=artifact,
+                status=ArtifactStatus.FAILED,
+                path=output_path if artifact is ArtifactType.PDF else None,
+                warnings=warnings,
+                error=failure,
+            )
+            for artifact in request.artifacts
+        )
+        return ConversionResult(
+            success=False,
+            source_format=request.source_format,
+            artifacts=artifacts,
+            selected_engine=selected_engine,
+            attempted_engines=attempted_engines,
+            warnings=warnings,
+            error=failure,
+            fallback_reason=fallback_reason,
+            duration_seconds=perf_counter() - started,
+            requested_revision_mode=request.options.revision_mode,
+            requested_comment_mode=request.options.comment_mode,
+        )
+
+    def convert(self, request: ConversionRequest) -> ConversionResult:
+        """Convert one supported request without exposing adapter-specific failures."""
+        started = perf_counter()
+        output_path = request.options.output_path or request.source_path.with_suffix(".pdf")
+        order: tuple[EngineName, ...] = ()
+        try:
+            if request.source_format is not SourceFormat.DOCX or request.artifacts != (
+                ArtifactType.PDF,
+            ):
+                raise InvalidInputError("only DOCX-to-PDF conversion is currently implemented")
+            if not request.source_path.is_file():
+                raise InvalidInputError("source DOCX file does not exist")
+            if output_path.suffix.casefold() != ".pdf":
+                raise InvalidInputError("PDF output must use the .pdf extension")
+            if output_path.exists() and not request.options.overwrite:
+                raise OutputExistsError("PDF output already exists")
+            order = engine_order(request.options, self._environment)
+            probes = self.probe_engines(order)
+            selection = select_engines(request.options, self._environment, probes)
+        except ConversionError as error:
+            return self._failure_result(
+                request,
+                error,
+                output_path=output_path,
+                attempted_engines=order,
+                started=started,
+            )
+
+        warnings: list[ConversionWarning] = []
+        attempted: list[EngineName] = []
+        fallback_reason: str | None = None
+        rejected = {item.engine: item for item in selection.rejected}
+        first_selected = order.index(selection.engines[0])
+        for name in order[:first_selected]:
+            rejection = rejected.get(name)
+            if rejection is None:
+                continue
+            attempted.append(name)
+            warning = _fallback_warning(rejection)
+            warnings.append(warning)
+            if fallback_reason is None:
+                fallback_reason = warning.message
+
+        with TemporaryDirectory(prefix="gordon-doc-pipeline-") as temporary:
+            workspace = Path(temporary)
+            for index, name in enumerate(selection.engines):
+                attempted.append(name)
+                engine = self._engines[name]
+                staging_path = workspace / f"attempt-{index + 1}.pdf"
+                try:
+                    execution = engine.convert(
+                        request.source_path,
+                        staging_path,
+                        timeout_seconds=request.options.timeout_seconds,
+                        revision_mode=request.options.revision_mode,
+                        comment_mode=request.options.comment_mode,
+                    )
+                    output_size = self._validate_execution(execution, name, staging_path)
+                except ConversionError as error:
+                    if selection.allow_fallback and index + 1 < len(selection.engines):
+                        warning = _exception_warning(error, name)
+                        warnings.append(warning)
+                        if fallback_reason is None:
+                            fallback_reason = warning.message
+                        continue
+                    return self._failure_result(
+                        request,
+                        error,
+                        output_path=output_path,
+                        attempted_engines=tuple(attempted),
+                        warnings=tuple(warnings),
+                        fallback_reason=fallback_reason,
+                        started=started,
+                    )
+                except Exception as cause:
+                    try:
+                        raise EngineFailedError(
+                            "conversion engine raised an unexpected failure",
+                            engine=name.value,
+                        ) from cause
+                    except EngineFailedError as error:
+                        if selection.allow_fallback and index + 1 < len(selection.engines):
+                            warning = _exception_warning(error, name)
+                            warnings.append(warning)
+                            if fallback_reason is None:
+                                fallback_reason = warning.message
+                            continue
+                        return self._failure_result(
+                            request,
+                            error,
+                            output_path=output_path,
+                            attempted_engines=tuple(attempted),
+                            warnings=tuple(warnings),
+                            fallback_reason=fallback_reason,
+                            started=started,
+                        )
+
+                warnings.extend(execution.warnings)
+                try:
+                    _publish_pdf(
+                        staging_path,
+                        output_path,
+                        overwrite=request.options.overwrite,
+                    )
+                except ConversionError as error:
+                    return self._failure_result(
+                        request,
+                        error,
+                        output_path=output_path,
+                        attempted_engines=tuple(attempted),
+                        warnings=tuple(warnings),
+                        fallback_reason=fallback_reason,
+                        selected_engine=name,
+                        started=started,
+                    )
+                artifact_warnings = tuple(warnings)
+                return ConversionResult(
+                    success=True,
+                    source_format=request.source_format,
+                    artifacts=(
+                        ArtifactResult(
+                            artifact_type=ArtifactType.PDF,
+                            status=ArtifactStatus.SUCCESS,
+                            path=output_path,
+                            size_bytes=output_size,
+                            warnings=artifact_warnings,
+                        ),
+                    ),
+                    selected_engine=name,
+                    attempted_engines=tuple(attempted),
+                    warnings=artifact_warnings,
+                    fallback_reason=fallback_reason,
+                    duration_seconds=perf_counter() - started,
+                    requested_revision_mode=request.options.revision_mode,
+                    effective_revision_mode=request.options.revision_mode,
+                    requested_comment_mode=request.options.comment_mode,
+                    effective_comment_mode=request.options.comment_mode,
+                )
+
+        raise AssertionError("engine selection produced no executable engine")
+
+    @staticmethod
+    def _validate_execution(
+        execution: EngineExecutionResult,
+        expected_engine: EngineName,
+        expected_path: Path,
+    ) -> int:
+        if execution.engine is not expected_engine or execution.output_path != expected_path:
+            raise EngineFailedError(
+                "conversion engine returned a mismatched execution result",
+                engine=expected_engine.value,
+            )
+        validation = validate_pdf(expected_path)
+        if validation.valid:
+            return validation.file_size
+        if validation.error is not None and validation.error.code is ErrorCode.PDF_NOT_CREATED:
+            raise PdfNotCreatedError(
+                "conversion engine did not create a non-empty PDF",
+                engine=expected_engine.value,
+            )
+        raise PdfValidationError(
+            "conversion engine created an invalid PDF",
+            engine=expected_engine.value,
+        )

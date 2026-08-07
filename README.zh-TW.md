@@ -4,9 +4,8 @@ GordonKit Document Converter 是適用於 Python 3.12 以上的可診斷、多�
 DOCX 轉 PDF 協調函式庫。實際排版會委派給 Microsoft Word、LibreOffice，或後續版本的
 Gotenberg；本專案本身不實作文書排版引擎。
 
-目前已完成跨平台請求／結果契約、引擎選擇政策、PDF 驗證，以及具隔離機制的 LibreOffice
-與 Microsoft Word COM adapter。安裝對應的外部應用程式後，可將 adapter 當作底層 Library
-元件使用；完整協調服務與 `gordon-doc` CLI 尚未提供。
+目前已完成跨平台請求／結果契約、引擎選擇政策、PDF 驗證、具隔離機制的 LibreOffice
+與 Microsoft Word COM adapter，以及公開轉換服務；`gordon-doc` CLI 尚未提供。
 
 ## 開發環境
 
@@ -26,16 +25,23 @@ Microsoft Word 整合測試需要 Windows、合法授權的 Microsoft Word 及 `
 dependency。僅在受控互動式環境先執行 `uv sync --dev --extra word --locked`，再執行
 `uv run pytest -m integration tests/integration/word_com`。
 
-## 契約範例
+## 轉換範例
 
 ```python
 from pathlib import Path
 
-from gordon_doc_converter import ConversionRequest
+from gordon_doc_converter import ConversionRequest, convert
 
 request = ConversionRequest.from_source(Path("範例.docx"))
-assert request.to_dict()["artifacts"] == ["pdf"]
+result = convert(request)
+if not result.success:
+    raise RuntimeError(result.error.message if result.error else "conversion failed")
+print(result.artifacts[0].path)
 ```
+
+`convert()` 會依 deployment policy 選擇引擎、驗證 staging 輸出，並只在驗證成功後發布
+PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且個別失敗互不影響的批次
+轉換使用 `convert_batch()`；能力診斷則使用 `probe_engines()`。
 
 Microsoft Word 與 LibreOffice 對同一文件可能產生不同版面。本專案會揭露實際引擎及
 fallback 原因，且明確指定引擎時絕不靜默切換。

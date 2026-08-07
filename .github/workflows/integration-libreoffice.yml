@@ -30,4 +30,7 @@ jobs:
       - name: Install LibreOffice Writer
         run: sudo apt-get update && sudo apt-get install --yes libreoffice-writer
       - run: uv sync --dev --locked
-      - run: uv run pytest -m integration tests/integration/libreoffice
+      - run: >-
+          uv run pytest -m integration
+          tests/integration/libreoffice
+          tests/integration/test_service.py
