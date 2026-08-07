@@ -4,3 +4,12 @@ Copyright 2026 GordonKit contributors
 This product includes software developed by third parties. Dependency copyright and license
 terms remain with their respective owners. Microsoft Word and LibreOffice are external
 rendering engines and are not bundled or redistributed by this project.
+
+Optional page-image support uses pypdfium2 (Apache-2.0 OR BSD-3-Clause), its bundled PDFium
+binary (BSD-style license and third-party notices), and Pillow (MIT-CMU). These dependencies
+are not installed by the core package. Distributors that bundle them must preserve their
+license and third-party notice files.
+
+Gotenberg is an external service licensed under the MIT License and is not bundled by the
+Python package. Container users are responsible for reviewing the notices of their selected
+Gotenberg and LibreOffice images.

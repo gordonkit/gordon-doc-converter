@@ -5,10 +5,16 @@ from __future__ import annotations
 import os
 import shutil
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import perf_counter
 
+from gordon_doc_converter.content import (
+    extract_docx_content,
+    extract_pdf_content,
+    write_content_artifacts,
+)
 from gordon_doc_converter.engines.base import ConverterEngine, EngineExecutionResult
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
@@ -21,6 +27,7 @@ from gordon_doc_converter.exceptions import (
     PdfValidationError,
 )
 from gordon_doc_converter.models import (
+    ArtifactItem,
     ArtifactResult,
     ArtifactStatus,
     ArtifactType,
@@ -33,6 +40,7 @@ from gordon_doc_converter.models import (
     SourceFormat,
 )
 from gordon_doc_converter.policies import EngineRejection, engine_order, select_engines
+from gordon_doc_converter.raster import ImageFormat, PdfRasterizer, RasterOptions
 from gordon_doc_converter.validation import validate_pdf
 
 
@@ -116,6 +124,19 @@ def _publish_pdf(source: Path, target: Path, *, overwrite: bool) -> None:
         ) from exc
 
 
+def _output_stem(request: ConversionRequest) -> Path:
+    configured = request.options.output_path
+    if configured is None:
+        return request.source_path.with_suffix("")
+    if len(request.artifacts) > 1 or configured.suffix.casefold() in {
+        ".pdf",
+        ".md",
+        ".html",
+    }:
+        return configured.with_suffix("")
+    return configured
+
+
 class ConversionPipeline:
     """Coordinate engine probing, selection, fallback, validation, and publication."""
 
@@ -123,6 +144,7 @@ class ConversionPipeline:
         self,
         engines: Iterable[ConverterEngine],
         environment: EnvironmentInfo,
+        rasterizer: PdfRasterizer | None = None,
     ) -> None:
         registry: dict[EngineName, ConverterEngine] = {}
         for engine in engines:
@@ -131,6 +153,7 @@ class ConversionPipeline:
             registry[engine.name] = engine
         self._engines: Mapping[EngineName, ConverterEngine] = registry
         self._environment = environment
+        self._rasterizer = rasterizer
 
     def probe_engines(self, names: Sequence[EngineName]) -> tuple[EngineProbeResult, ...]:
         """Probe requested engines while mapping adapter failures to safe results."""
@@ -202,6 +225,8 @@ class ConversionPipeline:
 
     def convert(self, request: ConversionRequest) -> ConversionResult:
         """Convert one supported request without exposing adapter-specific failures."""
+        if request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
+            return self._convert_artifacts(request)
         started = perf_counter()
         output_path = request.options.output_path or request.source_path.with_suffix(".pdf")
         order: tuple[EngineName, ...] = ()
@@ -340,6 +365,265 @@ class ConversionPipeline:
                 )
 
         raise AssertionError("engine selection produced no executable engine")
+
+    def _convert_artifacts(self, request: ConversionRequest) -> ConversionResult:
+        """Produce independent semantic and raster artifacts with partial-failure reporting."""
+        started = perf_counter()
+        results: dict[ArtifactType, ArtifactResult] = {}
+        warnings: list[ConversionWarning] = []
+        selected_engine: EngineName | None = None
+        attempted_engines: tuple[EngineName, ...] = ()
+        fallback_reason: str | None = None
+
+        if not request.source_path.is_file():
+            return self._failure_result(
+                request,
+                InvalidInputError("source document does not exist"),
+                output_path=None,
+                started=started,
+            )
+
+        content_types = tuple(
+            artifact
+            for artifact in request.artifacts
+            if artifact in {ArtifactType.MARKDOWN, ArtifactType.HTML}
+        )
+        if content_types:
+            try:
+                content = (
+                    extract_docx_content(
+                        request.source_path,
+                        revision_mode=request.options.revision_mode,
+                        comment_mode=request.options.comment_mode,
+                        include_annotation_metadata=(request.options.include_annotation_metadata),
+                    )
+                    if request.source_format is SourceFormat.DOCX
+                    else extract_pdf_content(request.source_path)
+                )
+                stem = _output_stem(request)
+                written = write_content_artifacts(
+                    content,
+                    stem,
+                    content_types,
+                    overwrite=request.options.overwrite,
+                )
+                warnings.extend(content.warnings)
+                shared_items: list[ArtifactItem] = []
+                if written.asset_directory is not None:
+                    for path in sorted(written.asset_directory.iterdir()):
+                        if path.is_file():
+                            shared_items.append(
+                                ArtifactItem(
+                                    path=path,
+                                    size_bytes=path.stat().st_size,
+                                    media_type=(
+                                        "application/json"
+                                        if path.suffix == ".json"
+                                        else "application/octet-stream"
+                                    ),
+                                )
+                            )
+                if written.annotation_sidecar is not None:
+                    path = written.annotation_sidecar
+                    shared_items.append(ArtifactItem(path, path.stat().st_size, "application/json"))
+                for artifact_type, path in written.artifacts:
+                    media_type = (
+                        "text/markdown; charset=utf-8"
+                        if artifact_type is ArtifactType.MARKDOWN
+                        else "text/html; charset=utf-8"
+                    )
+                    item = ArtifactItem(path, path.stat().st_size, media_type)
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.SUCCESS,
+                        path,
+                        path.stat().st_size,
+                        tuple(content.warnings),
+                        items=(item, *shared_items),
+                    )
+            except FileExistsError as exc:
+                error: ConversionError = OutputExistsError("content output already exists")
+                error.__cause__ = exc
+                self._record_artifact_failures(results, content_types, error)
+            except ConversionError as error:
+                self._record_artifact_failures(results, content_types, error)
+            except (OSError, ValueError) as exc:
+                write_error = EngineFailedError(
+                    "content artifact could not be written", engine="extractor"
+                )
+                write_error.__cause__ = exc
+                self._record_artifact_failures(results, content_types, write_error)
+
+        needs_pdf = any(
+            artifact in {ArtifactType.PDF, ArtifactType.PAGE_IMAGES}
+            for artifact in request.artifacts
+        )
+        if needs_pdf:
+            with TemporaryDirectory(prefix="gordon-doc-artifacts-") as temporary:
+                temporary_pdf = Path(temporary) / "source.pdf"
+                pdf_source = request.source_path
+                pdf_error: ConversionFailure | None = None
+                if request.source_format is SourceFormat.DOCX:
+                    pdf_request = ConversionRequest(
+                        request.source_path,
+                        SourceFormat.DOCX,
+                        (ArtifactType.PDF,),
+                        replace(
+                            request.options,
+                            output_path=temporary_pdf,
+                            overwrite=True,
+                        ),
+                    )
+                    pdf_result = self.convert(pdf_request)
+                    selected_engine = pdf_result.selected_engine
+                    attempted_engines = pdf_result.attempted_engines
+                    fallback_reason = pdf_result.fallback_reason
+                    warnings.extend(pdf_result.warnings)
+                    if pdf_result.success:
+                        pdf_source = temporary_pdf
+                    else:
+                        pdf_error = pdf_result.error
+                else:
+                    validation = validate_pdf(pdf_source)
+                    if not validation.valid:
+                        pdf_error = validation.error
+
+                if ArtifactType.PDF in request.artifacts:
+                    if pdf_error is not None:
+                        results[ArtifactType.PDF] = ArtifactResult(
+                            ArtifactType.PDF,
+                            ArtifactStatus.FAILED,
+                            error=pdf_error,
+                        )
+                    else:
+                        output = (
+                            request.options.output_path
+                            if len(request.artifacts) == 1
+                            and request.options.output_path is not None
+                            else _output_stem(request).with_suffix(".pdf")
+                        )
+                        try:
+                            if output.suffix.casefold() != ".pdf":
+                                raise InvalidInputError("PDF output must use the .pdf extension")
+                            if request.source_format is SourceFormat.PDF and (
+                                output.resolve() == request.source_path.resolve()
+                            ):
+                                raise OutputExistsError("PDF input and output paths are identical")
+                            _publish_pdf(
+                                pdf_source,
+                                output,
+                                overwrite=request.options.overwrite,
+                            )
+                            size = output.stat().st_size
+                            results[ArtifactType.PDF] = ArtifactResult(
+                                ArtifactType.PDF,
+                                ArtifactStatus.SUCCESS,
+                                output,
+                                size,
+                                items=(ArtifactItem(output, size, "application/pdf"),),
+                            )
+                        except ConversionError as error:
+                            self._record_artifact_failures(results, (ArtifactType.PDF,), error)
+
+                if ArtifactType.PAGE_IMAGES in request.artifacts:
+                    if pdf_error is not None:
+                        results[ArtifactType.PAGE_IMAGES] = ArtifactResult(
+                            ArtifactType.PAGE_IMAGES,
+                            ArtifactStatus.FAILED,
+                            error=pdf_error,
+                        )
+                    elif self._rasterizer is None:
+                        self._record_artifact_failures(
+                            results,
+                            (ArtifactType.PAGE_IMAGES,),
+                            InvalidInputError("page-image output requires a configured rasterizer"),
+                        )
+                    else:
+                        directory = (
+                            request.options.output_path
+                            if len(request.artifacts) == 1
+                            and request.options.output_path is not None
+                            else _output_stem(request).with_name(
+                                f"{_output_stem(request).name}.pages"
+                            )
+                        )
+                        try:
+                            images = self._rasterizer.rasterize(
+                                pdf_source,
+                                directory,
+                                options=RasterOptions(
+                                    dpi=request.options.image_dpi,
+                                    image_format=ImageFormat(request.options.image_format.value),
+                                    quality=request.options.image_quality,
+                                    pages=request.options.image_pages,
+                                    background=request.options.image_background,
+                                    overwrite=request.options.overwrite,
+                                ),
+                            )
+                            items = tuple(
+                                ArtifactItem(
+                                    image.path,
+                                    image.size_bytes,
+                                    (
+                                        "image/png"
+                                        if image.image_format is ImageFormat.PNG
+                                        else "image/jpeg"
+                                    ),
+                                    image.page_number,
+                                    image.width_pixels,
+                                    image.height_pixels,
+                                    image.sha256,
+                                )
+                                for image in images
+                            )
+                            results[ArtifactType.PAGE_IMAGES] = ArtifactResult(
+                                ArtifactType.PAGE_IMAGES,
+                                ArtifactStatus.SUCCESS,
+                                directory,
+                                sum(item.size_bytes for item in items),
+                                items=items,
+                            )
+                        except ConversionError as error:
+                            self._record_artifact_failures(
+                                results, (ArtifactType.PAGE_IMAGES,), error
+                            )
+
+        ordered = tuple(results[artifact] for artifact in request.artifacts)
+        successful = all(item.status is ArtifactStatus.SUCCESS for item in ordered)
+        first_error = next((item.error for item in ordered if item.error is not None), None)
+        return ConversionResult(
+            success=successful,
+            source_format=request.source_format,
+            artifacts=ordered,
+            selected_engine=selected_engine,
+            attempted_engines=attempted_engines,
+            warnings=tuple(warnings),
+            error=first_error,
+            fallback_reason=fallback_reason,
+            duration_seconds=perf_counter() - started,
+            requested_revision_mode=request.options.revision_mode,
+            effective_revision_mode=(
+                request.options.revision_mode if selected_engine is not None else None
+            ),
+            requested_comment_mode=request.options.comment_mode,
+            effective_comment_mode=(
+                request.options.comment_mode if selected_engine is not None else None
+            ),
+        )
+
+    @staticmethod
+    def _record_artifact_failures(
+        results: dict[ArtifactType, ArtifactResult],
+        artifacts: tuple[ArtifactType, ...],
+        error: ConversionError,
+    ) -> None:
+        failure = _failure_from_exception(error)
+        for artifact in artifacts:
+            results[artifact] = ArtifactResult(
+                artifact,
+                ArtifactStatus.FAILED,
+                error=failure,
+            )
 
     @staticmethod
     def _validate_execution(

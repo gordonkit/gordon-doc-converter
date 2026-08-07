@@ -1,0 +1,57 @@
+{
+  "format": "gordon-doc-converter-cjk-fixtures-v1",
+  "license": "CC0-1.0",
+  "provenance": "Deterministically generated synthetic content; no customer data.",
+  "fixtures": [
+    {
+      "file": "a4-portrait.docx",
+      "feature": "A4 portrait",
+      "sha256": "51aab8860f4f2ea4195fdeeff86207601ae7ef3c7e82f8552317d688eea60501"
+    },
+    {
+      "file": "a4-landscape.docx",
+      "feature": "A4 landscape",
+      "sha256": "8f5d5dc83be9ff826c5d67174ed7d5032bcc42af6e5b0ef5c19e5f4adc64b880"
+    },
+    {
+      "file": "mixed-sections.docx",
+      "feature": "mixed portrait and landscape sections",
+      "sha256": "a0d245e9f7ad43b0f16e66ff3b7be91ff641f35b0ebd62940ef9adf1542d716e"
+    },
+    {
+      "file": "chinese-toc.docx",
+      "feature": "Chinese table of contents field",
+      "sha256": "06cc870ddfd9fc4a98cd81bcb0eba942c3f76c1a2b0a8f9cbcdce1032a786852"
+    },
+    {
+      "file": "multi-page-table.docx",
+      "feature": "multi-page Traditional Chinese table",
+      "sha256": "0d19c2004574db86524c84e9a804b5d5da810c8f52603d3ce06d131c9c62378a"
+    },
+    {
+      "file": "headers-footers.docx",
+      "feature": "Traditional Chinese header and footer with page field",
+      "sha256": "0fc1b2898e9ac722ee24df11f675cf980e55b76be5bddaad3c68ec7704315826"
+    },
+    {
+      "file": "text-box.docx",
+      "feature": "VML text box with Traditional Chinese",
+      "sha256": "4a939a58d714bc1572f41ceeae879ad10927357446c014a1b5bce972c606ffb8"
+    },
+    {
+      "file": "floating-image.docx",
+      "feature": "anchored generated PNG",
+      "sha256": "15ae97961aedbc1daad66235868b757c5ecbdf12c3a417773a60361a228907ba"
+    },
+    {
+      "file": "fields.docx",
+      "feature": "PAGE, NUMPAGES, and DATE fields",
+      "sha256": "7427845b12ddb842c7c5fdc5519474588b7bfb95ea6a51a154b9179d8a79e640"
+    },
+    {
+      "file": "special-symbols.docx",
+      "feature": "CJK and special-symbol coverage",
+      "sha256": "15604d23b804b227097492a4190e7442767bb09b06611a306b8bec026519e1ff"
+    }
+  ]
+}

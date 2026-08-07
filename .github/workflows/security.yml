@@ -1,0 +1,49 @@
+name: Security and SBOM
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --dev --locked
+      - name: Export locked production and optional dependencies
+        run: >-
+          uv export --locked --no-dev --all-extras --no-emit-project --no-hashes
+          --output-file audit-requirements.txt
+      - name: Audit exported locked dependencies
+        run: uvx pip-audit --requirement audit-requirements.txt
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: gordon-doc-converter.spdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx
+          path: gordon-doc-converter.spdx.json
+          if-no-files-found: error

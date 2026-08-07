@@ -1,6 +1,6 @@
 [project]
 name = "gordon-doc-converter"
-version = "0.1.0"
+version = "0.4.0"
 description = "Diagnosable multi-engine DOCX-to-PDF conversion orchestration."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,12 +14,20 @@ classifiers = [
 ]
 dependencies = [
     "pypdf>=5.0,<7",
+    "typer>=0.16,<1",
 ]
+
+[project.scripts]
+gordon-doc = "gordon_doc_converter.cli:app"
 
 [project.optional-dependencies]
 word = ["pywin32>=308; sys_platform == 'win32'"]
 gotenberg = ["httpx>=0.27,<1"]
 api = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1"]
+images = [
+    "pillow>=12.3,<13",
+    "pypdfium2>=5.12,<6",
+]
 
 [build-system]
 requires = ["hatchling>=1.27"]
@@ -53,6 +61,10 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = "pypdf.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["PIL.*", "pypdfium2.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

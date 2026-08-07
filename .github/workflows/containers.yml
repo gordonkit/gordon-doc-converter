@@ -1,0 +1,65 @@
+name: Container build, smoke, and scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [cli, standalone-lo, gateway-gotenberg]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build profile
+        run: >-
+          docker build
+          --file docker/Dockerfile.${{ matrix.profile }}
+          --tag gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          .
+      - name: Smoke CLI entry point
+        if: matrix.profile == 'cli'
+        run: docker run --rm gordon-doc-cli:${{ github.sha }} version
+      - name: Scan image for fixed high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
+  api-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build standalone API
+        run: docker build --file docker/Dockerfile.standalone-lo --tag gordon-doc-api:smoke .
+      - name: Start read-only non-root API
+        run: >-
+          docker run --detach --name gordon-doc-api
+          --read-only --tmpfs /tmp:size=512m,mode=1777
+          --security-opt no-new-privileges
+          --publish 8000:8000
+          --env GORDON_DOC_API_KEY=smoke-token
+          gordon-doc-api:smoke
+      - name: Wait for readiness and exercise API
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/ready; then
+              python docker/smoke.py --token smoke-token
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs gordon-doc-api
+          exit 1
+      - if: always()
+        run: docker rm --force gordon-doc-api || true

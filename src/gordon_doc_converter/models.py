@@ -35,6 +35,13 @@ class ArtifactStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class PageImageFormat(StrEnum):
+    """Supported encodings for deterministic PDF page-image artifacts."""
+
+    PNG = "png"
+    JPEG = "jpeg"
+
+
 class DeploymentMode(StrEnum):
     """Engine selection policy modes."""
 
@@ -171,12 +178,26 @@ class ConversionOptions(JsonModel):
     revision_mode: RevisionMode = RevisionMode.FINAL
     comment_mode: CommentMode = CommentMode.OMIT
     include_annotation_metadata: bool = False
+    image_dpi: int = 144
+    image_format: PageImageFormat = PageImageFormat.PNG
+    image_quality: int = 90
+    image_pages: tuple[int, ...] | None = None
+    image_background: str = "#ffffff"
 
     def __post_init__(self) -> None:
         if self.timeout_seconds <= 0:
             raise InvalidInputError("timeout_seconds must be greater than zero")
         if self.container_engine is EngineName.WORD_COM:
             raise InvalidInputError("container_engine cannot be word-com")
+        if not 1 <= self.image_dpi <= 600:
+            raise InvalidInputError("image_dpi must be between 1 and 600")
+        if not 1 <= self.image_quality <= 100:
+            raise InvalidInputError("image_quality must be between 1 and 100")
+        if self.image_pages is not None:
+            if not self.image_pages or any(page < 1 for page in self.image_pages):
+                raise InvalidInputError("image_pages must contain positive page numbers")
+            if tuple(sorted(set(self.image_pages))) != self.image_pages:
+                raise InvalidInputError("image_pages must be unique and sorted")
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,6 +253,20 @@ class ArtifactResult(JsonModel):
     size_bytes: int | None = None
     warnings: tuple[ConversionWarning, ...] = ()
     error: ConversionFailure | None = None
+    items: tuple[ArtifactItem, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactItem(JsonModel):
+    """Machine-readable metadata for one file within a compound artifact."""
+
+    path: Path
+    size_bytes: int
+    media_type: str
+    page_number: int | None = None
+    width_pixels: int | None = None
+    height_pixels: int | None = None
+    sha256: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,9 +1,15 @@
 """Public contracts for GordonKit Document Converter."""
 
+from gordon_doc_converter.comparison import (
+    PdfComparisonReport,
+    PdfComparisonService,
+    PillowImageDiffer,
+)
 from gordon_doc_converter.exceptions import ConversionError, ErrorCode
 from gordon_doc_converter.models import (
     AnnotationAnchor,
     AnnotationKind,
+    ArtifactItem,
     ArtifactResult,
     ArtifactStatus,
     ArtifactType,
@@ -15,9 +21,16 @@ from gordon_doc_converter.models import (
     EngineName,
     EngineProbeResult,
     NormalizedAnnotation,
+    PageImageFormat,
     PdfValidationResult,
     RevisionMode,
     SourceFormat,
+)
+from gordon_doc_converter.raster import (
+    PageImageArtifact,
+    PdfiumPageRenderer,
+    PdfRasterizer,
+    RasterOptions,
 )
 from gordon_doc_converter.service import (
     DocumentConversionService,
@@ -30,6 +43,7 @@ __all__ = [
     "AnnotationAnchor",
     "AnnotationKind",
     "ArtifactResult",
+    "ArtifactItem",
     "ArtifactStatus",
     "ArtifactType",
     "CommentMode",
@@ -44,6 +58,14 @@ __all__ = [
     "ErrorCode",
     "NormalizedAnnotation",
     "PdfValidationResult",
+    "PageImageArtifact",
+    "PageImageFormat",
+    "PdfComparisonReport",
+    "PdfComparisonService",
+    "PdfiumPageRenderer",
+    "PdfRasterizer",
+    "PillowImageDiffer",
+    "RasterOptions",
     "RevisionMode",
     "SourceFormat",
     "convert",
@@ -51,4 +73,4 @@ __all__ = [
     "probe_engines",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.4.0"

@@ -2,16 +2,18 @@
 
 GordonKit Document Converter is a Python 3.12+ orchestration library for diagnosable,
 multi-engine DOCX-to-PDF conversion. It delegates rendering to Microsoft Word, LibreOffice,
-or (in a later release) Gotenberg; it does not implement a document layout engine.
+or optional Gotenberg; it does not implement a document layout engine.
 
 The current development state includes the cross-platform request/result contracts,
 engine-selection policy, PDF validation, isolated LibreOffice and Microsoft Word COM
-adapters, and the public conversion service. The `gordon-doc` CLI is not yet available.
+adapters, semantic DOCX/PDF extraction, Markdown/HTML and page-image artifacts, rendered PDF
+comparison, a private FastAPI adapter, hardened container profiles, and the `gordon-doc` CLI.
 
 ## Development setup
 
 ```console
 uv sync --dev
+uv sync --dev --all-extras
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src
@@ -46,6 +48,34 @@ print(result.artifacts[0].path)
 and publishes the PDF only after validation succeeds. Use `DocumentConversionService` for
 engine injection, `convert_batch()` for sequential failure-isolated batches, and
 `probe_engines()` for capability diagnostics.
+
+## Command-line interface
+
+```console
+gordon-doc doctor
+gordon-doc engines --json
+gordon-doc convert example.docx --output example.pdf
+gordon-doc convert example.pdf --to images --dpi 144
+gordon-doc convert example.docx --to markdown --to html
+gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
+gordon-doc batch one.docx two.docx --output-dir converted --json
+gordon-doc version
+```
+
+Use `--engine word-com`, `--engine libreoffice`, or a configured `--engine gotenberg` for
+strict explicit selection. Conversion options also include `--mode`, `--revisions`,
+`--comments`, `--timeout`, `--overwrite`, image format/quality/page selection, and an optional
+`--gotenberg-url`. Page images use `<stem>.pages/0001.png`; semantic artifacts use `.md`,
+`.html`, shared `.assets/`, and an annotation sidecar when present. Every command supports
+`--json` for automation.
+
+Install `.[images]` for PDFium/Pillow rasterization, `.[gotenberg]` for the remote adapter,
+`.[api]` for FastAPI, or `.[word]` for Windows COM. Container and private API deployment is
+documented in [docker/README.md](docker/README.md).
+
+Stable exit codes are `0` for success, `2` for invalid input or an existing output, `3` for
+engine or capability unavailability, `4` for conversion failure, timeout, or missing output,
+and `5` for PDF validation failure.
 
 Microsoft Word and LibreOffice can render the same document differently. The project will
 report the selected engine and fallback reason; it will never promise identical output or
