@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+  "github.copilot.config.commitMessageGeneration.instructions": [
+    { "text": "Output only one concise English Conventional Commit subject in <type>(<scope>): <imperative summary> format; describe only the primary change, keep it within 72 characters, and include no body, bullets, file list, or ending period." }
+  ],
+  "markdownlint.ignore": ["LICENSE", "NOTICE"]
+}
