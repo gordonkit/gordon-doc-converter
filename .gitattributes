@@ -1,3 +1,4 @@
 docs-src/** text eol=lf
 package.json text eol=lf
 package-lock.json text eol=lf
+tests/fixtures/docx/cjk/manifest.json text eol=lf
