@@ -27,6 +27,17 @@ Microsoft Word 整合測試需要 Windows、合法授權的 Microsoft Word 及 `
 dependency。僅在受控互動式環境先執行 `uv sync --dev --extra word --locked`，再執行
 `uv run pytest -m integration tests/integration/word_com`。
 
+靜態文件網站使用本地建置的 Tailwind CSS 與本地 SVG 圖示。發布 `docs/` 前，先安裝
+前端相依套件並重新產生 CSS：
+
+```console
+npm ci
+npm run build:css
+```
+
+產生後的網站資源都位於 `docs/`，且連結使用相對路徑，因此可部署到 Cloudflare Pages
+專案的子目錄。文件索引支援 English／繁體中文導覽，以及亮色／暗色主題偏好。
+
 ## 轉換範例
 
 ```python

@@ -1,0 +1,10 @@
+{
+  "name": "gordon-doc-converter-docs",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./docs/assets/tailwind.css -o ./docs/assets/tailwind.generated.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

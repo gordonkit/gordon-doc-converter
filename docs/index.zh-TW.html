@@ -5,27 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="GordonKit Document Converter 文件索引。" />
     <title>文件索引 | GordonKit Document Converter</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <script src="assets/theme.js" defer></script>
     <style>
-      :root { color-scheme: light; font-family: "Noto Serif TC", "Microsoft JhengHei", serif; background: #f4f7f5; color: #14213d; }
-      body { margin: 0; }
+      :root { color-scheme: light; font-family: "Noto Serif TC", "Microsoft JhengHei", serif; background: var(--docs-bg); color: var(--docs-ink); }
+      body { margin: 0; background: var(--docs-bg); color: var(--docs-ink); }
       main { max-width: 960px; margin: 0 auto; padding: 4rem 1.25rem; }
       header { border-bottom: 4px solid #14213d; padding-bottom: 2rem; }
       h1 { margin: 0; font-size: clamp(2.5rem, 8vw, 5rem); line-height: 0.95; }
       header p { max-width: 42rem; margin: 1.5rem 0 0; font: 1.1rem/1.7 "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: #52606d; }
       nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 2.5rem; }
-      section { background: white; border: 1px solid #d9e1dc; padding: 1.25rem; }
+      section { background: var(--docs-surface); border: 1px solid var(--docs-border); padding: 1.25rem; }
       h2 { margin: 0; font: 700 1.25rem/1.3 "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
       p, li { font: 0.95rem/1.6 "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
       ul { margin: 1rem 0 0; padding-left: 1.25rem; }
       a { color: #2f6b57; font-weight: 600; }
       a:hover { color: #e86a33; }
       .topbar { display: flex; justify-content: space-between; gap: 1rem; align-items: center; font: 600 0.9rem/1.4 "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
-      footer { margin-top: 3rem; border-top: 1px solid #d9e1dc; padding-top: 1rem; font: 0.9rem/1.5 "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: #52606d; }
+      footer { margin-top: 3rem; border-top: 1px solid var(--docs-border); padding-top: 1rem; font: 0.9rem/1.5 "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--docs-muted); }
     </style>
   </head>
   <body>
     <main>
-      <div class="topbar"><strong>GORDONKIT / 文件</strong><a href="index.html">English</a></div>
+      <div class="topbar"><strong>GORDONKIT / 文件</strong><span><a href="index.html">English</a> <button class="theme-toggle" data-theme-toggle type="button" aria-label="切換暗色主題"><img class="theme-icon-moon" src="assets/icons/theme-toggle.svg" alt="" /><img class="theme-icon-sun" src="assets/icons/theme-sun.svg" alt="" /></button></span></div>
       <header>
         <h1>貼近程式碼的<br />專案文件。</h1>
         <p>依使用對象與用途瀏覽專案文件。所有連結都使用相對路徑，因此可部署到 Cloudflare Pages 的子目錄中。</p>
