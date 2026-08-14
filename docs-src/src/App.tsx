@@ -87,7 +87,7 @@ function App() {
         </div>
       </header>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-slate-200 bg-mist px-5 pb-8 pt-5 transition-transform dark:border-slate-800 dark:bg-[#151b23] lg:top-16 lg:z-30 lg:w-64 lg:translate-x-0 lg:pt-7 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`scrollbar-hidden fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto overscroll-y-contain border-r border-slate-200 bg-mist px-5 pb-8 pt-5 transition-transform dark:border-slate-800 dark:bg-[#151b23] lg:top-16 lg:z-30 lg:w-64 lg:translate-x-0 lg:pt-7 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="mb-7 flex items-center justify-between lg:hidden"><Logo /><button className="icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><XMarkIcon className="h-5 w-5" /></button></div>
         <nav className="space-y-7">
           {categories.map((category) => (

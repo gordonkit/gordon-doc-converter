@@ -10,6 +10,8 @@
 
 @layer components {
   .icon-button { @apply inline-flex h-9 items-center justify-center gap-1.5 px-2 text-slate-500 transition hover:bg-slate-100 hover:text-ink dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white; }
+  .scrollbar-hidden { scrollbar-width: none; }
+  .scrollbar-hidden::-webkit-scrollbar { display: none; }
 }
 
 ::selection { background: #bce4d8; color: #17202e; }
