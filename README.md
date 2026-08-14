@@ -104,7 +104,9 @@ Microsoft Word and LibreOffice can render the same document differently. The pro
 report the selected engine and fallback reason; it will never promise identical output or
 silently switch an explicitly selected engine.
 
-See [README.zh-TW.md](README.zh-TW.md) for Traditional Chinese documentation.
+Browse the [documentation index](docs/index.html) for the technical reference, user guide,
+compatibility notes, and development standards. See [README.zh-TW.md](README.zh-TW.md) for
+Traditional Chinese documentation, or open the [Traditional Chinese documentation index](docs/index.zh-TW.html).
 
 ## License
 

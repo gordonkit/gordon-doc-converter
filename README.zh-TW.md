@@ -96,6 +96,9 @@ PDFium/Pillow rasterization 使用 `.[images]`；遠端 adapter 使用 `.[gotenb
 Microsoft Word 與 LibreOffice 對同一文件可能產生不同版面。本專案會揭露實際引擎及
 fallback 原因，且明確指定引擎時絕不靜默切換。
 
+請從[文件索引](docs/index.zh-TW.html)瀏覽技術參考、操作手冊、相容性說明與開發規範；
+也可以開啟[英文文件索引](docs/index.html)。
+
 ## 授權
 
 採用 Apache License 2.0，詳見 [LICENSE](LICENSE) 與 [NOTICE](NOTICE)。
