@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply m-0 font-sans; letter-spacing: 0; }
+  button, a { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal; }
+}
+
+@layer components {
+  .icon-button { @apply inline-flex h-9 items-center justify-center gap-1.5 px-2 text-slate-500 transition hover:bg-slate-100 hover:text-ink dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white; }
+}
+
+::selection { background: #bce4d8; color: #17202e; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #9ca3af; border: 3px solid transparent; background-clip: padding-box; }

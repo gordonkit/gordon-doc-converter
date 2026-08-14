@@ -2,23 +2,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Open documentation (English)",
-      "type": "pwa-chrome",
+      "name": "React Docs (Vite HMR)",
+      "type": "node",
       "request": "launch",
-      "file": "${workspaceFolder}/docs/index.html",
-      "presentation": {
-        "group": "documentation",
-        "order": 1
-      }
-    },
-    {
-      "name": "Open documentation (繁體中文)",
-      "type": "pwa-chrome",
-      "request": "launch",
-      "file": "${workspaceFolder}/docs/index.zh-TW.html",
-      "presentation": {
-        "group": "documentation",
-        "order": 2
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5173"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
       }
     }
   ]

@@ -27,16 +27,17 @@ Microsoft Word 整合測試需要 Windows、合法授權的 Microsoft Word 及 `
 dependency。僅在受控互動式環境先執行 `uv sync --dev --extra word --locked`，再執行
 `uv run pytest -m integration tests/integration/word_com`。
 
-靜態文件網站使用本地建置的 Tailwind CSS 與本地 SVG 圖示。發布 `docs/` 前，先安裝
-前端相依套件並重新產生 CSS：
+靜態文件網站以 React、Vite、Tailwind CSS 與 bundled Heroicons 建置。發布 `docs/` 前，
+先安裝前端相依套件並重新建置網站：
 
 ```console
 npm ci
-npm run build:css
+npm run build
 ```
 
 產生後的網站資源都位於 `docs/`，且連結使用相對路徑，因此可部署到 Cloudflare Pages
-專案的子目錄。文件索引支援 English／繁體中文導覽，以及亮色／暗色主題偏好。
+專案的子目錄。單一文件索引支援 English／繁體中文導覽、搜尋、響應式版面，以及
+亮色／暗色主題偏好。
 
 ## 轉換範例
 
@@ -111,8 +112,8 @@ PDFium/Pillow rasterization 使用 `.[images]`；遠端 adapter 使用 `.[gotenb
 Microsoft Word 與 LibreOffice 對同一文件可能產生不同版面。本專案會揭露實際引擎及
 fallback 原因，且明確指定引擎時絕不靜默切換。
 
-請從[文件索引](docs/index.zh-TW.html)瀏覽技術參考、操作手冊、相容性說明與開發規範；
-也可以開啟[英文文件索引](docs/index.html)。
+請從[文件索引](docs/index.html)瀏覽技術參考、操作手冊、相容性說明與開發規範，並使用
+右上角的語系控制切換 English／繁體中文。
 
 ## 授權
 

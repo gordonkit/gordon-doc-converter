@@ -30,17 +30,17 @@ The Microsoft Word integration test requires Windows, licensed Microsoft Word, a
 `uv sync --dev --extra word --locked` followed by
 `uv run pytest -m integration tests/integration/word_com`.
 
-The static documentation uses locally built Tailwind CSS and local SVG icons. Install the
-frontend dependency and rebuild the CSS before publishing `docs/`:
+The static documentation is a React site built with Vite, Tailwind CSS, and bundled Heroicons.
+Install the frontend dependencies and rebuild the site before publishing `docs/`:
 
 ```console
 npm ci
-npm run build:css
+npm run build
 ```
 
 The generated site is self-contained under `docs/` and uses relative links, so it can be
-served from a Cloudflare Pages project subdirectory. The documentation index supports
-English/Traditional Chinese navigation and a light/dark theme preference.
+served from a Cloudflare Pages project subdirectory. Its single documentation index supports
+English/Traditional Chinese navigation, search, responsive layouts, and a light/dark theme.
 
 ## Conversion example
 
@@ -122,8 +122,8 @@ report the selected engine and fallback reason; it will never promise identical 
 silently switch an explicitly selected engine.
 
 Browse the [documentation index](docs/index.html) for the technical reference, user guide,
-compatibility notes, and development standards. See [README.zh-TW.md](README.zh-TW.md) for
-Traditional Chinese documentation, or open the [Traditional Chinese documentation index](docs/index.zh-TW.html).
+compatibility notes, and development standards. Use its language control for Traditional
+Chinese, or see [README.zh-TW.md](README.zh-TW.md).
 
 ## License
 

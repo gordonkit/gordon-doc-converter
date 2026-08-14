@@ -1,19 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./docs/**/*.html"],
+  content: ["./docs-src/**/*.{html,ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#14213D",
-        signal: "#E86A33",
-        mist: "#F4F7F5",
-        leaf: "#2F6B57",
+        ink: "#17202e",
+        signal: "#c64b2b",
+        mist: "#f6f7f8",
+        leaf: "#19715b",
       },
       fontFamily: {
-        sans: ["IBM Plex Sans", "Segoe UI", "sans-serif"],
-        mono: ["Cascadia Code", "Consolas", "monospace"],
+        sans: ["Bahnschrift", "Noto Sans TC", "Segoe UI", "sans-serif"],
+        mono: ["IBM Plex Mono", "Cascadia Code", "Consolas", "monospace"],
       },
     },
   },
+  darkMode: "class",
   plugins: [],
 };
