@@ -103,7 +103,9 @@ def _reset_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli_module, "DocumentConversionService", StubService)
 
 
-@pytest.mark.parametrize("command", ["doctor", "engines", "convert", "compare", "batch", "version"])
+@pytest.mark.parametrize(
+    "command", ["doctor", "engines", "template", "convert", "compare", "batch", "version"]
+)
 def test_every_command_has_help(command: str) -> None:
     result = runner.invoke(app, [command, "--help"])
 

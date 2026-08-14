@@ -47,21 +47,32 @@ PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且�
 
 ## 支援的格式轉換
 
-| 輸入格式 | PDF | Markdown | HTML | 逐頁圖片 |
-| --- | --- | --- | --- | --- |
-| DOCX | 可以 | 可以 | 可以 | 可以，會先經過中間 PDF |
-| PDF | 可以，驗證後發布副本 | 可以 | 可以 | 可以 |
+| 輸入格式 | PDF | DOCX | Markdown | HTML | 逐頁圖片 |
+| --- | --- | --- | --- | --- | --- |
+| DOCX | 可以 | 不支援 | 可以 | 可以 | 可以，會先經過中間 PDF |
+| PDF | 可以，驗證後發布副本 | 不支援 | 可以 | 可以 | 可以 |
+| HTML | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不適用 | 不適用 | 不支援 |
+| Markdown | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不適用 | 不適用 | 不支援 |
 
-逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML 及圖片目前僅能作為輸出 artifact，不能
-作為輸入，也不能彼此互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX
-轉 PDF 則使用選定的 Word、LibreOffice 或 Gotenberg 引擎。
+逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML 及圖片是 DOCX/PDF 的輸出 artifact；
+Markdown 與 HTML 也可作為輸入，轉換為 PDF 或 DOCX，但目前不支援 Markdown 與 HTML
+彼此直接互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX 轉 PDF 則使用
+選定的 Word、LibreOffice 或 Gotenberg 引擎。
+
+使用 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4 HTML 起始範本。使用
+`--orientation landscape` 可建立 A4 橫式範本，編輯完成後可用
+`gordon-doc convert 報告.html --to pdf` 或 `--to docx` 轉換。HTML/Markdown 轉換需要
+Pandoc；PDF 輸出另外需要 `wkhtmltopdf` 等 Pandoc PDF backend。
 
 ## 命令列介面
 
 ```console
 gordon-doc doctor
 gordon-doc engines --json
+gordon-doc template 報告.html --orientation portrait
 gordon-doc convert 範例.docx --output 範例.pdf
+gordon-doc convert 報告.html --to pdf --orientation landscape
+gordon-doc convert 報告.html --to docx
 gordon-doc convert 範例.pdf --to images --dpi 144
 gordon-doc convert 範例.docx --to markdown --to html
 gordon-doc compare 預期.pdf 實際.pdf --diff-dir 差異 --json

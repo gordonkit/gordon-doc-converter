@@ -24,11 +24,13 @@ from gordon_doc_converter.models import (
     EngineName,
     EngineProbeResult,
     PageImageFormat,
+    PageOrientation,
     RevisionMode,
 )
 from gordon_doc_converter.models_types import JsonValue
 from gordon_doc_converter.raster import PdfiumPageRenderer, PdfRasterizer
 from gordon_doc_converter.service import DocumentConversionService
+from gordon_doc_converter.template import write_blank_html_template
 
 
 class ExitCode(IntEnum):
@@ -113,6 +115,7 @@ def _make_options(
     image_quality: int = 90,
     image_pages: tuple[int, ...] | None = None,
     image_background: str = "#ffffff",
+    page_orientation: PageOrientation = PageOrientation.PORTRAIT,
 ) -> ConversionOptions:
     return ConversionOptions(
         output_path=output_path,
@@ -127,6 +130,7 @@ def _make_options(
         image_quality=image_quality,
         image_pages=image_pages,
         image_background=image_background,
+        page_orientation=page_orientation,
     )
 
 
@@ -175,8 +179,42 @@ def engines(
 
 
 @_command()
+def template(
+    output: Annotated[Path, typer.Argument(help="HTML template destination.")],
+    orientation: Annotated[
+        PageOrientation, typer.Option("--orientation", help="A4 page orientation.")
+    ] = PageOrientation.PORTRAIT,
+    overwrite: Annotated[bool, typer.Option(help="Replace an existing template.")] = False,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit machine-readable JSON.")
+    ] = False,
+) -> None:
+    """Create an editable blank A4 HTML document template."""
+    try:
+        write_blank_html_template(output, orientation=orientation, overwrite=overwrite)
+    except (ConversionError, OSError, ValueError) as error:
+        if isinstance(error, ConversionError):
+            message = error.message
+            code = _error_exit_code(error.code)
+            payload = _failure_payload("template", error)
+        else:
+            message = str(error)
+            code = ExitCode.INPUT_ERROR
+            payload = {"command": "template", "success": False, "error": message}
+        _emit(payload, f"Template failed: {message}", json_output=json_output)
+        raise typer.Exit(code) from error
+    payload = {
+        "command": "template",
+        "success": True,
+        "path": str(output),
+        "orientation": orientation.value,
+    }
+    _emit(payload, f"Created HTML template: {output}", json_output=json_output)
+
+
+@_command()
 def convert(
-    source: Annotated[Path, typer.Argument(help="Source DOCX or PDF file.")],
+    source: Annotated[Path, typer.Argument(help="Source DOCX, PDF, HTML, or Markdown file.")],
     output: Annotated[
         Path | None, typer.Option("--output", "-o", help="Artifact destination.")
     ] = None,
@@ -209,6 +247,9 @@ def convert(
         list[int] | None, typer.Option("--page", min=1, help="One-based page; repeatable.")
     ] = None,
     image_background: Annotated[str, typer.Option("--background")] = "#ffffff",
+    page_orientation: Annotated[
+        PageOrientation, typer.Option("--orientation", help="A4 page orientation.")
+    ] = PageOrientation.PORTRAIT,
     gotenberg_url: Annotated[
         str | None, typer.Option("--gotenberg-url", help="Optional Gotenberg base URL.")
     ] = None,
@@ -231,6 +272,7 @@ def convert(
             image_quality=image_quality,
             image_pages=tuple(image_pages) if image_pages else None,
             image_background=image_background,
+            page_orientation=page_orientation,
         )
         artifacts = tuple(artifact_types) if artifact_types else None
         request = ConversionRequest.from_source(source, artifacts=artifacts, options=options)

@@ -16,12 +16,15 @@ class SourceFormat(StrEnum):
 
     DOCX = "docx"
     PDF = "pdf"
+    HTML = "html"
+    MARKDOWN = "md"
 
 
 class ArtifactType(StrEnum):
     """Artifact types represented by the forward-compatible result contract."""
 
     PDF = "pdf"
+    DOCX = "docx"
     MARKDOWN = "markdown"
     HTML = "html"
     PAGE_IMAGES = "images"
@@ -40,6 +43,13 @@ class PageImageFormat(StrEnum):
 
     PNG = "png"
     JPEG = "jpeg"
+
+
+class PageOrientation(StrEnum):
+    """A4 page orientation applied to markup conversions."""
+
+    PORTRAIT = "portrait"
+    LANDSCAPE = "landscape"
 
 
 class DeploymentMode(StrEnum):
@@ -183,12 +193,16 @@ class ConversionOptions(JsonModel):
     image_quality: int = 90
     image_pages: tuple[int, ...] | None = None
     image_background: str = "#ffffff"
+    page_size: str = "A4"
+    page_orientation: PageOrientation = PageOrientation.PORTRAIT
 
     def __post_init__(self) -> None:
         if self.timeout_seconds <= 0:
             raise InvalidInputError("timeout_seconds must be greater than zero")
         if self.container_engine is EngineName.WORD_COM:
             raise InvalidInputError("container_engine cannot be word-com")
+        if self.page_size.casefold() != "a4":
+            raise InvalidInputError("only A4 page size is currently supported")
         if not 1 <= self.image_dpi <= 600:
             raise InvalidInputError("image_dpi must be between 1 and 600")
         if not 1 <= self.image_quality <= 100:
@@ -230,7 +244,9 @@ class ConversionRequest(JsonModel):
         try:
             source_format = SourceFormat(suffix)
         except ValueError as exc:
-            raise InvalidInputError("source must have a .docx or .pdf extension") from exc
+            raise InvalidInputError(
+                "source must have a .docx or .pdf, .html, or .md extension"
+            ) from exc
         if artifacts is None:
             if source_format is SourceFormat.PDF:
                 raise InvalidInputError("PDF input requires an explicit artifact target")

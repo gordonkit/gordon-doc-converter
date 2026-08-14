@@ -51,22 +51,33 @@ engine injection, `convert_batch()` for sequential failure-isolated batches, and
 
 ## Supported format conversions
 
-| Input | PDF | Markdown | HTML | Page images |
-| --- | --- | --- | --- | --- |
-| DOCX | Yes | Yes | Yes | Yes, via an intermediate PDF |
-| PDF | Yes, validated copy | Yes | Yes | Yes |
+| Input | PDF | DOCX | Markdown | HTML | Page images |
+| --- | --- | --- | --- | --- | --- |
+| DOCX | Yes | No | Yes | Yes | Yes, via an intermediate PDF |
+| PDF | Yes, validated copy | No | Yes | Yes | Yes |
+| HTML | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No |
+| Markdown | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No |
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, and image files are output
-artifacts only; the project does not currently accept them as input or convert between them.
+artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for PDF/DOCX
+conversion. The project does not convert Markdown and HTML directly between each other.
 PDF-to-PDF validates and publishes the source rather than re-rendering it. DOCX-to-PDF uses
 the selected Word, LibreOffice, or Gotenberg engine.
+
+Create an editable, print-ready A4 HTML starting point with `gordon-doc template report.html`.
+Use `--orientation landscape` for A4 horizontal layout, then convert it with
+`gordon-doc convert report.html --to pdf` or `--to docx`. HTML/Markdown conversion requires
+Pandoc; PDF output additionally requires a Pandoc PDF backend such as `wkhtmltopdf`.
 
 ## Command-line interface
 
 ```console
 gordon-doc doctor
 gordon-doc engines --json
+gordon-doc template report.html --orientation portrait
 gordon-doc convert example.docx --output example.pdf
+gordon-doc convert report.html --to pdf --orientation landscape
+gordon-doc convert report.html --to docx
 gordon-doc convert example.pdf --to images --dpi 144
 gordon-doc convert example.docx --to markdown --to html
 gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json

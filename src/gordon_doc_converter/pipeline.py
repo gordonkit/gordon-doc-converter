@@ -16,6 +16,7 @@ from gordon_doc_converter.content import (
     write_content_artifacts,
 )
 from gordon_doc_converter.engines.base import ConverterEngine, EngineExecutionResult
+from gordon_doc_converter.engines.pandoc import PandocConverter
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
     ConversionError,
@@ -130,6 +131,7 @@ def _output_stem(request: ConversionRequest) -> Path:
         return request.source_path.with_suffix("")
     if len(request.artifacts) > 1 or configured.suffix.casefold() in {
         ".pdf",
+        ".docx",
         ".md",
         ".html",
     }:
@@ -225,6 +227,8 @@ class ConversionPipeline:
 
     def convert(self, request: ConversionRequest) -> ConversionResult:
         """Convert one supported request without exposing adapter-specific failures."""
+        if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
+            return self._convert_markup(request)
         if request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
             return self._convert_artifacts(request)
         started = perf_counter()
@@ -365,6 +369,120 @@ class ConversionPipeline:
                 )
 
         raise AssertionError("engine selection produced no executable engine")
+
+    def _convert_markup(self, request: ConversionRequest) -> ConversionResult:
+        """Convert HTML or Markdown to validated A4 PDF or DOCX artifacts."""
+        started = perf_counter()
+        supported = {ArtifactType.PDF, ArtifactType.DOCX}
+        invalid = set(request.artifacts) - supported
+        if invalid:
+            return self._failure_result(
+                request,
+                InvalidInputError("HTML and Markdown sources support only PDF and DOCX outputs"),
+                output_path=None,
+                started=started,
+            )
+        if not request.source_path.is_file():
+            return self._failure_result(
+                request,
+                InvalidInputError("source markup file does not exist"),
+                output_path=None,
+                started=started,
+            )
+        converter = PandocConverter()
+        results: list[ArtifactResult] = []
+        with TemporaryDirectory(prefix="gordon-doc-markup-") as temporary:
+            workspace = Path(temporary)
+            for artifact_type in request.artifacts:
+                suffix = ".pdf" if artifact_type is ArtifactType.PDF else ".docx"
+                output = (
+                    request.options.output_path
+                    if len(request.artifacts) == 1 and request.options.output_path is not None
+                    else _output_stem(request).with_suffix(suffix)
+                )
+                if output.suffix.casefold() != suffix:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(
+                                InvalidInputError(
+                                    f"{artifact_type.value} output must use the {suffix} extension"
+                                )
+                            ),
+                        )
+                    )
+                    continue
+                if output.exists() and not request.options.overwrite:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(
+                                OutputExistsError("output already exists")
+                            ),
+                        )
+                    )
+                    continue
+                staged = workspace / f"output{suffix}"
+                try:
+                    converter.convert(
+                        request.source_path,
+                        staged,
+                        source_format=request.source_format,
+                        artifact_type=artifact_type,
+                        options=request.options,
+                    )
+                    if artifact_type is ArtifactType.PDF:
+                        validation = validate_pdf(staged)
+                        if not validation.valid:
+                            raise PdfValidationError("generated PDF failed validation")
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    if request.options.overwrite:
+                        staged.replace(output)
+                    else:
+                        staged.rename(output)
+                    size = output.stat().st_size
+                    media_type = (
+                        "application/pdf"
+                        if artifact_type is ArtifactType.PDF
+                        else (
+                            "application/vnd.openxmlformats-"
+                            "officedocument.wordprocessingml.document"
+                        )
+                    )
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.SUCCESS,
+                            output,
+                            size,
+                            items=(
+                                ArtifactItem(
+                                    output,
+                                    size,
+                                    media_type,
+                                ),
+                            ),
+                        )
+                    )
+                except ConversionError as error:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(error),
+                        )
+                    )
+        success = all(item.status is ArtifactStatus.SUCCESS for item in results)
+        first_error = next((item.error for item in results if item.error is not None), None)
+        return ConversionResult(
+            success=success,
+            source_format=request.source_format,
+            artifacts=tuple(results),
+            error=first_error,
+            duration_seconds=perf_counter() - started,
+        )
 
     def _convert_artifacts(self, request: ConversionRequest) -> ConversionResult:
         """Produce independent semantic and raster artifacts with partial-failure reporting."""
