@@ -7,7 +7,22 @@ or optional Gotenberg; it does not implement a document layout engine.
 The current development state includes the cross-platform request/result contracts,
 engine-selection policy, PDF validation, isolated LibreOffice and Microsoft Word COM
 adapters, semantic DOCX/PDF extraction, Markdown/HTML and page-image artifacts, rendered PDF
-comparison, a private FastAPI adapter, hardened container profiles, and the `gordon-doc` CLI.
+comparison, an authenticated FastAPI adapter, hardened container profiles, and the `gordon-doc`
+CLI.
+
+## Installation
+
+Install the core library and CLI from PyPI:
+
+```console
+python -m pip install gordon-doc-converter
+gordon-doc version
+```
+
+Optional features are available as `gordon-doc-converter[images]`,
+`gordon-doc-converter[gotenberg]`, `gordon-doc-converter[api]`, and
+`gordon-doc-converter[word]`. See the [online documentation](https://docs.gordonkit.com/)
+for engine and platform requirements.
 
 ## Development setup
 
@@ -40,8 +55,8 @@ npm ci
 npm run build
 ```
 
-The generated site is self-contained under `docs/` and uses relative links, so it can be
-served from a Cloudflare Pages project subdirectory. Its single documentation index supports
+The generated site is self-contained under `docs/` and uses relative links. It is published
+at [docs.gordonkit.com](https://docs.gordonkit.com/). Its single documentation index supports
 English/Traditional Chinese navigation, search, responsive layouts, and a light/dark theme.
 The generated API contract is available at `docs/openapi.json`, and the read-only Swagger UI
 is available at `docs/swagger/index.html`. Run `npm run openapi:check` to detect a stale export.
@@ -114,7 +129,7 @@ strict explicit selection. Conversion options also include `--mode`, `--revision
 `--json` for automation.
 
 Install `.[images]` for PDFium/Pillow rasterization, `.[gotenberg]` for the remote adapter,
-`.[api]` for FastAPI, or `.[word]` for Windows COM. Container and private API deployment is
+`.[api]` for FastAPI, or `.[word]` for Windows COM. Container and authenticated API deployment is
 documented in [docker/README.md](docker/README.md).
 
 Stable exit codes are `0` for success, `2` for invalid input or an existing output, `3` for

@@ -5,9 +5,11 @@ description = "Diagnosable multi-engine DOCX-to-PDF conversion orchestration."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
+authors = [{ name = "GordonKit contributors" }]
 keywords = ["docx", "pdf", "document-conversion"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Typing :: Typed",
@@ -16,6 +18,12 @@ dependencies = [
     "pypdf>=5.0,<7",
     "typer>=0.16,<1",
 ]
+
+[project.urls]
+Documentation = "https://docs.gordonkit.com/"
+Changelog = "https://github.com/gordonkit/gordon-doc-converter/blob/main/CHANGELOG.md"
+Issues = "https://github.com/gordonkit/gordon-doc-converter/issues"
+Repository = "https://github.com/gordonkit/gordon-doc-converter"
 
 [project.scripts]
 gordon-doc = "gordon_doc_converter.cli:app"

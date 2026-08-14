@@ -18,8 +18,8 @@ Commit messages use Conventional Commits
 in the form
 `<type>(<scope>): <imperative summary>` and stay within 72 characters.
 
-Follow the [Git branching and integration workflow](docs/development/git-branching.html).
-Use it for branch names, pull requests, merges, and releases.
-See the [Traditional Chinese version](docs/development/git-branching.zh-TW.html).
+Use short-lived branches, open a pull request against `main`, and wait for all required
+checks before merging. See the [online contributing guide](https://docs.gordonkit.com/#contributing)
+for the current setup and quality commands.
 
 By participating, you agree to follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

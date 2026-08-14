@@ -27,16 +27,29 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --dev --locked
-      - run: uv build
+      - run: uv run python scripts/check_release.py --tag "$GITHUB_REF_NAME"
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy src
+      - run: uv run pytest
+      - run: uv build --out-dir build-one
+      - run: uv build --out-dir build-two
+      - run: uv run python scripts/compare_builds.py build-one build-two
       - name: Check wheel in a clean virtual environment
-        run: uv run python scripts/check_package.py dist/*.whl
+        run: uv run python scripts/check_package.py build-one/*.whl
       - name: Attest distribution provenance
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: "dist/*"
-      - name: Publish to PyPI with trusted publishing
-        uses: pypa/gh-action-pypi-publish@release/v1
-      - name: Publish signed GitHub release assets
+          subject-path: "build-one/*"
+      - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" build-one/* --draft --generate-notes --verify-tag
+      - name: Publish to PyPI with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: build-one/
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false

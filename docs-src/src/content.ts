@@ -174,7 +174,7 @@ export const pages: Page[] = [
     id: "api",
     category: "getting-started",
     title: { en: "HTTP API", "zh-TW": "HTTP API" },
-    summary: { en: "Run the private FastAPI adapter and explore its OpenAPI contract.", "zh-TW": "啟動私有 FastAPI adapter，並瀏覽其 OpenAPI 契約。" },
+    summary: { en: "Run the authenticated FastAPI adapter and explore its OpenAPI contract.", "zh-TW": "啟動具認證的 FastAPI adapter，並瀏覽其 OpenAPI 契約。" },
     sections: [
       {
         id: "start-api",
@@ -265,7 +265,7 @@ export const pages: Page[] = [
     sections: [
       { id: "profiles", title: { en: "Choose a profile", "zh-TW": "選擇 Profile" }, body: { en: "Every Compose service is opt-in. Use cli for local commands, standalone-lo for an API with LibreOffice in one image, or gateway-gotenberg for a smaller API image backed by a separate renderer.", "zh-TW": "所有 Compose service 都必須明確選用。cli 適合本機命令；standalone-lo 將 API 與 LibreOffice 包在同一映像；gateway-gotenberg 則使用較小的 API 映像搭配獨立排版服務。" }, note: { en: "Always pass --profile. Running compose up without a profile starts no services.", "zh-TW": "務必傳入 --profile；未指定 profile 時，compose up 不會啟動任何服務。" } },
       { id: "cli-profile", title: { en: "CLI profile", "zh-TW": "CLI Profile" }, body: { en: "The CLI image includes LibreOffice and mounts the current directory at /work. It is suited to local, one-off conversions without running an HTTP service.", "zh-TW": "CLI 映像內含 LibreOffice，並將目前目錄掛載至 /work，適合不啟動 HTTP service 的本機單次轉換。" }, code: "docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/report.docx --output /work/report.pdf" },
-      { id: "standalone-profile", title: { en: "Standalone LibreOffice API", "zh-TW": "單體 LibreOffice API" }, body: { en: "Run the private API and LibreOffice in one container when simple deployment and local rendering matter more than independent renderer scaling.", "zh-TW": "需要簡單部署與本機排版，且不需獨立擴展 renderer 時，可在同一容器執行私有 API 與 LibreOffice。" }, code: "# .env\nGORDON_DOC_API_KEY=replace-me\n\ndocker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build" },
+      { id: "standalone-profile", title: { en: "Standalone LibreOffice API", "zh-TW": "單體 LibreOffice API" }, body: { en: "Run the authenticated API and LibreOffice in one container when simple deployment and local rendering matter more than independent renderer scaling.", "zh-TW": "需要簡單部署與本機排版，且不需獨立擴展 renderer 時，可在同一容器執行具認證的 API 與 LibreOffice。" }, code: "# .env\nGORDON_DOC_API_KEY=replace-me\n\ndocker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build" },
       { id: "gateway-profile", title: { en: "Gotenberg gateway", "zh-TW": "Gotenberg Gateway" }, body: { en: "Run the API gateway with a separate Gotenberg service when renderer isolation and independent service health are preferred. Compose waits for Gotenberg to become healthy before the gateway starts.", "zh-TW": "偏好 renderer 隔離與獨立服務健康狀態時，可讓 API gateway 搭配個別 Gotenberg service；Compose 會等待 Gotenberg 健康後再啟動 gateway。" }, code: "docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --build" },
       { id: "health", title: { en: "Operations and security", "zh-TW": "維運與安全" }, body: { en: "All profiles run as a non-root user with a read-only root filesystem, a bounded temporary filesystem, and no-new-privileges. API profiles require a strong key; production ingress must also enforce request-size and distributed rate limits.", "zh-TW": "所有 profile 都以非 root 使用者、唯讀 root filesystem、有限 tmpfs 與 no-new-privileges 執行。API profile 必須使用高強度 key；正式環境 ingress 也應限制 request 大小並提供分散式 rate limit。" }, code: "python docker/smoke.py --token replace-me --docx sample.docx", note: { en: "Do not commit the .env file or customer documents. The smoke client checks liveness, authenticated engine discovery, and optionally an end-to-end PDF conversion.", "zh-TW": "請勿提交 .env 或客戶文件。Smoke client 會檢查存活狀態、經認證的引擎探索，以及選用的端到端 PDF 轉換。" } },
     ],
@@ -276,7 +276,7 @@ export const pages: Page[] = [
     title: { en: "Roadmap", "zh-TW": "產品藍圖" },
     summary: { en: "Track the stable core and intentionally staged delivery areas.", "zh-TW": "掌握穩定核心與分階段交付範圍。" },
     sections: [
-      { id: "current", title: { en: "Current scope", "zh-TW": "目前範圍" }, body: { en: "The core library, CLI, conversion adapters, semantic artifacts, comparison tools, private API adapter, and container profiles are available.", "zh-TW": "目前已提供核心函式庫、CLI、轉換 adapters、語意 artifacts、比較工具、私有 API adapter 與容器 profiles。" } },
+      { id: "current", title: { en: "Current scope", "zh-TW": "目前範圍" }, body: { en: "The core library, CLI, conversion adapters, semantic artifacts, comparison tools, authenticated API adapter, and container profiles are available.", "zh-TW": "目前已提供核心函式庫、CLI、轉換 adapters、語意 artifacts、比較工具、具認證的 API adapter 與容器 profiles。" } },
       { id: "principles", title: { en: "Project principles", "zh-TW": "專案原則" }, body: { en: "GordonKit favors explicit policy, portable contracts, isolated external processes, and diagnostic results over hidden convenience.", "zh-TW": "GordonKit 重視明確政策、可攜契約、隔離外部程序與可診斷結果，不以隱藏行為換取表面便利。" } },
     ],
   },

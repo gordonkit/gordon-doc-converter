@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-14
+
 ### Added
 
 - Initial package, tooling, governance, and bilingual documentation baseline.

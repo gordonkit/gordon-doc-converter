@@ -6,7 +6,20 @@ Gotenberg；本專案本身不實作文書排版引擎。
 
 目前已完成跨平台請求／結果契約、引擎選擇政策、PDF 驗證、具隔離機制的 LibreOffice
 與 Microsoft Word COM adapter、DOCX/PDF 語意擷取、Markdown/HTML 與逐頁圖片 artifact、
-PDF 渲染比對、私有 FastAPI adapter、強化容器 profiles，以及 `gordon-doc` CLI。
+PDF 渲染比對、具認證的 FastAPI adapter、強化容器 profiles，以及 `gordon-doc` CLI。
+
+## 安裝
+
+從 PyPI 安裝核心函式庫與 CLI：
+
+```console
+python -m pip install gordon-doc-converter
+gordon-doc version
+```
+
+選用功能可透過 `gordon-doc-converter[images]`、`gordon-doc-converter[gotenberg]`、
+`gordon-doc-converter[api]` 與 `gordon-doc-converter[word]` 安裝。各引擎與平台需求請參閱
+[線上文件](https://docs.gordonkit.com/)。
 
 ## 開發環境
 
@@ -37,8 +50,8 @@ npm ci
 npm run build
 ```
 
-產生後的網站資源都位於 `docs/`，且連結使用相對路徑，因此可部署到 Cloudflare Pages
-專案的子目錄。單一文件索引支援 English／繁體中文導覽、搜尋、響應式版面，以及
+產生後的網站資源都位於 `docs/`，且連結使用相對路徑。網站發布於
+[docs.gordonkit.com](https://docs.gordonkit.com/)。單一文件索引支援 English／繁體中文導覽、搜尋、響應式版面，以及
 亮色／暗色主題偏好。產生的 API 契約位於 `docs/openapi.json`，唯讀 Swagger UI 位於
 `docs/swagger/index.html`。可執行 `npm run openapi:check` 檢查匯出規格是否過期。
 
@@ -106,7 +119,7 @@ gordon-doc version
 sidecar。所有指令都支援 `--json`，便於自動化整合。
 
 PDFium/Pillow rasterization 使用 `.[images]`；遠端 adapter 使用 `.[gotenberg]`；FastAPI
-使用 `.[api]`；Windows COM 使用 `.[word]`。容器及私有 API 說明見
+使用 `.[api]`；Windows COM 使用 `.[word]`。容器及具認證 API 的說明見
 [docker/README.md](docker/README.md)。
 
 固定退出碼為：`0` 成功；`2` 輸入無效或輸出已存在；`3` 引擎或能力不可用；`4` 轉換

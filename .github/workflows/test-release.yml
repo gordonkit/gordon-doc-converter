@@ -1,0 +1,49 @@
+name: TestPyPI release rehearsal
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/gordon-doc-converter
+    env:
+      SOURCE_DATE_EPOCH: "946684800"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --dev --locked
+      - id: release
+        name: Validate release metadata
+        shell: bash
+        run: echo "version=$(uv run python scripts/check_release.py)" >> "$GITHUB_OUTPUT"
+      - run: uv build --out-dir dist
+      - name: Check wheel in a clean virtual environment
+        run: uv run python scripts/check_package.py dist/*.whl
+      - name: Publish to TestPyPI with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+      - name: Download the published wheel from TestPyPI
+        run: >-
+          python -m pip download
+          --disable-pip-version-check
+          --no-deps
+          --only-binary=:all:
+          --index-url https://test.pypi.org/simple/
+          --dest testpypi-dist
+          gordon-doc-converter==${{ steps.release.outputs.version }}
+      - name: Check the wheel downloaded from TestPyPI
+        run: uv run python scripts/check_package.py testpypi-dist/*.whl
