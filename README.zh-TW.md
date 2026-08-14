@@ -45,6 +45,17 @@ print(result.artifacts[0].path)
 PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且個別失敗互不影響的批次
 轉換使用 `convert_batch()`；能力診斷則使用 `probe_engines()`。
 
+## 支援的格式轉換
+
+| 輸入格式 | PDF | Markdown | HTML | 逐頁圖片 |
+| --- | --- | --- | --- | --- |
+| DOCX | 可以 | 可以 | 可以 | 可以，會先經過中間 PDF |
+| PDF | 可以，驗證後發布副本 | 可以 | 可以 | 可以 |
+
+逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML 及圖片目前僅能作為輸出 artifact，不能
+作為輸入，也不能彼此互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX
+轉 PDF 則使用選定的 Word、LibreOffice 或 Gotenberg 引擎。
+
 ## 命令列介面
 
 ```console

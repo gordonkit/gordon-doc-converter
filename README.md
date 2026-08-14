@@ -49,6 +49,18 @@ and publishes the PDF only after validation succeeds. Use `DocumentConversionSer
 engine injection, `convert_batch()` for sequential failure-isolated batches, and
 `probe_engines()` for capability diagnostics.
 
+## Supported format conversions
+
+| Input | PDF | Markdown | HTML | Page images |
+| --- | --- | --- | --- | --- |
+| DOCX | Yes | Yes | Yes | Yes, via an intermediate PDF |
+| PDF | Yes, validated copy | Yes | Yes | Yes |
+
+Page-image output is available as PNG or JPEG. Markdown, HTML, and image files are output
+artifacts only; the project does not currently accept them as input or convert between them.
+PDF-to-PDF validates and publishes the source rather than re-rendering it. DOCX-to-PDF uses
+the selected Word, LibreOffice, or Gotenberg engine.
+
 ## Command-line interface
 
 ```console
