@@ -1,17 +1,19 @@
-"""Shared protocol implemented by all DOCX-to-PDF engines."""
+"""Shared protocols implemented by conversion engines."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from gordon_doc_converter.models import (
+    ArtifactType,
     CommentMode,
     ConversionWarning,
     EngineName,
     EngineProbeResult,
     RevisionMode,
+    SourceFormat,
 )
 
 
@@ -47,4 +49,21 @@ class ConverterEngine(Protocol):
         comment_mode: CommentMode,
     ) -> EngineExecutionResult:
         """Render one DOCX to PDF or raise a project conversion exception."""
+        ...
+
+
+@runtime_checkable
+class FileConverterEngine(ConverterEngine, Protocol):
+    """Capability contract for office-file conversions."""
+
+    def convert_file(
+        self,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        timeout_seconds: float,
+    ) -> EngineExecutionResult:
+        """Convert an office document to another supported file artifact."""
         ...

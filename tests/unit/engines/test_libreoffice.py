@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from pypdf import PdfWriter
@@ -19,7 +20,13 @@ from gordon_doc_converter.exceptions import (
     PdfValidationError,
     UnsupportedAnnotationModeError,
 )
-from gordon_doc_converter.models import CommentMode, EngineName, RevisionMode
+from gordon_doc_converter.models import (
+    ArtifactType,
+    CommentMode,
+    EngineName,
+    RevisionMode,
+    SourceFormat,
+)
 from gordon_doc_converter.process.runner import ProcessResult, ProcessTimeoutError
 
 
@@ -34,6 +41,13 @@ def _source(tmp_path: Path) -> Path:
     source = tmp_path / "臺灣 測試文件.docx"
     source.write_bytes(b"generated public fixture")
     return source
+
+
+def _write_odt(path: Path) -> None:
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/vnd.oasis.opendocument.text")
+        archive.writestr("META-INF/manifest.xml", "<manifest/>")
+        archive.writestr("content.xml", "<content/>")
 
 
 def _output_directory(arguments: Sequence[str]) -> Path:
@@ -329,3 +343,37 @@ def test_conversion_reports_unavailable_executable(
             revision_mode=RevisionMode.FINAL,
             comment_mode=CommentMode.OMIT,
         )
+
+
+def test_convert_file_supports_odt_to_docx_with_target_validation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "臺灣 文件.odt"
+    _write_odt(source)
+    output = tmp_path / "nested" / "結果.docx"
+    executable = tmp_path / "soffice"
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        assert timeout_seconds == 7
+        output_directory = _output_directory(arguments)
+        generated = output_directory / f"{source.stem}.docx"
+        with ZipFile(generated, "w", ZIP_DEFLATED) as archive:
+            archive.writestr("[Content_Types].xml", "<Types/>")
+            archive.writestr("_rels/.rels", "<Relationships/>")
+            archive.writestr("word/document.xml", "<document/>")
+        return ProcessResult(0, "converted", "")
+
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
+
+    result = LibreOfficeEngine(executable).convert_file(
+        source,
+        output,
+        source_format=SourceFormat.ODT,
+        artifact_type=ArtifactType.DOCX,
+        timeout_seconds=7,
+    )
+
+    assert result.engine is EngineName.LIBREOFFICE
+    assert result.output_path == output
+    assert output.is_file()

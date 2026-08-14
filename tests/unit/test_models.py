@@ -31,6 +31,13 @@ def test_docx_request_defaults_to_pdf() -> None:
     assert request.artifacts == (ArtifactType.PDF,)
 
 
+def test_odt_request_defaults_to_pdf() -> None:
+    request = ConversionRequest.from_source(Path("臺灣 文件.odt"))
+
+    assert request.source_format is SourceFormat.ODT
+    assert request.artifacts == (ArtifactType.PDF,)
+
+
 def test_pdf_request_requires_explicit_target() -> None:
     with pytest.raises(InvalidInputError, match="explicit artifact"):
         ConversionRequest.from_source(Path("input.pdf"))
@@ -38,7 +45,7 @@ def test_pdf_request_requires_explicit_target() -> None:
 
 @pytest.mark.parametrize("source", [Path("input.txt"), Path("input"), Path("input.doc")])
 def test_request_rejects_unknown_source_format(source: Path) -> None:
-    with pytest.raises(InvalidInputError, match=".docx or .pdf"):
+    with pytest.raises(InvalidInputError, match=".docx, .odt, .pdf"):
         ConversionRequest.from_source(source)
 
 

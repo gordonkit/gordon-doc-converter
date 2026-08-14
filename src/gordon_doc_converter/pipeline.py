@@ -15,7 +15,11 @@ from gordon_doc_converter.content import (
     extract_pdf_content,
     write_content_artifacts,
 )
-from gordon_doc_converter.engines.base import ConverterEngine, EngineExecutionResult
+from gordon_doc_converter.engines.base import (
+    ConverterEngine,
+    EngineExecutionResult,
+    FileConverterEngine,
+)
 from gordon_doc_converter.engines.pandoc import PandocConverter
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
@@ -132,6 +136,7 @@ def _output_stem(request: ConversionRequest) -> Path:
     if len(request.artifacts) > 1 or configured.suffix.casefold() in {
         ".pdf",
         ".docx",
+        ".odt",
         ".md",
         ".html",
     }:
@@ -229,6 +234,8 @@ class ConversionPipeline:
         """Convert one supported request without exposing adapter-specific failures."""
         if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
             return self._convert_markup(request)
+        if request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts:
+            return self._convert_office_files(request)
         if request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
             return self._convert_artifacts(request)
         started = perf_counter()
@@ -369,6 +376,152 @@ class ConversionPipeline:
                 )
 
         raise AssertionError("engine selection produced no executable engine")
+
+    def _convert_office_files(self, request: ConversionRequest) -> ConversionResult:
+        """Convert DOCX/ODT files through the LibreOffice file adapter."""
+        started = perf_counter()
+        supported = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
+        if request.source_format not in {SourceFormat.DOCX, SourceFormat.ODT}:
+            error: ConversionError = InvalidInputError(
+                "office file conversion requires a DOCX or ODT source"
+            )
+            return self._failure_result(request, error, output_path=None, started=started)
+        if set(request.artifacts) - supported:
+            error = InvalidInputError("office file conversion supports only PDF, DOCX, and ODT")
+            return self._failure_result(request, error, output_path=None, started=started)
+        if not request.source_path.is_file():
+            error = InvalidInputError("source office file does not exist")
+            return self._failure_result(request, error, output_path=None, started=started)
+        if request.options.engine not in {None, EngineName.LIBREOFFICE}:
+            error = InvalidInputError("DOCX and ODT file conversion requires LibreOffice")
+            return self._failure_result(request, error, output_path=None, started=started)
+        engine = self._engines.get(EngineName.LIBREOFFICE)
+        if engine is None:
+            error = EngineFailedError(
+                "LibreOffice file conversion adapter is not configured",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+            return self._failure_result(request, error, output_path=None, started=started)
+        if not isinstance(engine, FileConverterEngine):
+            error = EngineFailedError(
+                "configured LibreOffice adapter does not support file conversion",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+            return self._failure_result(request, error, output_path=None, started=started)
+        try:
+            probe = engine.probe()
+        except Exception as cause:
+            error = EngineFailedError(
+                "LibreOffice file conversion probe failed",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+            error.__cause__ = cause
+            return self._failure_result(request, error, output_path=None, started=started)
+        if not probe.available:
+            error = EngineFailedError(
+                probe.reason or "LibreOffice is unavailable",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+            return self._failure_result(request, error, output_path=None, started=started)
+
+        results: list[ArtifactResult] = []
+        with TemporaryDirectory(prefix="gordon-doc-office-") as temporary:
+            workspace = Path(temporary)
+            for index, artifact_type in enumerate(request.artifacts):
+                suffix = ".pdf" if artifact_type is ArtifactType.PDF else f".{artifact_type.value}"
+                output = (
+                    request.options.output_path
+                    if len(request.artifacts) == 1 and request.options.output_path is not None
+                    else _output_stem(request).with_suffix(suffix)
+                )
+                if output.suffix.casefold() != suffix:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(
+                                InvalidInputError(f"{artifact_type.value} output must use {suffix}")
+                            ),
+                        )
+                    )
+                    continue
+                if output.exists() and not request.options.overwrite:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(
+                                OutputExistsError("conversion output already exists")
+                            ),
+                        )
+                    )
+                    continue
+                staged = workspace / f"output-{index}{suffix}"
+                try:
+                    execution = engine.convert_file(
+                        request.source_path,
+                        staged,
+                        source_format=request.source_format,
+                        artifact_type=artifact_type,
+                        timeout_seconds=request.options.timeout_seconds,
+                    )
+                    if (
+                        execution.engine is not EngineName.LIBREOFFICE
+                        or execution.output_path != staged
+                    ):
+                        raise EngineFailedError(
+                            "LibreOffice returned a mismatched file conversion result",
+                            engine=EngineName.LIBREOFFICE.value,
+                        )
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    if request.options.overwrite:
+                        staged.replace(output)
+                    else:
+                        staged.rename(output)
+                    size = output.stat().st_size
+                    media_type = (
+                        "application/pdf"
+                        if artifact_type is ArtifactType.PDF
+                        else (
+                            "application/vnd.oasis.opendocument.text"
+                            if artifact_type is ArtifactType.ODT
+                            else (
+                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            )
+                        )
+                    )
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.SUCCESS,
+                            output,
+                            size,
+                            items=(ArtifactItem(output, size, media_type),),
+                        )
+                    )
+                except ConversionError as error:
+                    results.append(
+                        ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=_failure_from_exception(error),
+                        )
+                    )
+        successful = all(item.status is ArtifactStatus.SUCCESS for item in results)
+        first_error = next((item.error for item in results if item.error is not None), None)
+        return ConversionResult(
+            success=successful,
+            source_format=request.source_format,
+            artifacts=tuple(results),
+            selected_engine=EngineName.LIBREOFFICE if successful else None,
+            attempted_engines=(EngineName.LIBREOFFICE,),
+            error=first_error,
+            duration_seconds=perf_counter() - started,
+            requested_revision_mode=request.options.revision_mode,
+            effective_revision_mode=(request.options.revision_mode if successful else None),
+            requested_comment_mode=request.options.comment_mode,
+            effective_comment_mode=(request.options.comment_mode if successful else None),
+        )
 
     def _convert_markup(self, request: ConversionRequest) -> ConversionResult:
         """Convert HTML or Markdown to validated A4 PDF or DOCX artifacts."""

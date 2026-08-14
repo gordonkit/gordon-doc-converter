@@ -22,16 +22,19 @@ from gordon_doc_converter.exceptions import (
     UnsupportedAnnotationModeError,
 )
 from gordon_doc_converter.models import (
+    ArtifactType,
     CommentMode,
     EngineName,
     EngineProbeResult,
     RevisionMode,
+    SourceFormat,
 )
 from gordon_doc_converter.process.runner import (
     ProcessStartError,
     ProcessTimeoutError,
     run_process,
 )
+from gordon_doc_converter.security import validate_source_document
 from gordon_doc_converter.validation import validate_pdf
 
 _ENGINE = EngineName.LIBREOFFICE
@@ -239,6 +242,116 @@ class LibreOfficeEngine:
                     output_path.unlink(missing_ok=True)
                 raise EngineFailedError(
                     "LibreOffice PDF could not be written to the requested output",
+                    engine=self.name.value,
+                ) from exc
+
+        return EngineExecutionResult(
+            engine=self.name,
+            output_path=output_path,
+            duration_seconds=perf_counter() - started,
+        )
+
+    def convert_file(
+        self,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        timeout_seconds: float,
+    ) -> EngineExecutionResult:
+        """Convert a DOCX or ODT source to a PDF, DOCX, or ODT file."""
+        supported_sources = {SourceFormat.DOCX, SourceFormat.ODT}
+        supported_artifacts = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
+        if source_format not in supported_sources:
+            raise InvalidInputError("LibreOffice file conversion requires a DOCX or ODT source")
+        if artifact_type not in supported_artifacts:
+            raise InvalidInputError("LibreOffice file conversion supports PDF, DOCX, and ODT")
+        if timeout_seconds <= 0:
+            raise InvalidInputError("timeout_seconds must be greater than zero")
+        if source_path.suffix.casefold() != f".{source_format.value}" or not source_path.is_file():
+            raise InvalidInputError("LibreOffice source format does not match an existing file")
+        expected_suffix = ".pdf" if artifact_type is ArtifactType.PDF else f".{artifact_type.value}"
+        if output_path.suffix.casefold() != expected_suffix:
+            raise InvalidInputError(f"LibreOffice output must use the {expected_suffix} extension")
+        if output_path.exists():
+            raise OutputExistsError("conversion output already exists")
+        executable = self._executable()
+        if executable is None:
+            raise EngineUnavailableError(
+                "LibreOffice executable was not found",
+                engine=self.name.value,
+            )
+
+        started = perf_counter()
+        with TemporaryDirectory(prefix="gordon-doc-libreoffice-") as temporary:
+            workspace = Path(temporary)
+            profile_path = workspace / "profile"
+            generated_path = workspace / "output" / f"{source_path.stem}{expected_suffix}"
+            profile_path.mkdir()
+            generated_path.parent.mkdir()
+            arguments = (
+                str(executable),
+                "--headless",
+                "--nologo",
+                "--nodefault",
+                "--nofirststartwizard",
+                "--nolockcheck",
+                f"-env:UserInstallation={profile_path.as_uri()}",
+                "--convert-to",
+                artifact_type.value,
+                "--outdir",
+                str(generated_path.parent),
+                str(source_path.resolve()),
+            )
+            try:
+                result = run_process(arguments, timeout_seconds)
+            except ProcessStartError as exc:
+                raise EngineUnavailableError(
+                    "LibreOffice could not be started",
+                    engine=self.name.value,
+                ) from exc
+            except ProcessTimeoutError as exc:
+                raise ConversionTimeoutError(
+                    "LibreOffice conversion exceeded its timeout",
+                    engine=self.name.value,
+                ) from exc
+            if result.returncode != 0:
+                raise EngineFailedError(
+                    f"LibreOffice conversion exited with code {result.returncode}",
+                    engine=self.name.value,
+                )
+
+            if artifact_type is ArtifactType.PDF:
+                validation = validate_pdf(generated_path)
+                if not validation.valid:
+                    if (
+                        validation.error is not None
+                        and validation.error.code is ErrorCode.PDF_NOT_CREATED
+                    ):
+                        raise PdfNotCreatedError(
+                            "LibreOffice did not create a non-empty PDF",
+                            engine=self.name.value,
+                        )
+                    raise PdfValidationError(
+                        "LibreOffice created an invalid PDF",
+                        engine=self.name.value,
+                    )
+            else:
+                validate_source_document(generated_path, SourceFormat(artifact_type.value))
+            try:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with (
+                    generated_path.open("rb") as source_stream,
+                    output_path.open("xb") as output_stream,
+                ):
+                    shutil.copyfileobj(source_stream, output_stream)
+            except FileExistsError as exc:
+                raise OutputExistsError("conversion output already exists") from exc
+            except OSError as exc:
+                output_path.unlink(missing_ok=True)
+                raise EngineFailedError(
+                    "LibreOffice output could not be written to the requested path",
                     engine=self.name.value,
                 ) from exc
 

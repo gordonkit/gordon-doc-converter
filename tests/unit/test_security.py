@@ -15,6 +15,13 @@ from gordon_doc_converter.security import InputValidationLimits, validate_source
 _CONTENT_TYPES = "<Types/>"
 _RELS = "<Relationships/>"
 _DOCUMENT = "<w:document xmlns:w='urn:test'><w:body/></w:document>"
+_ODF_MIMETYPE = "application/vnd.oasis.opendocument.text"
+_ODF_MANIFEST = (
+    "<manifest:manifest xmlns:manifest='urn:oasis:names:tc:opendocument:xmlns:manifest:1.0'/>"
+)
+_ODF_CONTENT = (
+    "<office:document-content xmlns:office='urn:oasis:names:tc:opendocument:xmlns:office:1.0'/>"
+)
 
 
 def _write_docx(path: Path, extras: dict[str, bytes] | None = None) -> None:
@@ -24,6 +31,13 @@ def _write_docx(path: Path, extras: dict[str, bytes] | None = None) -> None:
         archive.writestr("word/document.xml", _DOCUMENT)
         for name, content in (extras or {}).items():
             archive.writestr(name, content)
+
+
+def _write_odt(path: Path, *, mimetype: str = _ODF_MIMETYPE) -> None:
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", mimetype)
+        archive.writestr("META-INF/manifest.xml", _ODF_MANIFEST)
+        archive.writestr("content.xml", _ODF_CONTENT)
 
 
 def _write_pdf(path: Path, pages: int) -> None:
@@ -45,6 +59,31 @@ def test_valid_docx_accepts_matching_mime_and_traditional_chinese_path(tmp_path:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ),
     )
+
+
+def test_valid_odt_accepts_matching_mime_and_traditional_chinese_path(tmp_path: Path) -> None:
+    path = tmp_path / "臺灣 文件.odt"
+    _write_odt(path)
+
+    validate_source_document(
+        path,
+        SourceFormat.ODT,
+        declared_mime_type=_ODF_MIMETYPE,
+    )
+
+
+def test_odt_rejects_invalid_mimetype_and_missing_core_part(tmp_path: Path) -> None:
+    wrong_mimetype = tmp_path / "wrong.odt"
+    _write_odt(wrong_mimetype, mimetype="text/plain")
+    with pytest.raises(InvalidInputError, match="mimetype"):
+        validate_source_document(wrong_mimetype, SourceFormat.ODT)
+
+    missing_content = tmp_path / "missing.odt"
+    with ZipFile(missing_content, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", _ODF_MIMETYPE)
+        archive.writestr("META-INF/manifest.xml", _ODF_MANIFEST)
+    with pytest.raises(InvalidInputError, match="core parts"):
+        validate_source_document(missing_content, SourceFormat.ODT)
 
 
 def test_docx_rejects_invalid_package_and_unsafe_member(tmp_path: Path) -> None:

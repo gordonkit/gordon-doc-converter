@@ -1,7 +1,7 @@
 # GordonKit Document Converter
 
 GordonKit Document Converter is a Python 3.12+ orchestration library for diagnosable,
-multi-engine DOCX-to-PDF conversion. It delegates rendering to Microsoft Word, LibreOffice,
+multi-engine document conversion. It delegates rendering to Microsoft Word, LibreOffice,
 or optional Gotenberg; it does not implement a document layout engine.
 
 The current development state includes the cross-platform request/result contracts,
@@ -63,18 +63,21 @@ engine injection, `convert_batch()` for sequential failure-isolated batches, and
 
 ## Supported format conversions
 
-| Input | PDF | DOCX | Markdown | HTML | Page images |
+| Input | PDF | DOCX | ODT | Markdown | HTML | Page images |
 | --- | --- | --- | --- | --- | --- |
-| DOCX | Yes | No | Yes | Yes | Yes, via an intermediate PDF |
-| PDF | Yes, validated copy | No | Yes | Yes | Yes |
-| HTML | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No |
-| Markdown | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No |
+| DOCX | Yes | Yes, via LibreOffice | Yes, via LibreOffice | Yes | Yes | Yes, via an intermediate PDF |
+| ODT | Yes, via LibreOffice | Yes, via LibreOffice | Yes | No | No | No |
+| PDF | Yes, validated copy | No | No | Yes | Yes | Yes |
+| HTML | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No | No |
+| Markdown | Yes, with Pandoc and a PDF backend | Yes, with Pandoc | No | No | No | No |
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, and image files are output
 artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for PDF/DOCX
 conversion. The project does not convert Markdown and HTML directly between each other.
-PDF-to-PDF validates and publishes the source rather than re-rendering it. DOCX-to-PDF uses
-the selected Word, LibreOffice, or Gotenberg engine.
+PDF-to-PDF validates and publishes the source rather than re-rendering it. DOCX/ODT office-file
+conversion uses LibreOffice; DOCX-to-PDF can also use the selected Word or Gotenberg engine.
+ODT support targets ODF-CNS 15251 / ISO/IEC 26300 Writer documents. It validates package
+structure and content readability, but does not promise pixel-identical round trips.
 
 Create an editable, print-ready A4 HTML starting point with `gordon-doc template report.html`.
 Use `--orientation landscape` for A4 horizontal layout, then convert it with
@@ -88,6 +91,8 @@ gordon-doc doctor
 gordon-doc engines --json
 gordon-doc template report.html --orientation portrait
 gordon-doc convert example.docx --output example.pdf
+gordon-doc convert report.odt --to docx
+gordon-doc convert example.docx --to odt --engine libreoffice
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.html --to docx
 gordon-doc convert example.pdf --to images --dpi 144

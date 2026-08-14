@@ -21,6 +21,7 @@ from gordon_doc_converter.models import (
     EngineName,
     EngineProbeResult,
     RevisionMode,
+    SourceFormat,
 )
 from gordon_doc_converter.service import DocumentConversionService
 
@@ -66,6 +67,7 @@ class StubEngine:
     calls: list[tuple[Path, Path]] = field(default_factory=list)
     option_calls: list[tuple[float, RevisionMode, CommentMode]] = field(default_factory=list)
     probe_error: Exception | None = None
+    file_render: Callable[[Path, Path, ArtifactType], None] | None = None
 
     def probe(self) -> EngineProbeResult:
         if self.probe_error is not None:
@@ -84,6 +86,21 @@ class StubEngine:
         self.calls.append((source_path, output_path))
         self.option_calls.append((timeout_seconds, revision_mode, comment_mode))
         self.render(source_path, output_path)
+        return EngineExecutionResult(self.name, output_path, 0.01)
+
+    def convert_file(
+        self,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        timeout_seconds: float,
+    ) -> EngineExecutionResult:
+        del source_format, timeout_seconds
+        if self.file_render is None:
+            raise AssertionError("file renderer was not configured")
+        self.file_render(source_path, output_path, artifact_type)
         return EngineExecutionResult(self.name, output_path, 0.01)
 
 
@@ -136,6 +153,38 @@ def test_successful_conversion_returns_valid_stable_result(tmp_path: Path) -> No
     assert result.artifacts[0].path == source.with_suffix(".pdf")
     assert result.artifacts[0].size_bytes == source.with_suffix(".pdf").stat().st_size
     assert result.to_dict()["selected_engine"] == "libreoffice"
+
+
+def test_odt_source_uses_libreoffice_file_conversion_route(tmp_path: Path) -> None:
+    source = _source(tmp_path, "臺灣 文件.odt")
+
+    def render_file(
+        source_path: Path,
+        output_path: Path,
+        artifact_type: ArtifactType,
+    ) -> None:
+        assert source_path == source
+        assert artifact_type is ArtifactType.PDF
+        _write_pdf(output_path, source_path.name)
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: _write_pdf(output_path),
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.ODT,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert result.selected_engine is EngineName.LIBREOFFICE
+    assert result.artifacts[0].path == source.with_suffix(".pdf")
 
 
 def test_service_passes_timeout_and_annotation_modes_to_selected_engine(tmp_path: Path) -> None:

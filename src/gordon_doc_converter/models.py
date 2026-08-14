@@ -15,6 +15,7 @@ class SourceFormat(StrEnum):
     """Supported source document formats across the public roadmap."""
 
     DOCX = "docx"
+    ODT = "odt"
     PDF = "pdf"
     HTML = "html"
     MARKDOWN = "md"
@@ -25,6 +26,7 @@ class ArtifactType(StrEnum):
 
     PDF = "pdf"
     DOCX = "docx"
+    ODT = "odt"
     MARKDOWN = "markdown"
     HTML = "html"
     PAGE_IMAGES = "images"
@@ -245,7 +247,7 @@ class ConversionRequest(JsonModel):
             source_format = SourceFormat(suffix)
         except ValueError as exc:
             raise InvalidInputError(
-                "source must have a .docx or .pdf, .html, or .md extension"
+                "source must have a .docx, .odt, .pdf, .html, or .md extension"
             ) from exc
         if artifacts is None:
             if source_format is SourceFormat.PDF:

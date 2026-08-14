@@ -1,7 +1,7 @@
 # GordonKit 文件轉換器
 
 GordonKit Document Converter 是適用於 Python 3.12 以上的可診斷、多引擎
-DOCX 轉 PDF 協調函式庫。實際排版會委派給 Microsoft Word、LibreOffice，或選用的
+文件轉換協調函式庫。實際排版會委派給 Microsoft Word、LibreOffice，或選用的
 Gotenberg；本專案本身不實作文書排版引擎。
 
 目前已完成跨平台請求／結果契約、引擎選擇政策、PDF 驗證、具隔離機制的 LibreOffice
@@ -58,17 +58,19 @@ PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且�
 
 ## 支援的格式轉換
 
-| 輸入格式 | PDF | DOCX | Markdown | HTML | 逐頁圖片 |
+| 輸入格式 | PDF | DOCX | ODT | Markdown | HTML | 逐頁圖片 |
 | --- | --- | --- | --- | --- | --- |
-| DOCX | 可以 | 不支援 | 可以 | 可以 | 可以，會先經過中間 PDF |
-| PDF | 可以，驗證後發布副本 | 不支援 | 可以 | 可以 | 可以 |
-| HTML | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不適用 | 不適用 | 不支援 |
-| Markdown | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不適用 | 不適用 | 不支援 |
+| DOCX | 可以 | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 可以 | 可以，會先經過中間 PDF |
+| ODT | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 不支援 | 不支援 | 不支援 |
+| PDF | 可以，驗證後發布副本 | 不支援 | 不支援 | 可以 | 可以 | 可以 |
+| HTML | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 |
+| Markdown | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 |
 
 逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML 及圖片是 DOCX/PDF 的輸出 artifact；
 Markdown 與 HTML 也可作為輸入，轉換為 PDF 或 DOCX，但目前不支援 Markdown 與 HTML
 彼此直接互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX 轉 PDF 則使用
-選定的 Word、LibreOffice 或 Gotenberg 引擎。
+選定的 Word、LibreOffice 或 Gotenberg 引擎。ODT 以 ODF-CNS 15251／ISO/IEC 26300 Writer
+文件為相容目標；目前驗證 package 結構與內容可讀性，不保證往返轉換後像素完全一致。
 
 使用 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4 HTML 起始範本。使用
 `--orientation landscape` 可建立 A4 橫式範本，編輯完成後可用
@@ -82,6 +84,8 @@ gordon-doc doctor
 gordon-doc engines --json
 gordon-doc template 報告.html --orientation portrait
 gordon-doc convert 範例.docx --output 範例.pdf
+gordon-doc convert 報告.odt --to docx
+gordon-doc convert 範例.docx --to odt --engine libreoffice
 gordon-doc convert 報告.html --to pdf --orientation landscape
 gordon-doc convert 報告.html --to docx
 gordon-doc convert 範例.pdf --to images --dpi 144
