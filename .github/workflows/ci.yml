@@ -50,7 +50,7 @@ jobs:
       - run: npm run openapi:check
       - run: npx tsc --project docs-src/tsconfig.json
       - run: npm run build
-      - run: git diff --exit-code -- docs docs-src/public/openapi.json
+      - run: git diff --exit-code -- docs-src/public/openapi.json
       - uses: actions/upload-artifact@v4
         with:
           name: documentation-site
