@@ -29,3 +29,25 @@ jobs:
       - run: uv run mypy src
       - run: uv run pytest
       - run: uv build
+
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: uv sync --dev --extra api --locked
+      - run: npm ci
+      - run: npm run openapi:check
+      - run: npx tsc --project docs-src/tsconfig.json
+      - run: npm run build
+      - run: git diff --exit-code -- docs docs-src/public/openapi.json

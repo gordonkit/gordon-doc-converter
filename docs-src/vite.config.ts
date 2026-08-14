@@ -9,5 +9,11 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "../docs"),
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        docs: resolve(__dirname, "index.html"),
+        swagger: resolve(__dirname, "swagger/index.html"),
+      },
+    },
   },
 });

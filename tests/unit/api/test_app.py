@@ -122,6 +122,31 @@ def test_health_and_version_do_not_require_document_access() -> None:
     assert "version" in client.get("/version").json()
 
 
+def test_openapi_contract_and_interactive_documentation_are_published() -> None:
+    client = _client(StubService())
+
+    schema_response = client.get("/openapi.json")
+    swagger_response = client.get("/docs")
+    redoc_response = client.get("/redoc")
+
+    assert schema_response.status_code == 200
+    schema = schema_response.json()
+    assert schema["openapi"].startswith("3.1.")
+    assert schema["components"]["securitySchemes"]["BearerAuth"] == {
+        "type": "http",
+        "scheme": "bearer",
+    }
+    conversion = schema["paths"]["/conversions"]["post"]
+    assert conversion["security"] == [{"BearerAuth": []}]
+    assert "application/pdf" in conversion["responses"]["200"]["content"]
+    assert all(
+        parameter["name"] != "Authorization" for parameter in conversion.get("parameters", [])
+    )
+    assert swagger_response.status_code == 200
+    assert "Swagger UI" in swagger_response.text
+    assert redoc_response.status_code == 200
+
+
 def test_ready_reports_unavailable_default_engine() -> None:
     response = _client(StubService(available=False)).get("/ready")
 

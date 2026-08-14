@@ -1,0 +1,76 @@
+:root {
+  color: #17202a;
+  background: #f6f8fa;
+  font-family: "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.docs-header {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #d8dee4;
+  background: #ffffff;
+  padding: 12px clamp(16px, 4vw, 48px);
+}
+
+.docs-header a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #17202a;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.logo-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  background: #17202a;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.docs-header .spec-link {
+  border: 1px solid #aab4c0;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.docs-header .spec-link:hover {
+  border-color: #16835d;
+  color: #116b4c;
+}
+
+.swagger-ui .topbar {
+  display: none;
+}
+
+.swagger-ui .information-container {
+  margin: 0;
+  padding-top: 28px;
+}
+
+.swagger-ui .scheme-container {
+  box-shadow: none;
+}
+
+@media (max-width: 560px) {
+  .docs-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

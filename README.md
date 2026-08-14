@@ -30,10 +30,12 @@ The Microsoft Word integration test requires Windows, licensed Microsoft Word, a
 `uv sync --dev --extra word --locked` followed by
 `uv run pytest -m integration tests/integration/word_com`.
 
-The static documentation is a React site built with Vite, Tailwind CSS, and bundled Heroicons.
-Install the frontend dependencies and rebuild the site before publishing `docs/`:
+The static documentation is a React site built with Vite, Tailwind CSS, bundled Heroicons,
+and a bundled Swagger UI. Install the API and frontend dependencies before rebuilding
+`docs/`; the build exports the current FastAPI contract to `openapi.json` automatically:
 
 ```console
+uv sync --dev --extra api --locked
 npm ci
 npm run build
 ```
@@ -41,6 +43,8 @@ npm run build
 The generated site is self-contained under `docs/` and uses relative links, so it can be
 served from a Cloudflare Pages project subdirectory. Its single documentation index supports
 English/Traditional Chinese navigation, search, responsive layouts, and a light/dark theme.
+The generated API contract is available at `docs/openapi.json`, and the read-only Swagger UI
+is available at `docs/swagger/index.html`. Run `npm run openapi:check` to detect a stale export.
 
 ## Conversion example
 

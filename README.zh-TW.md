@@ -27,17 +27,20 @@ Microsoft Word 整合測試需要 Windows、合法授權的 Microsoft Word 及 `
 dependency。僅在受控互動式環境先執行 `uv sync --dev --extra word --locked`，再執行
 `uv run pytest -m integration tests/integration/word_com`。
 
-靜態文件網站以 React、Vite、Tailwind CSS 與 bundled Heroicons 建置。發布 `docs/` 前，
-先安裝前端相依套件並重新建置網站：
+靜態文件網站以 React、Vite、Tailwind CSS、bundled Heroicons 與內建 Swagger UI 建置。
+發布 `docs/` 前先安裝 API 與前端相依套件；建置時會自動將目前的 FastAPI 契約匯出為
+`openapi.json`：
 
 ```console
+uv sync --dev --extra api --locked
 npm ci
 npm run build
 ```
 
 產生後的網站資源都位於 `docs/`，且連結使用相對路徑，因此可部署到 Cloudflare Pages
 專案的子目錄。單一文件索引支援 English／繁體中文導覽、搜尋、響應式版面，以及
-亮色／暗色主題偏好。
+亮色／暗色主題偏好。產生的 API 契約位於 `docs/openapi.json`，唯讀 Swagger UI 位於
+`docs/swagger/index.html`。可執行 `npm run openapi:check` 檢查匯出規格是否過期。
 
 ## 轉換範例
 

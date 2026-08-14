@@ -6,6 +6,11 @@ export type Section = {
   body: Record<Locale, string>;
   code?: string;
   note?: Record<Locale, string>;
+  links?: Array<{
+    label: Record<Locale, string>;
+    href: string;
+    download?: boolean;
+  }>;
   interfaces?: Array<{
     title: Record<Locale, string>;
     label: Record<Locale, string>;
@@ -163,6 +168,63 @@ export const pages: Page[] = [
     sections: [
       { id: "diagnostics", title: { en: "Diagnostics", "zh-TW": "環境診斷" }, body: { en: "Inspect available engines before a production run.", "zh-TW": "正式轉換前先檢查可用引擎。" }, code: "gordon-doc doctor\ngordon-doc engines --json" },
       { id: "convert", title: { en: "Convert files", "zh-TW": "轉換檔案" }, body: { en: "Choose output formats and operational policy from one command.", "zh-TW": "透過單一指令選擇輸出格式與執行政策。" }, code: "gordon-doc convert report.docx --output report.pdf\ngordon-doc convert report.pdf --to images --dpi 144" },
+    ],
+  },
+  {
+    id: "api",
+    category: "getting-started",
+    title: { en: "HTTP API", "zh-TW": "HTTP API" },
+    summary: { en: "Run the private FastAPI adapter and explore its OpenAPI contract.", "zh-TW": "啟動私有 FastAPI adapter，並瀏覽其 OpenAPI 契約。" },
+    sections: [
+      {
+        id: "start-api",
+        title: { en: "Start the API", "zh-TW": "啟動 API" },
+        body: {
+          en: "Install the optional API dependencies, set a strong API key, and run the application factory on port 8000.",
+          "zh-TW": "安裝選用的 API 相依套件、設定高強度 API key，並在 8000 port 啟動 application factory。",
+        },
+        code: "uv sync --extra api\n$env:GORDON_DOC_API_KEY = \"replace-me\"\nuv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000",
+        note: {
+          en: "The environment-variable example uses PowerShell. Keep this API private and do not commit API keys.",
+          "zh-TW": "環境變數範例使用 PowerShell。此 API 應維持私有部署，且請勿提交 API key。",
+        },
+      },
+      {
+        id: "api-documentation",
+        title: { en: "Interactive API documentation", "zh-TW": "互動式 API 文件" },
+        body: {
+          en: "The documentation site publishes the generated OpenAPI 3.1 contract and a bundled, read-only Swagger UI. You can inspect the JSON in your browser or download it for code generation and validation tools.",
+          "zh-TW": "文件站會發布產生的 OpenAPI 3.1 契約與內建的唯讀 Swagger UI。你可以在瀏覽器檢視 JSON，或下載後交由程式碼產生與驗證工具使用。",
+        },
+        links: [
+          {
+            label: { en: "View OpenAPI JSON", "zh-TW": "檢視 OpenAPI JSON" },
+            href: "./openapi.json",
+          },
+          {
+            label: { en: "Download OpenAPI JSON", "zh-TW": "下載 OpenAPI JSON" },
+            href: "./openapi.json",
+            download: true,
+          },
+          {
+            label: { en: "Open Swagger UI", "zh-TW": "開啟 Swagger UI" },
+            href: "./swagger/",
+          },
+        ],
+        note: {
+          en: "The hosted Swagger UI is read-only. Use the API server's /docs page when you need Try it out against a configured private deployment.",
+          "zh-TW": "託管的 Swagger UI 採唯讀模式。如需對已設定的私有部署使用 Try it out，請開啟 API server 本身的 /docs。",
+        },
+      },
+      {
+        id: "api-endpoints",
+        title: { en: "Available endpoints", "zh-TW": "可用端點" },
+        body: {
+          en: "The specification describes document conversion, engine discovery, health, readiness, and version endpoints. Protected requests use a Bearer token.",
+          "zh-TW": "規格包含文件轉換、引擎探索、存活檢查、就緒檢查與版本端點。受保護的 request 使用 Bearer token。",
+        },
+        code: "POST /conversions\nGET  /engines\nGET  /live\nGET  /ready\nGET  /version\n\nAuthorization: Bearer <api-key>",
+      },
     ],
   },
   {

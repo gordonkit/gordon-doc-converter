@@ -6,6 +6,8 @@ import {
   CodeBracketIcon,
   CommandLineIcon,
   CubeTransparentIcon,
+  ArrowDownTrayIcon,
+  ArrowTopRightOnSquareIcon,
   LanguageIcon,
   MagnifyingGlassIcon,
   MoonIcon,
@@ -117,6 +119,7 @@ function App() {
                 {section.interfaces && <InterfaceOptions interfaces={section.interfaces} locale={locale} />}
                 {section.table && <FormatTable table={section.table} locale={locale} />}
                 {section.code && <CodeBlock code={section.code} copyLabel={t.copy} copiedLabel={t.copied} />}
+                {section.links && <ResourceLinks links={section.links} locale={locale} />}
                 {section.note && <div className="mt-5 border-l-4 border-leaf bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100">{section.note[locale]}</div>}
               </section>
             ))}
@@ -205,6 +208,19 @@ function CodeBlock({ code, copyLabel, copiedLabel }: { code: string; copyLabel: 
   const [copied, setCopied] = useState(false);
   const copy = async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   return <div className="group relative mt-5 overflow-hidden border border-slate-800 bg-[#151b23]"><button onClick={copy} className="absolute right-2 top-2 flex items-center gap-1.5 border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-300 opacity-0 transition group-hover:opacity-100 focus:opacity-100"><ClipboardDocumentIcon className="h-4 w-4" />{copied ? copiedLabel : copyLabel}</button><pre className="overflow-x-auto p-5 font-mono text-[13px] leading-6 text-slate-200"><code>{code}</code></pre></div>;
+}
+
+function ResourceLinks({ links, locale }: { links: NonNullable<(typeof pages)[number]["sections"][number]["links"]>; locale: Locale }) {
+  return (
+    <div className="mt-6 flex flex-wrap gap-3">
+      {links.map((link) => (
+        <a key={`${link.href}-${link.label.en}`} href={link.href} download={link.download || undefined} target={link.download ? undefined : "_blank"} rel={link.download ? undefined : "noreferrer"} className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-ink transition hover:border-signal hover:text-leaf dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-emerald-500 dark:hover:text-emerald-400">
+          {link.download ? <ArrowDownTrayIcon className="h-4 w-4" /> : <ArrowTopRightOnSquareIcon className="h-4 w-4" />}
+          {link.label[locale]}
+        </a>
+      ))}
+    </div>
+  );
 }
 
 function PageLink({ direction, label, title, onClick }: { direction: "previous" | "next"; label: string; title: string; onClick: () => void }) {

@@ -205,7 +205,7 @@ def create_app(
         body: bytes = Body(..., media_type="application/octet-stream"),
         x_filename: str = Header(..., alias="X-Filename"),
         content_type: str | None = Header(None, alias="Content-Type"),
-        authorization: str | None = Header(None, alias="Authorization"),
+        authorization: str | None = Header(None, alias="Authorization", include_in_schema=False),
         engine: str | None = Query(None),
     ) -> Any:
         authorize(authorization)
@@ -316,7 +316,7 @@ def create_app(
             concurrency.release()
 
     def engines_endpoint(
-        authorization: str | None = Header(None, alias="Authorization"),
+        authorization: str | None = Header(None, alias="Authorization", include_in_schema=False),
     ) -> list[dict[str, object]]:
         authorize(authorization)
         names = [EngineName.LIBREOFFICE]
@@ -340,11 +340,51 @@ def create_app(
     def version() -> dict[str, str]:
         return {"version": __version__}
 
-    app.add_api_route("/conversions", convert_document, methods=["POST"])
-    app.add_api_route("/engines", engines_endpoint, methods=["GET"])
-    app.add_api_route("/live", live, methods=["GET"])
-    app.add_api_route("/ready", ready, methods=["GET"])
-    app.add_api_route("/version", version, methods=["GET"])
+    bearer_security: dict[str, Any] = {"security": [{"BearerAuth": []}]}
+    app.add_api_route(
+        "/conversions",
+        convert_document,
+        methods=["POST"],
+        response_class=Response,
+        responses={
+            200: {
+                "description": "Converted PDF document",
+                "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+            },
+            400: {"description": "Invalid document or conversion options"},
+            401: {"description": "Authentication failed"},
+            413: {"description": "Source document exceeds the size limit"},
+            422: {"description": "Conversion failed"},
+            429: {"description": "Rate or concurrency limit exceeded"},
+            500: {"description": "Conversion service failed"},
+            503: {"description": "Authentication or malware scanning unavailable"},
+        },
+        tags=["conversion"],
+        summary="Convert a DOCX document to PDF",
+        openapi_extra=bearer_security,
+    )
+    app.add_api_route(
+        "/engines",
+        engines_endpoint,
+        methods=["GET"],
+        tags=["engines"],
+        summary="List available conversion engines",
+        openapi_extra=bearer_security,
+    )
+    app.add_api_route("/live", live, methods=["GET"], tags=["health"])
+    app.add_api_route("/ready", ready, methods=["GET"], tags=["health"])
+    app.add_api_route("/version", version, methods=["GET"], tags=["metadata"])
+
+    default_openapi = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        schema = cast("dict[str, Any]", default_openapi())
+        components = schema.setdefault("components", {})
+        security_schemes = components.setdefault("securitySchemes", {})
+        security_schemes["BearerAuth"] = {"type": "http", "scheme": "bearer"}
+        return schema
+
+    app.openapi = openapi
     return cast("Any", app)
 
 
