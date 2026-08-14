@@ -6,52 +6,52 @@
     {
       "file": "a4-portrait.docx",
       "feature": "A4 portrait",
-      "sha256": "51aab8860f4f2ea4195fdeeff86207601ae7ef3c7e82f8552317d688eea60501"
+      "sha256": "e069af8d77a790d166b35be638e4155fb6e91b837f760eee0a1989f8b7475e73"
     },
     {
       "file": "a4-landscape.docx",
       "feature": "A4 landscape",
-      "sha256": "8f5d5dc83be9ff826c5d67174ed7d5032bcc42af6e5b0ef5c19e5f4adc64b880"
+      "sha256": "9f889bdb34a2244c553bfe6db79f7d1907439f2313608a3f2f6576cb6baee441"
     },
     {
       "file": "mixed-sections.docx",
       "feature": "mixed portrait and landscape sections",
-      "sha256": "a0d245e9f7ad43b0f16e66ff3b7be91ff641f35b0ebd62940ef9adf1542d716e"
+      "sha256": "aacac73eabfba566a9922062bd7e572ca7442825f8757cf1b3b5fed313e3affe"
     },
     {
       "file": "chinese-toc.docx",
       "feature": "Chinese table of contents field",
-      "sha256": "06cc870ddfd9fc4a98cd81bcb0eba942c3f76c1a2b0a8f9cbcdce1032a786852"
+      "sha256": "56574d7174dd967be7880da24849c1f3b2371f46f16461a9f3db57dc4ead8bcf"
     },
     {
       "file": "multi-page-table.docx",
       "feature": "multi-page Traditional Chinese table",
-      "sha256": "0d19c2004574db86524c84e9a804b5d5da810c8f52603d3ce06d131c9c62378a"
+      "sha256": "c05dd9613bf62b820084863ea8fa4624f609dac386455eb33fd8529ada9e6ce1"
     },
     {
       "file": "headers-footers.docx",
       "feature": "Traditional Chinese header and footer with page field",
-      "sha256": "0fc1b2898e9ac722ee24df11f675cf980e55b76be5bddaad3c68ec7704315826"
+      "sha256": "77237e00a67e3339a21bfee1f2b1c7ba67ceecc422528360c378ae697999b6b3"
     },
     {
       "file": "text-box.docx",
       "feature": "VML text box with Traditional Chinese",
-      "sha256": "4a939a58d714bc1572f41ceeae879ad10927357446c014a1b5bce972c606ffb8"
+      "sha256": "ead8c19197e06343c69a53d36db7db5fa5d38d769f31c9b7384ce0fdd04d7701"
     },
     {
       "file": "floating-image.docx",
       "feature": "anchored generated PNG",
-      "sha256": "15ae97961aedbc1daad66235868b757c5ecbdf12c3a417773a60361a228907ba"
+      "sha256": "85066d541afccc4def8be3c6c7aabbb6c4b246f95f9869eea97f5eddfb30368d"
     },
     {
       "file": "fields.docx",
       "feature": "PAGE, NUMPAGES, and DATE fields",
-      "sha256": "7427845b12ddb842c7c5fdc5519474588b7bfb95ea6a51a154b9179d8a79e640"
+      "sha256": "2a7ef48b18d17c5f5da72b31abb3466b97957e1970b56b6b4c66fcdcdc7705de"
     },
     {
       "file": "special-symbols.docx",
       "feature": "CJK and special-symbol coverage",
-      "sha256": "15604d23b804b227097492a4190e7442767bb09b06611a306b8bec026519e1ff"
+      "sha256": "9bb131e787b16b72f5fede5657adb3d01c53f07926b3b97b066ab9d2be343209"
     }
   ]
 }

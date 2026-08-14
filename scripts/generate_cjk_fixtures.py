@@ -349,6 +349,7 @@ def _write_zip(path: Path, fixture: Fixture) -> None:
     with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data in sorted(parts.items()):
             info = ZipInfo(name, ZIP_TIMESTAMP)
+            info.create_system = 3
             info.compress_type = ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, data)

@@ -10,6 +10,7 @@ from xml.etree import ElementTree
 from zipfile import ZipFile
 
 FIXTURE_DIRECTORY = Path(__file__).parents[1] / "fixtures" / "docx" / "cjk"
+ZIP_TIMESTAMP = (2020, 1, 1, 0, 0, 0)
 
 
 def test_committed_fixtures_are_reproducible() -> None:
@@ -43,6 +44,10 @@ def test_all_fixtures_are_valid_ooxml_zip_packages() -> None:
         with ZipFile(path) as archive:
             assert archive.testzip() is None
             assert required <= set(archive.namelist())
-            for name in archive.namelist():
+            for member in archive.infolist():
+                assert member.date_time == ZIP_TIMESTAMP
+                assert member.create_system == 3
+                assert member.external_attr == 0o100644 << 16
+                name = member.filename
                 if name.endswith((".xml", ".rels")):
                     ElementTree.fromstring(archive.read(name))
