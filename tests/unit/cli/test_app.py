@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
@@ -28,6 +29,11 @@ from gordon_doc_converter.models import (
 
 cli_module = importlib.import_module("gordon_doc_converter.cli.app")
 runner = CliRunner()
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def _plain_text(value: str) -> str:
+    return ANSI_ESCAPE.sub("", value)
 
 
 def _write_pdf(path: Path) -> None:
@@ -110,7 +116,7 @@ def test_every_command_has_help(command: str) -> None:
     result = runner.invoke(app, [command, "--help"])
 
     assert result.exit_code == 0
-    assert "--help" in result.stdout
+    assert "--help" in _plain_text(result.stdout)
 
 
 def test_version_json_contract() -> None:
