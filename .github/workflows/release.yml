@@ -38,7 +38,7 @@ jobs:
       - name: Check wheel in a clean virtual environment
         run: uv run python scripts/check_package.py build-one/*.whl
       - name: Attest distribution provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "build-one/*"
       - name: Create draft GitHub release
