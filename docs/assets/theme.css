@@ -33,15 +33,41 @@ html[data-theme="dark"] .bg-ink { background-color: #0b111d !important; }
 .theme-toggle {
   display: inline-grid;
   place-items: center;
+  box-sizing: border-box;
   width: 2rem;
   height: 2rem;
-  border: 1px solid var(--docs-border);
-  background: var(--docs-surface);
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  background: transparent;
   color: var(--docs-ink);
   cursor: pointer;
+  vertical-align: middle;
 }
-.theme-toggle:hover { border-color: #e86a33; }
+.theme-toggle:hover { background: rgba(232, 106, 51, 0.16); }
 .theme-toggle svg { width: 1rem; height: 1rem; }
+.theme-toggle img { display: block; width: 1rem; height: 1rem; }
 .theme-icon-sun { display: none; }
 html[data-theme="dark"] .theme-icon-moon { display: none; }
 html[data-theme="dark"] .theme-icon-sun { display: block; }
+html[data-theme="dark"] .theme-toggle img { filter: invert(1); }
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  color: var(--docs-ink);
+  font: 700 0.7rem/1 "Segoe UI", sans-serif;
+  text-decoration: none;
+  vertical-align: middle;
+}
+.icon-button img { display: block; width: 1rem; height: 1rem; }
+.icon-button:hover { background: rgba(232, 106, 51, 0.16); color: var(--docs-ink); }
+html[data-theme="dark"] .icon-button { color: #f4f7f5; }
+html[data-theme="dark"] .icon-button:hover { background: rgba(244, 247, 245, 0.16); color: #ffffff; }
+html[data-theme="dark"] .icon-button img { filter: invert(1); }
