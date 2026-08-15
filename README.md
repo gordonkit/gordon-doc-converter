@@ -146,4 +146,5 @@ Chinese, or see [README.zh-TW.md](README.zh-TW.md).
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
+[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).

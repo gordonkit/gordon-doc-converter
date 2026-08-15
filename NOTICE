@@ -5,6 +5,10 @@ This product includes software developed by third parties. Dependency copyright 
 terms remain with their respective owners. Microsoft Word and LibreOffice are external
 rendering engines and are not bundled or redistributed by this project.
 
+The static documentation site bundles React, React DOM, Heroicons, and Swagger UI. Complete
+copyright, license, and attribution text for those distributions is provided in
+THIRD_PARTY_NOTICES.txt.
+
 Optional page-image support uses pypdfium2 (Apache-2.0 OR BSD-3-Clause), its bundled PDFium
 binary (BSD-style license and third-party notices), and Pillow (MIT-CMU). These dependencies
 are not installed by the core package. Distributors that bundle them must preserve their

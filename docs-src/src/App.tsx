@@ -17,15 +17,14 @@ import { useEffect, useState } from "react";
 import { categories, type Locale, pages } from "./content";
 
 const labels = {
-  en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation" },
-  "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件" },
+  en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation", license: "Apache-2.0 License", notices: "Third-party notices" },
+  "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件", license: "Apache-2.0 授權", notices: "第三方授權聲明" },
 };
 
 function Logo() {
   return (
-    <span className="flex items-center gap-2.5">
-      <img src="./gordonkit-logo.svg" alt="" className="h-8 w-8 shrink-0 dark:invert" />
-      <span className="whitespace-nowrap font-semibold tracking-normal text-ink dark:text-white">GordonKit <span className="font-normal text-slate-400">Docs</span></span>
+    <span className="whitespace-nowrap font-normal tracking-normal text-ink dark:text-white">
+      gordonkit.com <span className="text-slate-400">Docs</span>
     </span>
   );
 }
@@ -128,6 +127,10 @@ function App() {
             {pageIndex < pages.length - 1 && <PageLink direction="next" label={t.next} title={pages[pageIndex + 1].title[locale]} onClick={() => navigate(pages[pageIndex + 1].id)} />}
           </nav>
         </article>
+        <footer className="mx-auto flex max-w-4xl flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 px-6 py-6 text-xs text-slate-500 sm:px-10 dark:border-slate-800 dark:text-slate-400">
+          <a href="https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE" target="_blank" rel="noreferrer" className="hover:text-ink dark:hover:text-white">{t.license}</a>
+          <a href="./THIRD_PARTY_NOTICES.txt" className="hover:text-ink dark:hover:text-white">{t.notices}</a>
+        </footer>
       </main>
 
       <aside className="fixed bottom-0 right-0 top-16 hidden w-60 border-l border-slate-200 px-7 py-12 dark:border-slate-800 xl:block">

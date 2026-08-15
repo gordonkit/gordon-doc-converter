@@ -26,5 +26,9 @@ The images run as a non-root user with a read-only root filesystem and bounded `
 Uploaded and generated documents are deleted before each request returns. No Microsoft Office
 components or fonts are included.
 
+Project license and third-party notice files are installed under
+`/usr/share/licenses/gordon-doc-converter/`. Container CI also publishes a CycloneDX SBOM for
+each profile as a workflow artifact.
+
 After startup, `python docker/smoke.py --token replace-me --docx sample.docx` checks the
 health, authenticated engine inventory, and an optional end-to-end conversion.

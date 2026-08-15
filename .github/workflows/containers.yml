@@ -24,9 +24,28 @@ jobs:
           --file docker/Dockerfile.${{ matrix.profile }}
           --tag gordon-doc-${{ matrix.profile }}:${{ github.sha }}
           .
+      - name: Verify legal documents in image
+        run: >-
+          docker run --rm --entrypoint sh
+          gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          -c 'test -r /usr/share/licenses/gordon-doc-converter/LICENSE
+          && test -r /usr/share/licenses/gordon-doc-converter/NOTICE
+          && test -r /usr/share/licenses/gordon-doc-converter/THIRD_PARTY_NOTICES.txt'
       - name: Smoke CLI entry point
         if: matrix.profile == 'cli'
         run: docker run --rm gordon-doc-cli:${{ github.sha }} version
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          format: cyclonedx
+          output: sbom-${{ matrix.profile }}.cdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.profile }}
+          path: sbom-${{ matrix.profile }}.cdx.json
+          if-no-files-found: error
       - name: Scan image for fixed high and critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

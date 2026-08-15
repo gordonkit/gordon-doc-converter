@@ -47,10 +47,15 @@ jobs:
           cache: npm
       - run: uv sync --dev --extra api --locked
       - run: npm ci
+      - run: npm run licenses:check
       - run: npm run openapi:check
       - run: npx tsc --project docs-src/tsconfig.json
       - run: npm run build
-      - run: git diff --exit-code -- docs-src/public/openapi.json
+      - run: >-
+          git diff --exit-code --
+          THIRD_PARTY_NOTICES.txt
+          docs-src/public/THIRD_PARTY_NOTICES.txt
+          docs-src/public/openapi.json
       - uses: actions/upload-artifact@v4
         with:
           name: documentation-site

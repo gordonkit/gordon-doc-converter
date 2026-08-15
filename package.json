@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "dev": "vite --config docs-src/vite.config.ts",
+    "licenses:export": "uv run python scripts/export_third_party_notices.py",
+    "licenses:check": "uv run python scripts/export_third_party_notices.py --check",
     "openapi:export": "uv run python scripts/export_openapi.py",
     "openapi:check": "uv run python scripts/export_openapi.py --check",
-    "build": "npm run openapi:export && vite build --config docs-src/vite.config.ts",
+    "build": "npm run licenses:export && npm run openapi:export && vite build --config docs-src/vite.config.ts",
     "preview": "vite preview --config docs-src/vite.config.ts"
   },
   "dependencies": {

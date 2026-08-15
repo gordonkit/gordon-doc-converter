@@ -133,4 +133,5 @@ fallback 原因，且明確指定引擎時絕不靜默切換。
 
 ## 授權
 
-採用 Apache License 2.0，詳見 [LICENSE](LICENSE) 與 [NOTICE](NOTICE)。
+採用 Apache License 2.0，詳見 [LICENSE](LICENSE)、[NOTICE](NOTICE) 與
+[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。
