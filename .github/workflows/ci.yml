@@ -238,8 +238,9 @@ jobs:
 
   codeql:
     if: >-
-      needs.changes.outputs.codeql == 'true' ||
-      github.event.schedule == '41 3 * * 3'
+      (github.repository_visibility == 'public' || vars.ENABLE_CODEQL == 'true') &&
+      (needs.changes.outputs.codeql == 'true' ||
+      github.event.schedule == '41 3 * * 3')
     needs: changes
     permissions:
       actions: read
