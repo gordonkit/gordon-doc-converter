@@ -1,5 +1,10 @@
 # GordonKit Document Converter
 
+[![CI](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Development Status: Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
+
 GordonKit Document Converter is a Python 3.12+ orchestration library for diagnosable,
 multi-engine document conversion. It delegates rendering to Microsoft Word, LibreOffice,
 or optional Gotenberg; it does not implement a document layout engine.

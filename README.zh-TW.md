@@ -1,5 +1,10 @@
 # GordonKit 文件轉換器
 
+[![CI](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![授權：Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![開發狀態：Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
+
 GordonKit Document Converter 是適用於 Python 3.12 以上的可診斷、多引擎
 文件轉換協調函式庫。實際排版會委派給 Microsoft Word、LibreOffice，或選用的
 Gotenberg；本專案本身不實作文書排版引擎。
