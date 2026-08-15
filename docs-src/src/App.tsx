@@ -5,7 +5,6 @@ import {
   ClipboardDocumentIcon,
   CodeBracketIcon,
   CommandLineIcon,
-  CubeTransparentIcon,
   ArrowDownTrayIcon,
   ArrowTopRightOnSquareIcon,
   LanguageIcon,
@@ -25,8 +24,8 @@ const labels = {
 function Logo() {
   return (
     <span className="flex items-center gap-2.5">
-      <span className="grid h-8 w-8 place-items-center bg-ink text-white dark:bg-white dark:text-ink"><CubeTransparentIcon className="h-5 w-5" /></span>
-      <span className="font-semibold tracking-normal text-ink dark:text-white">GordonKit <span className="font-normal text-slate-400">Docs</span></span>
+      <img src="./gordonkit-logo.svg" alt="" className="h-8 w-8 shrink-0 dark:invert" />
+      <span className="whitespace-nowrap font-semibold tracking-normal text-ink dark:text-white">GordonKit <span className="font-normal text-slate-400">Docs</span></span>
     </span>
   );
 }
