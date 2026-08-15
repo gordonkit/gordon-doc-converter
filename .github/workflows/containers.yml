@@ -2,6 +2,16 @@ name: Container build, smoke, and scan
 
 on:
   pull_request:
+    paths:
+      - "docker/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - "LICENSE"
+      - "NOTICE"
+      - "THIRD_PARTY_NOTICES.txt"
+      - ".github/workflows/containers.yml"
   push:
     branches: [main]
   workflow_dispatch:

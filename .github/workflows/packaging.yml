@@ -2,6 +2,16 @@ name: Packaging
 
 on:
   pull_request:
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - "LICENSE"
+      - "NOTICE"
+      - "scripts/check_package.py"
+      - "scripts/compare_builds.py"
+      - ".github/workflows/packaging.yml"
   push:
     branches: [main]
   workflow_dispatch:
