@@ -4,12 +4,99 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+    - cron: "41 3 * * 3"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cjk: ${{ steps.filter.outputs.cjk }}
+      codeql: ${{ steps.filter.outputs.codeql }}
+      containers: ${{ steps.filter.outputs.containers }}
+      libreoffice: ${{ steps.filter.outputs.libreoffice }}
+      packaging: ${{ steps.filter.outputs.packaging }}
+      security: ${{ steps.filter.outputs.security }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        name: Classify changed paths
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cjk=false
+          codeql=false
+          containers=false
+          libreoffice=false
+          packaging=false
+          security=false
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            cjk=true
+            codeql=true
+            containers=true
+            libreoffice=true
+            packaging=true
+            security=true
+          elif [[ "${{ github.event_name }}" != "schedule" ]]; then
+            if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+              mapfile -t changed_files < <(git diff-tree --no-commit-id --name-only -r "$HEAD_SHA")
+            else
+              mapfile -t changed_files < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+            fi
+
+            for path in "${changed_files[@]}"; do
+              case "$path" in
+                .github/workflows/ci.yml)
+                  cjk=true; codeql=true; containers=true
+                  libreoffice=true; packaging=true; security=true ;;
+                scripts/generate_cjk_fixtures.py|tests/fixtures/docx/cjk/*|tests/integration/libreoffice/test_cjk_fixtures.py)
+                  cjk=true ;;
+              esac
+              case "$path" in
+                src/*|scripts/*|tests/*|docs-src/src/*|docs-src/swagger/*|package.json|package-lock.json|pyproject.toml|uv.lock)
+                  codeql=true ;;
+              esac
+              case "$path" in
+                docker/*|src/*|pyproject.toml|uv.lock|README.md|LICENSE|NOTICE|THIRD_PARTY_NOTICES.txt)
+                  containers=true ;;
+              esac
+              case "$path" in
+                src/*|tests/integration/libreoffice/*|tests/integration/test_service.py|pyproject.toml|uv.lock)
+                  libreoffice=true ;;
+              esac
+              case "$path" in
+                src/*|pyproject.toml|uv.lock|README.md|LICENSE|NOTICE|scripts/check_package.py|scripts/compare_builds.py)
+                  packaging=true ;;
+              esac
+              case "$path" in
+                pyproject.toml|uv.lock|package.json|package-lock.json)
+                  security=true ;;
+              esac
+            done
+          fi
+
+          {
+            echo "cjk=$cjk"
+            echo "codeql=$codeql"
+            echo "containers=$containers"
+            echo "libreoffice=$libreoffice"
+            echo "packaging=$packaging"
+            echo "security=$security"
+          } >> "$GITHUB_OUTPUT"
+
   quality:
+    if: github.event_name != 'schedule'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -31,6 +118,7 @@ jobs:
       - run: uv build
 
   documentation:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +149,232 @@ jobs:
           name: documentation-site
           path: docs/
           if-no-files-found: error
+
+  packaging:
+    if: needs.changes.outputs.packaging == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_DATE_EPOCH: "946684800"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --dev --locked
+      - run: uv build --out-dir build-one
+      - run: uv build --out-dir build-two
+      - run: uv run python scripts/compare_builds.py build-one build-two
+      - name: Check wheel in a clean virtual environment
+        run: uv run python scripts/check_package.py build-one/*.whl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: build-one/*
+          if-no-files-found: error
+
+  dependency-audit:
+    if: >-
+      needs.changes.outputs.security == 'true' ||
+      github.event.schedule == '23 4 * * 1'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --dev --locked
+      - name: Export locked production and optional dependencies
+        run: >-
+          uv export --locked --no-dev --all-extras --no-emit-project --no-hashes
+          --output-file audit-requirements.txt
+      - name: Audit exported locked dependencies
+        run: uvx pip-audit --requirement audit-requirements.txt
+
+  npm-audit:
+    if: >-
+      needs.changes.outputs.security == 'true' ||
+      github.event.schedule == '23 4 * * 1'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
+
+  sbom:
+    if: >-
+      needs.changes.outputs.security == 'true' ||
+      github.event.schedule == '23 4 * * 1'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: gordon-doc-converter.spdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx
+          path: gordon-doc-converter.spdx.json
+          if-no-files-found: error
+
+  codeql:
+    if: >-
+      needs.changes.outputs.codeql == 'true' ||
+      github.event.schedule == '41 3 * * 3'
+    needs: changes
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v4
+
+  containers:
+    if: needs.changes.outputs.containers == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [cli, standalone-lo, gateway-gotenberg]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build profile
+        run: >-
+          docker build
+          --file docker/Dockerfile.${{ matrix.profile }}
+          --tag gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          .
+      - name: Verify legal documents in image
+        run: >-
+          docker run --rm --entrypoint sh
+          gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          -c 'test -r /usr/share/licenses/gordon-doc-converter/LICENSE
+          && test -r /usr/share/licenses/gordon-doc-converter/NOTICE
+          && test -r /usr/share/licenses/gordon-doc-converter/THIRD_PARTY_NOTICES.txt'
+      - name: Smoke CLI entry point
+        if: matrix.profile == 'cli'
+        run: docker run --rm gordon-doc-cli:${{ github.sha }} version
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          format: cyclonedx
+          output: sbom-${{ matrix.profile }}.cdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.profile }}
+          path: sbom-${{ matrix.profile }}.cdx.json
+          if-no-files-found: error
+      - name: Scan image for fixed high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
+  api-smoke:
+    if: needs.changes.outputs.containers == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build standalone API
+        run: docker build --file docker/Dockerfile.standalone-lo --tag gordon-doc-api:smoke .
+      - name: Start read-only non-root API
+        run: >-
+          docker run --detach --name gordon-doc-api
+          --read-only --tmpfs /tmp:size=512m,mode=1777
+          --security-opt no-new-privileges
+          --publish 8000:8000
+          --env GORDON_DOC_API_KEY=smoke-token
+          gordon-doc-api:smoke
+      - name: Wait for readiness and exercise API
+        run: |
+          for _attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/ready; then
+              python docker/smoke.py --token smoke-token
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs gordon-doc-api
+          exit 1
+      - if: always()
+        run: docker rm --force gordon-doc-api || true
+
+  libreoffice:
+    if: needs.changes.outputs.libreoffice == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install LibreOffice Writer
+        run: sudo apt-get update && sudo apt-get install --yes libreoffice-writer
+      - run: uv sync --dev --locked
+      - run: >-
+          uv run pytest -m integration
+          tests/integration/libreoffice
+          tests/integration/test_service.py
+
+  cjk:
+    if: needs.changes.outputs.cjk == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.x"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install LibreOffice Writer and open CJK fonts
+        run: >-
+          sudo apt-get update && sudo apt-get install --yes
+          libreoffice-writer fonts-noto-cjk
+      - run: uv sync --dev --locked
+      - run: uv run python scripts/generate_cjk_fixtures.py --check
+      - run: uv run pytest -m integration tests/integration/libreoffice/test_cjk_fixtures.py
 
   deploy-documentation:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
