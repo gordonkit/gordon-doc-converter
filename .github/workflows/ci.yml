@@ -144,7 +144,7 @@ jobs:
           THIRD_PARTY_NOTICES.txt
           docs-src/public/THIRD_PARTY_NOTICES.txt
           docs-src/public/openapi.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: documentation-site
           path: docs/
@@ -171,7 +171,7 @@ jobs:
       - run: uv run python scripts/compare_builds.py build-one build-two
       - name: Check wheel in a clean virtual environment
         run: uv run python scripts/check_package.py build-one/*.whl
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: build-one/*
@@ -230,7 +230,7 @@ jobs:
           format: spdx-json
           output-file: gordon-doc-converter.spdx.json
           upload-artifact: false
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-spdx
           path: gordon-doc-converter.spdx.json
@@ -290,7 +290,7 @@ jobs:
           format: cyclonedx
           output: sbom-${{ matrix.profile }}.cdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ matrix.profile }}
           path: sbom-${{ matrix.profile }}.cdx.json
