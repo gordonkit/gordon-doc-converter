@@ -5,6 +5,8 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Development Status: Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
 
+[繁體中文](README.zh-TW.md)
+
 [Documentation](https://docs.gordonkit.com/)
 
 GordonKit Document Converter is a Python 3.12+ orchestration library for diagnosable,
