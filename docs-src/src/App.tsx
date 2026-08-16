@@ -164,6 +164,9 @@ function FormatTable({ table, locale }: { table: NonNullable<(typeof pages)[numb
   const headers = table.headers[locale];
   const rows = table.rows[locale];
   const disabledLabel = locale === "en" ? "Same input and output format" : "輸入與輸出格式相同";
+  const alignment = table.alignLeft ? "text-left" : "text-center";
+  const firstColumnWidth = table.firstColumnWidth === "wide" ? "w-64" : table.firstColumnWidth === "w48" ? "w-48" : table.firstColumnWidth === "w50" ? "w-[12.5rem]" : "w-28";
+  const secondColumnWidth = table.secondColumnWidth === "w40" ? "w-40" : table.secondColumnWidth === "w48" ? "w-48" : table.secondColumnWidth === "w50" ? "w-[12.5rem]" : "";
 
   return (
     <div className="mt-6">
@@ -171,14 +174,14 @@ function FormatTable({ table, locale }: { table: NonNullable<(typeof pages)[numb
         <table className="w-full table-fixed border-collapse text-center text-sm">
           <caption className="sr-only">{table.caption[locale]}</caption>
           <thead className="bg-ink text-white dark:bg-slate-800">
-            <tr>{headers.map((header, index) => <th key={header} scope="col" className={`border-r border-white/10 px-2 py-3 font-semibold last:border-r-0 ${index === 0 ? "w-28 text-left" : ""}`}>{header}</th>)}</tr>
+            <tr>{headers.map((header, index) => <th key={header} scope="col" className={`border-r border-white/10 px-2 py-3 font-semibold last:border-r-0 ${alignment} ${index === 0 ? `${firstColumnWidth} text-left` : index === 1 ? secondColumnWidth : ""}`}>{header}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {rows.map((row) => (
               <tr key={row[0]} className="even:bg-slate-50 dark:even:bg-slate-900/50">
                 {row.map((cell, index) => index === 0
                   ? <th key={cell} scope="row" className="border-r border-slate-200 px-3 py-3 text-left font-mono font-semibold text-ink dark:border-slate-700 dark:text-white">{cell}</th>
-                  : <td key={`${row[0]}-${index}`} aria-disabled={!cell || undefined} title={!cell ? disabledLabel : undefined} className={`border-r border-slate-200 px-2 py-3 font-mono text-xs font-semibold last:border-r-0 dark:border-slate-700 ${!cell ? "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500" : cell === "—" ? "text-slate-300 dark:text-slate-600" : "text-leaf dark:text-emerald-400"}`}>{cell || "×"}</td>)}
+                  : <td key={`${row[0]}-${index}`} aria-disabled={!cell || undefined} title={!cell ? disabledLabel : undefined} className={`border-r border-slate-200 px-2 py-3 font-mono text-xs font-semibold last:border-r-0 dark:border-slate-700 ${alignment} ${index === 1 ? secondColumnWidth : ""} ${!cell ? "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500" : cell === "—" ? "text-slate-300 dark:text-slate-600" : "text-leaf dark:text-emerald-400"}`}>{cell || "×"}</td>)}
               </tr>
             ))}
           </tbody>
@@ -190,7 +193,7 @@ function FormatTable({ table, locale }: { table: NonNullable<(typeof pages)[numb
             <h3 className="mb-3 font-mono text-sm font-semibold text-ink dark:text-white">{row[0]}</h3>
             <dl className="grid grid-cols-2 gap-x-5 gap-y-2">
               {row.slice(1).map((cell, index) => (
-                <div key={`${row[0]}-${headers[index + 1]}`} aria-disabled={!cell || undefined} title={!cell ? disabledLabel : undefined} className={`flex items-center justify-between gap-2 border-b pb-1.5 ${!cell ? "border-slate-200 bg-slate-100 px-1.5 text-slate-400 dark:border-slate-700 dark:bg-slate-800" : "border-slate-100 dark:border-slate-800"}`}>
+                <div key={`${row[0]}-${headers[index + 1]}`} aria-disabled={!cell || undefined} title={!cell ? disabledLabel : undefined} className={`flex gap-2 border-b pb-1.5 ${table.alignLeft ? "flex-col items-start" : "items-center justify-between"} ${!cell ? "border-slate-200 bg-slate-100 px-1.5 text-slate-400 dark:border-slate-700 dark:bg-slate-800" : "border-slate-100 dark:border-slate-800"}`}>
                   <dt className="text-xs text-slate-500">{headers[index + 1]}</dt>
                   <dd className={`font-mono text-xs font-semibold ${!cell ? "text-slate-400 dark:text-slate-500" : cell === "—" ? "text-slate-300 dark:text-slate-600" : "text-leaf dark:text-emerald-400"}`}>{cell || "×"}</dd>
                 </div>
