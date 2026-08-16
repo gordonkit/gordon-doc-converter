@@ -81,7 +81,7 @@ PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且�
 ## 支援的格式轉換
 
 | 輸入格式 | PDF | DOCX | ODT | Markdown | HTML | 逐頁圖片 |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- |
 | DOCX | 可以 | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 可以 | 可以，會先經過中間 PDF |
 | ODT | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 不支援 | 不支援 | 不支援 |
 | PDF | 可以，驗證後發布副本 | 不支援 | 不支援 | 可以 | 可以 | 可以 |

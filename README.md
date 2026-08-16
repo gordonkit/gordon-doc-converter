@@ -88,7 +88,7 @@ engine injection, `convert_batch()` for sequential failure-isolated batches, and
 ## Supported format conversions
 
 | Input | PDF | DOCX | ODT | Markdown | HTML | Page images |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- |
 | DOCX | Yes | Yes, via LibreOffice | Yes, via LibreOffice | Yes | Yes | Yes, via an intermediate PDF |
 | ODT | Yes, via LibreOffice | Yes, via LibreOffice | Yes | No | No | No |
 | PDF | Yes, validated copy | No | No | Yes | Yes | Yes |

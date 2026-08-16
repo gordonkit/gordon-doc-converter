@@ -1,11 +1,3 @@
 {
-  "git.enableSmartCommit": true,
   "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-  "github.copilot.git.commitMessageGeneration.enabled": true,
-  "github.copilot.chat.commitMessageGeneration.instructions": [
-    "Output only one concise English Conventional Commit subject in <type>(<scope>): <imperative summary> format.",
-    "Keep the subject within 72 characters and use imperative mood.",
-    "Do not end the subject with a period.",
-    "Include no body, bullets, file list, or additional text."
-  ]
 }
