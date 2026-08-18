@@ -9,22 +9,19 @@
 
 [Documentation](https://docs.gordonkit.com/)
 
-GordonKit Document Converter is a Python 3.12+ orchestration library for diagnosable,
-multi-engine document conversion. It delegates rendering to Microsoft Word, LibreOffice,
-or optional Gotenberg; it does not implement a document layout engine.
-
-Its primary purpose is file-format conversion. The Python library, command-line interface,
-and HTTP API are different ways to access the same conversion service.
+GordonKit Document Converter converts DOCX and other document formats to PDF, HTML,
+Markdown, images, and more. It provides a Python library, CLI, and HTTP API, using Microsoft
+Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 
 ## Supported format conversions
 
-| Input | DOCX | PDF | HTML | Markdown | YAML | JSON | ODT | Images |
+| Input | DOCX | PDF | HTML | ODT | Markdown | YAML | JSON | Images |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | ✓ | ✓ | ✓ | ✓ | LO | PDF |
-| PDF | — | × | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| DOCX | × | Auto | ✓ | LO | ✓ | ✓ | ✓ | PDF |
+| PDF | — | × | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | HTML | P | P+ | × | — | — | — | — | — |
-| Markdown | P | P+ | — | × | — | — | — | — |
-| ODT | LO | LO | — | — | — | — | × | — |
+| ODT | LO | LO | — | × | — | — | — | — |
+| Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
 `P+` Pandoc with a PDF backend · `PDF` via an intermediate PDF · `—` not supported ·
@@ -181,19 +178,19 @@ DOCX locator contract. Optional locator fields are omitted instead of being seri
 
 ```yaml
 schema_version: "1.3"
-source:
-    format: pdf
-    sha256: <source-file-sha256>
-root_blocks:
-    - id: block-000001
-        source_order: 0
-        kind: paragraph
-        physical_page_number: 1
-        text: Page text
-        source_anchor:
-            locator: pdf-page
-            page_number: 1
-            content_sha256: <normalized-content-sha256>
+source: {format: "pdf", sha256: "<source-file-sha256>"}
+root_blocks: [{
+    id: "block-000001",
+    source_order: 0,
+    kind: "paragraph",
+    physical_page_number: 1,
+    text: "Page text",
+    source_anchor: {
+        locator: "pdf-page",
+        page_number: 1,
+        content_sha256: "<normalized-content-sha256>"
+    }
+}]
 ```
 
 Byte offsets are deliberately not part of the stable locator contract. A DOCX offset points
