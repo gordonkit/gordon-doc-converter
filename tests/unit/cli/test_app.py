@@ -217,6 +217,29 @@ def test_convert_builds_request_and_emits_json(tmp_path: Path) -> None:
     assert request.options.overwrite is True
 
 
+def test_convert_without_rendering_engine_emits_clear_human_output(tmp_path: Path) -> None:
+    source = tmp_path / "input.docx"
+    output = tmp_path / "input.html"
+    StubService.conversion_results = (
+        ConversionResult(
+            success=True,
+            source_format=SourceFormat.DOCX,
+            artifacts=(
+                ArtifactResult(
+                    artifact_type=ArtifactType.HTML,
+                    status=ArtifactStatus.SUCCESS,
+                    path=output,
+                ),
+            ),
+        ),
+    )
+
+    result = runner.invoke(app, ["convert", str(source), "--to", "html"])
+
+    assert result.exit_code == 0
+    assert result.stdout == f"Converted without a rendering engine: {output}\n"
+
+
 def test_convert_invalid_extension_returns_input_exit_and_json(tmp_path: Path) -> None:
     result = runner.invoke(app, ["convert", str(tmp_path / "input.txt"), "--json"])
 

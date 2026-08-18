@@ -89,8 +89,9 @@ def _failure_payload(command: str, error: ConversionError) -> dict[str, JsonValu
 def _render_conversion(result: ConversionResult) -> str:
     if result.success:
         artifact = result.artifacts[0]
-        engine = result.selected_engine.value if result.selected_engine else "unknown"
-        return f"Converted with {engine}: {artifact.path}"
+        if result.selected_engine is None:
+            return f"Converted without a rendering engine: {artifact.path}"
+        return f"Converted with {result.selected_engine.value}: {artifact.path}"
     message = result.error.message if result.error else "conversion failed"
     return f"Conversion failed: {message}"
 
