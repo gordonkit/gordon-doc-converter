@@ -37,6 +37,46 @@ class PageContentKind(StrEnum):
     EMPTY = "empty"
 
 
+class LayoutAvailability(StrEnum):
+    """Availability of source layout metadata for semantic blocks."""
+
+    NOT_REQUESTED = "not-requested"
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentMetadata:
+    """Allowlisted portable document properties."""
+
+    title: str | None = None
+    subject: str | None = None
+    creator: str | None = None
+    keywords: str | None = None
+    created: str | None = None
+    modified: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LayoutMetadata:
+    """Provenance and availability of physical/display page metadata."""
+
+    availability: LayoutAvailability = LayoutAvailability.NOT_REQUESTED
+    provider: str | None = None
+    confidence: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceAnchor:
+    """Source-specific locator for reversing one normalized block to its origin."""
+
+    locator: str
+    part: str | None = None
+    element_path: str | None = None
+    native_id: str | None = None
+    page_number: int | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class InlineSpan:
     """One normalized inline text, link, image, or annotation reference."""
@@ -58,6 +98,8 @@ class ContentBlock:
     list_level: int | None = None
     rows: tuple[tuple[tuple[InlineSpan, ...], ...], ...] = ()
     page_number: int | None = None
+    display_page_label: str | None = None
+    source_anchor: SourceAnchor | None = None
 
     @property
     def text(self) -> str:
@@ -86,3 +128,6 @@ class NormalizedContent:
     annotations: tuple[NormalizedAnnotation, ...] = ()
     warnings: tuple[ConversionWarning, ...] = ()
     page_kinds: tuple[PageContentKind, ...] = ()
+    metadata: DocumentMetadata | None = None
+    layout: LayoutMetadata = LayoutMetadata()
+    source_sha256: str | None = None

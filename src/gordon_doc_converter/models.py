@@ -29,6 +29,8 @@ class ArtifactType(StrEnum):
     ODT = "odt"
     MARKDOWN = "markdown"
     HTML = "html"
+    YAML = "yaml"
+    JSON = "json"
     PAGE_IMAGES = "images"
 
 
@@ -86,6 +88,14 @@ class CommentMode(StrEnum):
     OMIT = "omit"
     APPENDIX = "appendix"
     MARKUP = "markup"
+
+
+class MetadataDetail(StrEnum):
+    """Optional source metadata detail included in semantic artifacts."""
+
+    NONE = "none"
+    BASIC = "basic"
+    LAYOUT = "layout"
 
 
 class AnnotationKind(StrEnum):
@@ -190,6 +200,7 @@ class ConversionOptions(JsonModel):
     revision_mode: RevisionMode = RevisionMode.FINAL
     comment_mode: CommentMode = CommentMode.OMIT
     include_annotation_metadata: bool = False
+    metadata_detail: MetadataDetail = MetadataDetail.BASIC
     image_dpi: int = 144
     image_format: PageImageFormat = PageImageFormat.PNG
     image_quality: int = 90

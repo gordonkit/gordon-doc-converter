@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Versioned hierarchical YAML and JSON semantic artifacts with shared deterministic content,
+  source-order IDs, document metadata controls, and explicit page provenance.
+- Cross-format reverse locators with source/content fingerprints, OOXML element and table-cell
+  paths for DOCX, and one-based page anchors for PDF.
+- TTY-aware conversion progress for single and batch CLI commands, isolated on stderr with
+  explicit `--progress` and `--no-progress` overrides.
+
 ## [0.5.1] - 2026-08-18
 
 ### Fixed

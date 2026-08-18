@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import file_digest
 from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile, is_zipfile
 
@@ -39,6 +40,12 @@ class InputValidationLimits:
 
 
 _DEFAULT_INPUT_LIMITS = InputValidationLimits()
+
+
+def file_sha256(path: Path) -> str:
+    """Return a streaming SHA-256 fingerprint for a validated source file."""
+    with path.open("rb") as stream:
+        return file_digest(stream, "sha256").hexdigest()
 
 
 def _validate_member_name(name: str) -> None:

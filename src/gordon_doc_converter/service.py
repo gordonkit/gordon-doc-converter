@@ -16,6 +16,7 @@ from gordon_doc_converter.models import (
     EngineProbeResult,
 )
 from gordon_doc_converter.pipeline import ConversionPipeline
+from gordon_doc_converter.progress import ProgressCallback, ProgressEvent, ProgressState
 from gordon_doc_converter.raster import PdfiumPageRenderer, PdfRasterizer
 
 
@@ -43,13 +44,49 @@ class DocumentConversionService:
             rasterizer or PdfRasterizer(PdfiumPageRenderer()),
         )
 
-    def convert(self, request: ConversionRequest) -> ConversionResult:
+    def convert(
+        self,
+        request: ConversionRequest,
+        *,
+        progress_callback: ProgressCallback | None = None,
+    ) -> ConversionResult:
         """Convert one request through policy-selected engines and stable result contracts."""
-        return self._pipeline.convert(request)
+        return self._pipeline.convert(request, progress_callback=progress_callback)
 
-    def convert_batch(self, requests: Iterable[ConversionRequest]) -> tuple[ConversionResult, ...]:
+    def convert_batch(
+        self,
+        requests: Iterable[ConversionRequest],
+        *,
+        progress_callback: ProgressCallback | None = None,
+    ) -> tuple[ConversionResult, ...]:
         """Convert requests sequentially so one item failure does not stop the batch."""
-        return tuple(self.convert(request) for request in requests)
+        queued = tuple(requests)
+        results: list[ConversionResult] = []
+        for index, request in enumerate(queued, start=1):
+            if progress_callback is not None:
+                progress_callback(
+                    ProgressEvent(
+                        "batch",
+                        ProgressState.RUNNING,
+                        "Converting batch item",
+                        completed=index - 1,
+                        total=len(queued),
+                        source_name=request.source_path.name,
+                    )
+                )
+            results.append(self.convert(request, progress_callback=progress_callback))
+            if progress_callback is not None:
+                progress_callback(
+                    ProgressEvent(
+                        "batch",
+                        ProgressState.COMPLETED,
+                        "Finished batch item",
+                        completed=index,
+                        total=len(queued),
+                        source_name=request.source_path.name,
+                    )
+                )
+        return tuple(results)
 
     def probe_engines(
         self,

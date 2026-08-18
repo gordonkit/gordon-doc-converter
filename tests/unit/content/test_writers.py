@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from gordon_doc_converter.content.html import render_html
 from gordon_doc_converter.content.markdown import render_markdown
@@ -16,7 +17,9 @@ from gordon_doc_converter.content.models import (
     InlineKind,
     InlineSpan,
     NormalizedContent,
+    SourceAnchor,
 )
+from gordon_doc_converter.content.structured import render_json, render_yaml
 from gordon_doc_converter.content.writers import write_content_artifacts
 from gordon_doc_converter.models import (
     AnnotationKind,
@@ -156,16 +159,205 @@ def test_markdown_normalizes_skipped_word_list_levels_and_tabs() -> None:
     assert rendered == "- (1) 第一層\n  - 2\\. 跳層   項目\n"
 
 
+def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "前言"),),
+            ),
+            ContentBlock(
+                BlockKind.HEADING,
+                (InlineSpan(InlineKind.TEXT, "第一章"),),
+                level=1,
+            ),
+            ContentBlock(
+                BlockKind.HEADING,
+                (InlineSpan(InlineKind.TEXT, "跳級小節"),),
+                level=3,
+            ),
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "內容"),),
+                page_number=2,
+            ),
+        ),
+    )
+
+    json_payload = json.loads(render_json(content))
+    yaml_payload = yaml.safe_load(render_yaml(content))
+
+    assert yaml_payload == json_payload
+    assert json_payload["schema_version"] == "1.3"
+    assert json_payload["root_blocks"][0]["text"] == "前言"
+    chapter = json_payload["sections"][0]
+    assert chapter["title"] == "第一章"
+    assert chapter["children"][0]["title"] == "跳級小節"
+    assert chapter["children"][0]["blocks"][0]["physical_page_number"] == 2
+    assert render_json(content) == render_json(content)
+    assert render_yaml(content) == render_yaml(content)
+
+
+def test_structured_content_coalesces_word_runs_and_keeps_semantic_inlines() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (
+                    InlineSpan(InlineKind.TEXT, "連續"),
+                    InlineSpan(InlineKind.TEXT, "文字"),
+                ),
+            ),
+            ContentBlock(
+                BlockKind.TABLE,
+                rows=(
+                    (
+                        (
+                            InlineSpan(InlineKind.TEXT, "野村臺灣"),
+                            InlineSpan(InlineKind.TEXT, "策略高息"),
+                            InlineSpan(InlineKind.TEXT, "\n公開說明書"),
+                        ),
+                    ),
+                ),
+            ),
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (
+                    InlineSpan(InlineKind.TEXT, "參考"),
+                    InlineSpan(InlineKind.LINK, "網站", target="https://example.test"),
+                ),
+            ),
+        ),
+    )
+
+    payload = json.loads(render_json(content))
+
+    paragraph = payload["root_blocks"][0]
+    assert paragraph["text"] == "連續文字"
+    assert "inlines" not in paragraph
+    cell = payload["root_blocks"][1]["rows"][0][0]
+    assert cell == {"text": "野村臺灣策略高息\n公開說明書"}
+    linked = payload["root_blocks"][2]
+    assert linked["text"] == "參考網站"
+    assert [span["kind"] for span in linked["inlines"]] == ["text", "link"]
+
+
+def test_yaml_renders_multiline_text_as_a_readable_literal_block() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "第一行\n第二行\n第三行"),),
+            ),
+        ),
+    )
+
+    rendered = render_yaml(content)
+
+    assert "text: |-\n    第一行\n    第二行\n    第三行\n" in rendered
+    assert "第一行\n\n" not in rendered
+    assert yaml.safe_load(rendered)["root_blocks"][0]["text"] == "第一行\n第二行\n第三行"
+
+
+def test_structured_payload_omits_unavailable_optional_values() -> None:
+    payload = json.loads(
+        render_json(
+            NormalizedContent(
+                source_format=SourceFormat.DOCX,
+                blocks=(
+                    ContentBlock(
+                        BlockKind.PARAGRAPH,
+                        (InlineSpan(InlineKind.TEXT, "內容"),),
+                    ),
+                ),
+            )
+        )
+    )
+
+    def values(item: object) -> list[object]:
+        if isinstance(item, dict):
+            return list(item.values()) + [
+                nested for value in item.values() for nested in values(value)
+            ]
+        if isinstance(item, list):
+            return [nested for value in item for nested in values(value)]
+        return []
+
+    block = payload["root_blocks"][0]
+    assert "physical_page_number" not in block
+    assert "display_page_label" not in block
+    assert "layout" not in payload
+    assert "metadata" not in payload
+    assert None not in values(payload)
+
+
+def test_structured_anchors_support_docx_elements_cells_and_pdf_pages() -> None:
+    docx = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.TABLE,
+                rows=(((InlineSpan(InlineKind.TEXT, "儲存格"),),),),
+                source_anchor=SourceAnchor(
+                    "ooxml-element",
+                    part="word/document.xml",
+                    element_path="/w:document/w:body/w:tbl[1]",
+                ),
+            ),
+        ),
+        source_sha256="a" * 64,
+    )
+    pdf = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "頁面文字"),),
+                page_number=3,
+                source_anchor=SourceAnchor("pdf-page", page_number=3),
+            ),
+        ),
+        source_sha256="b" * 64,
+    )
+
+    docx_payload = json.loads(render_json(docx))
+    pdf_payload = json.loads(render_json(pdf))
+
+    assert docx_payload["source"]["sha256"] == "a" * 64
+    table = docx_payload["root_blocks"][0]
+    assert table["source_anchor"]["element_path"].endswith("w:tbl[1]")
+    assert table["rows"][0][0]["source_anchor"]["element_path"].endswith("w:tbl[1]/w:tr[1]/w:tc[1]")
+    assert len(table["rows"][0][0]["source_anchor"]["content_sha256"]) == 64
+    assert pdf_payload["source"]["sha256"] == "b" * 64
+    assert pdf_payload["root_blocks"][0]["source_anchor"]["page_number"] == 3
+
+
 def test_writer_reuses_one_asset_manifest_and_writes_annotation_sidecar(tmp_path: Path) -> None:
     output_stem = tmp_path / "臺灣 文件"
 
     result = write_content_artifacts(
         _content(),
         output_stem,
-        (ArtifactType.MARKDOWN, ArtifactType.HTML),
+        (
+            ArtifactType.MARKDOWN,
+            ArtifactType.HTML,
+            ArtifactType.YAML,
+            ArtifactType.JSON,
+        ),
     )
 
-    assert tuple(path.suffix for _, path in result.artifacts) == (".md", ".html")
+    assert tuple(path.suffix for _, path in result.artifacts) == (
+        ".md",
+        ".html",
+        ".yaml",
+        ".json",
+    )
+    yaml_document = yaml.safe_load((tmp_path / "臺灣 文件.yaml").read_text(encoding="utf-8"))
+    json_document = json.loads((tmp_path / "臺灣 文件.json").read_text(encoding="utf-8"))
+    assert yaml_document == json_document
     asset_directory = result.asset_directory
     assert asset_directory is not None
     assert asset_directory == tmp_path / "臺灣 文件.assets"

@@ -13,12 +13,15 @@ from gordon_doc_converter.content.models import (
     ContentBlock,
     InlineKind,
     InlineSpan,
+    LayoutAvailability,
+    LayoutMetadata,
     NormalizedContent,
     PageContentKind,
+    SourceAnchor,
 )
 from gordon_doc_converter.exceptions import InvalidInputError
-from gordon_doc_converter.models import ConversionWarning, SourceFormat
-from gordon_doc_converter.security import validate_source_document
+from gordon_doc_converter.models import ConversionWarning, MetadataDetail, SourceFormat
+from gordon_doc_converter.security import file_sha256, validate_source_document
 
 
 def _image_media_type(name: str) -> str:
@@ -72,7 +75,11 @@ def _page_images(
     return assets, spans, detected, failed
 
 
-def extract_pdf_content(source_path: Path) -> NormalizedContent:
+def extract_pdf_content(
+    source_path: Path,
+    *,
+    metadata_detail: MetadataDetail = MetadataDetail.BASIC,
+) -> NormalizedContent:
     """Extract per-page text and supported embedded images with page provenance."""
     validate_source_document(source_path, SourceFormat.PDF)
     try:
@@ -124,7 +131,12 @@ def extract_pdf_content(source_path: Path) -> NormalizedContent:
             inlines.extend(image_spans)
             if inlines:
                 blocks.append(
-                    ContentBlock(BlockKind.PARAGRAPH, tuple(inlines), page_number=page_number)
+                    ContentBlock(
+                        BlockKind.PARAGRAPH,
+                        tuple(inlines),
+                        page_number=page_number,
+                        source_anchor=SourceAnchor("pdf-page", page_number=page_number),
+                    )
                 )
             if kind in {PageContentKind.IMAGE, PageContentKind.MIXED}:
                 warnings.append(
@@ -141,12 +153,21 @@ def extract_pdf_content(source_path: Path) -> NormalizedContent:
                         f"Page {page_number} has no extractable text or supported embedded images.",
                     )
                 )
+        layout = LayoutMetadata()
+        if metadata_detail is MetadataDetail.LAYOUT:
+            layout = LayoutMetadata(
+                LayoutAvailability.AVAILABLE,
+                provider="pypdf",
+                confidence="exact",
+            )
         return NormalizedContent(
             SourceFormat.PDF,
             tuple(blocks),
             tuple(assets),
             warnings=tuple(warnings),
             page_kinds=tuple(page_kinds),
+            layout=layout,
+            source_sha256=file_sha256(source_path),
         )
     except InvalidInputError:
         raise

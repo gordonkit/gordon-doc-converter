@@ -80,17 +80,17 @@ PDF。需要注入引擎時使用 `DocumentConversionService`；依序執行且�
 
 ## 支援的格式轉換
 
-| 輸入格式 | PDF | DOCX | ODT | Markdown | HTML | 逐頁圖片 |
-| --- | --- | --- | --- | --- | --- | --- |
-| DOCX | 可以 | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 可以 | 可以，會先經過中間 PDF |
-| ODT | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 不支援 | 不支援 | 不支援 |
-| PDF | 可以，驗證後發布副本 | 不支援 | 不支援 | 可以 | 可以 | 可以 |
-| HTML | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 |
-| Markdown | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 |
+| 輸入格式 | PDF | DOCX | ODT | Markdown | HTML | YAML | JSON | 逐頁圖片 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOCX | 可以 | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 可以 | 可以 | 可以 | 可以，會先經過中間 PDF |
+| ODT | 可以，使用 LibreOffice | 可以，使用 LibreOffice | 可以 | 不支援 | 不支援 | 不支援 | 不支援 | 不支援 |
+| PDF | 可以，驗證後發布副本 | 不支援 | 不支援 | 可以 | 可以 | 可以 | 可以 | 可以 |
+| HTML | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 | 不支援 | 不支援 |
+| Markdown | 可以，需要 Pandoc 及 PDF backend | 可以，需要 Pandoc | 不支援 | 不適用 | 不適用 | 不支援 | 不支援 | 不支援 |
 
-逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML 及圖片是 DOCX/PDF 的輸出 artifact；
-Markdown 與 HTML 也可作為輸入，轉換為 PDF 或 DOCX，但目前不支援 Markdown 與 HTML
-彼此直接互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX 轉 PDF 則使用
+逐頁圖片可輸出為 PNG 或 JPEG。Markdown、HTML、YAML、JSON 及圖片是 DOCX/PDF 的輸出
+artifact；Markdown 與 HTML 也可作為輸入，轉換為 PDF 或 DOCX，但目前不支援 Markdown
+與 HTML 彼此直接互轉。PDF 轉 PDF 只會驗證並發布來源檔案，不會重新排版；DOCX 轉 PDF 則使用
 選定的 Word、LibreOffice 或 Gotenberg 引擎。ODT 以 ODF-CNS 15251／ISO/IEC 26300 Writer
 文件為相容目標；目前驗證 package 結構與內容可讀性，不保證往返轉換後像素完全一致。
 
@@ -111,17 +111,55 @@ gordon-doc convert 範例.docx --to odt --engine libreoffice
 gordon-doc convert 報告.html --to pdf --orientation landscape
 gordon-doc convert 報告.html --to docx
 gordon-doc convert 範例.pdf --to images --dpi 144
-gordon-doc convert 範例.docx --to markdown --to html
+gordon-doc convert 範例.docx --to markdown --to html --to yaml --to json
+gordon-doc convert 範例.docx --to yaml --metadata layout --progress
 gordon-doc compare 預期.pdf 實際.pdf --diff-dir 差異 --json
 gordon-doc batch 文件一.docx 文件二.docx --output-dir 已轉換 --json
 gordon-doc version
 ```
 
 使用 `--engine word-com`、`--engine libreoffice` 或已設定的 `--engine gotenberg` 可嚴格
-指定引擎。轉換選項也包含 `--mode`、`--revisions`、`--comments`、`--timeout`、
-`--overwrite`、圖片格式／品質／頁碼，以及選用的 `--gotenberg-url`。逐頁圖片使用
-`<stem>.pages/0001.png`；語意產物使用 `.md`、`.html`、共用 `.assets/`，有註解時另建
-sidecar。所有指令都支援 `--json`，便於自動化整合。
+指定引擎。轉換選項也包含 `--mode`、`--revisions`、`--comments`、`--metadata`、
+`--timeout`、`--overwrite`、圖片格式／品質／頁碼，以及選用的 `--gotenberg-url`。
+逐頁圖片使用 `<stem>.pages/0001.png`；語意產物使用 `.md`、`.html`、`.yaml`、`.json`、
+共用 `.assets/`，有註解時另建 sidecar。YAML 與 JSON 共用具版本的章節、段落、清單及
+表格 schema，可供後續索引使用。`--to json` 產生文件 artifact；不同用途的 `--json`
+則輸出 CLI 執行結果，便於自動化整合。
+
+metadata 等級可選 `none`、`basic`（預設的 allowlist 文件屬性）或 `layout`。PDF 實體
+頁碼從 1 起算，provider 為 `pypdf`。DOCX 在尚未配置 layout provider 時，實體頁碼與
+文件顯示頁碼欄位會省略並明確標示 unavailable，不會將推定頁碼宣稱為精確資料。
+
+結構化 artifact 提供跨格式反向定位。`source.sha256` 用來確認完全相同的來源檔案；
+每個 `source_anchor` 另有正規化內容 SHA-256 供定位後驗證。DOCX block 可定位至
+`word/document.xml` element，表格儲存格再以 row/cell 定位；PDF block 則定位至從 1
+起算的實體頁。目前 PDF anchor 定位到頁面而非頁內座標；未來可由 layout provider
+加入座標而不破壞 DOCX locator 契約。無值的選用 locator 欄位不會輸出為 null。
+
+```yaml
+schema_version: "1.3"
+source:
+    format: pdf
+    sha256: <來源檔案-sha256>
+root_blocks:
+    - id: block-000001
+        source_order: 0
+        kind: paragraph
+        physical_page_number: 1
+        text: 頁面文字
+        source_anchor:
+            locator: pdf-page
+            page_number: 1
+            content_sha256: <正規化內容-sha256>
+```
+
+byte offset 刻意不納入穩定 locator 契約。DOCX offset 指向 ZIP 內的壓縮資料，Office
+重新儲存或調整壓縮方式後就會改變；PDF offset 指向序列化 object 或 stream，經過最佳化、
+linearization 或增量儲存後也會改變。請使用來源指紋搭配 OOXML element path 或 PDF page
+anchor。未來若加入 byte offset，也只會作為非權威的診斷提示。
+
+`convert` 與 `batch` 在互動終端會自動顯示轉換階段。進度只寫入 stderr，使用 `--json`
+或重導向時會自動關閉；可用 `--progress` 或 `--no-progress` 覆寫自動判斷。
 
 PDFium/Pillow rasterization 使用 `.[images]`；遠端 adapter 使用 `.[gotenberg]`；FastAPI
 使用 `.[api]`；Windows COM 使用 `.[word]`。容器及具認證 API 的說明見

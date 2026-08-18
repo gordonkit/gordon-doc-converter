@@ -9,6 +9,7 @@ from pathlib import Path
 from gordon_doc_converter.content.html import render_html
 from gordon_doc_converter.content.markdown import render_markdown
 from gordon_doc_converter.content.models import NormalizedContent
+from gordon_doc_converter.content.structured import render_json, render_yaml
 from gordon_doc_converter.models import ArtifactType
 
 
@@ -36,15 +37,28 @@ def write_content_artifacts(
     *,
     overwrite: bool = False,
 ) -> ContentWriteResult:
-    """Write Markdown/HTML once-extracted content with one deterministic asset manifest."""
-    unsupported = set(artifact_types) - {ArtifactType.MARKDOWN, ArtifactType.HTML}
+    """Write semantic artifacts once with one deterministic asset manifest."""
+    supported = {
+        ArtifactType.MARKDOWN,
+        ArtifactType.HTML,
+        ArtifactType.YAML,
+        ArtifactType.JSON,
+    }
+    unsupported = set(artifact_types) - supported
     if unsupported:
-        raise ValueError("content writer supports only Markdown and HTML artifacts")
+        raise ValueError("unsupported semantic content artifact")
     asset_directory = output_stem.with_name(f"{output_stem.name}.assets")
     relative_asset_directory = asset_directory.name
     if not overwrite:
         planned = [
-            output_stem.with_suffix(".md" if item is ArtifactType.MARKDOWN else ".html")
+            output_stem.with_suffix(
+                {
+                    ArtifactType.MARKDOWN: ".md",
+                    ArtifactType.HTML: ".html",
+                    ArtifactType.YAML: ".yaml",
+                    ArtifactType.JSON: ".json",
+                }[item]
+            )
             for item in artifact_types
         ]
         planned.extend(asset_directory / asset.filename for asset in content.assets)
@@ -63,13 +77,19 @@ def write_content_artifacts(
                 render_markdown(content, asset_directory=relative_asset_directory),
                 overwrite=overwrite,
             )
-        else:
+        elif artifact_type is ArtifactType.HTML:
             path = output_stem.with_suffix(".html")
             _write_text(
                 path,
                 render_html(content, asset_directory=relative_asset_directory),
                 overwrite=overwrite,
             )
+        elif artifact_type is ArtifactType.YAML:
+            path = output_stem.with_suffix(".yaml")
+            _write_text(path, render_yaml(content), overwrite=overwrite)
+        else:
+            path = output_stem.with_suffix(".json")
+            _write_text(path, render_json(content), overwrite=overwrite)
         artifacts.append((artifact_type, path))
 
     manifest_path: Path | None = None

@@ -12,9 +12,13 @@ from gordon_doc_converter.content.models import (
     BlockKind,
     ContentAsset,
     ContentBlock,
+    DocumentMetadata,
     InlineKind,
     InlineSpan,
+    LayoutAvailability,
+    LayoutMetadata,
     NormalizedContent,
+    SourceAnchor,
 )
 from gordon_doc_converter.exceptions import InvalidInputError
 from gordon_doc_converter.models import (
@@ -22,17 +26,22 @@ from gordon_doc_converter.models import (
     AnnotationKind,
     CommentMode,
     ConversionWarning,
+    MetadataDetail,
     NormalizedAnnotation,
     RevisionMode,
     SourceFormat,
 )
-from gordon_doc_converter.security import validate_source_document
+from gordon_doc_converter.security import file_sha256, validate_source_document
 
 _W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 _A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 _PR = "http://schemas.openxmlformats.org/package/2006/relationships"
 _MC = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+_W14 = "http://schemas.microsoft.com/office/word/2010/wordml"
+_CP = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+_DC = "http://purl.org/dc/elements/1.1/"
+_DCTERMS = "http://purl.org/dc/terms/"
 
 
 def _q(namespace: str, name: str) -> str:
@@ -115,6 +124,25 @@ def _parse_xml(archive: ZipFile, name: str) -> ElementTree.Element:
         return ElementTree.fromstring(archive.read(name))
     except (KeyError, ElementTree.ParseError) as exc:
         raise InvalidInputError(f"DOCX contains an invalid {name} part") from exc
+
+
+def _core_properties(archive: ZipFile) -> DocumentMetadata:
+    if "docProps/core.xml" not in archive.namelist():
+        return DocumentMetadata()
+    root = _parse_xml(archive, "docProps/core.xml")
+
+    def text(namespace: str, name: str) -> str | None:
+        element = root.find(_q(namespace, name))
+        return element.text if element is not None and element.text else None
+
+    return DocumentMetadata(
+        title=text(_DC, "title"),
+        subject=text(_DC, "subject"),
+        creator=text(_DC, "creator"),
+        keywords=text(_CP, "keywords"),
+        created=text(_DCTERMS, "created"),
+        modified=text(_DCTERMS, "modified"),
+    )
 
 
 def _relationships(archive: ZipFile) -> dict[str, _Relationship]:
@@ -561,7 +589,11 @@ def _manual_continuation_level(properties: ElementTree.Element | None, state: _S
     return None
 
 
-def _paragraph(element: ElementTree.Element, state: _State) -> ContentBlock:
+def _paragraph(
+    element: ElementTree.Element,
+    state: _State,
+    source_anchor: SourceAnchor | None = None,
+) -> ContentBlock:
     properties = element.find(_q(_W, "pPr"))
     style = properties.find(_q(_W, "pStyle")) if properties is not None else None
     style_value = style.get(_q(_W, "val"), "") if style is not None else ""
@@ -626,10 +658,15 @@ def _paragraph(element: ElementTree.Element, state: _State) -> ContentBlock:
             if manual_level is not None
             else continuation_level
         ),
+        source_anchor=source_anchor,
     )
 
 
-def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
+def _table(
+    element: ElementTree.Element,
+    state: _State,
+    source_anchor: SourceAnchor | None = None,
+) -> ContentBlock:
     rows: list[tuple[tuple[InlineSpan, ...], ...]] = []
     widths: set[int] = set()
     for row in element.findall(_q(_W, "tr")):
@@ -650,7 +687,7 @@ def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
                 "A table has merged or uneven cells that cannot be represented exactly.",
             )
         )
-    return ContentBlock(BlockKind.TABLE, rows=tuple(rows))
+    return ContentBlock(BlockKind.TABLE, rows=tuple(rows), source_anchor=source_anchor)
 
 
 def _textbox_contents(element: ElementTree.Element) -> list[ElementTree.Element]:
@@ -669,19 +706,40 @@ def _textbox_contents(element: ElementTree.Element) -> list[ElementTree.Element]
     return contents
 
 
-def _blocks(element: ElementTree.Element, state: _State) -> list[ContentBlock]:
+def _blocks(
+    element: ElementTree.Element,
+    state: _State,
+    *,
+    element_path: str,
+) -> list[ContentBlock]:
     blocks: list[ContentBlock] = []
+    tag_counts: dict[str, int] = {}
     for child in element:
+        local_name = child.tag.rsplit("}", 1)[-1]
+        tag_counts[local_name] = tag_counts.get(local_name, 0) + 1
+        child_path = f"{element_path}/w:{local_name}[{tag_counts[local_name]}]"
+        anchor = SourceAnchor(
+            "ooxml-element",
+            part="word/document.xml",
+            element_path=child_path,
+            native_id=child.get(_q(_W14, "paraId")),
+        )
         if child.tag == _q(_W, "p"):
-            for textbox in _textbox_contents(child):
-                blocks.extend(_blocks(textbox, state))
-            paragraph = _paragraph(child, state)
+            for textbox_index, textbox in enumerate(_textbox_contents(child), start=1):
+                blocks.extend(
+                    _blocks(
+                        textbox,
+                        state,
+                        element_path=f"{child_path}/textbox[{textbox_index}]",
+                    )
+                )
+            paragraph = _paragraph(child, state, anchor)
             if paragraph.inlines:
                 blocks.append(paragraph)
         elif child.tag == _q(_W, "tbl"):
-            blocks.append(_table(child, state))
+            blocks.append(_table(child, state, anchor))
         elif child.tag in {_q(_W, "sdt"), _q(_W, "sdtContent"), _q(_W, "customXml")}:
-            blocks.extend(_blocks(child, state))
+            blocks.extend(_blocks(child, state, element_path=child_path))
     return blocks
 
 
@@ -691,6 +749,7 @@ def extract_docx_content(
     revision_mode: RevisionMode = RevisionMode.FINAL,
     comment_mode: CommentMode = CommentMode.OMIT,
     include_annotation_metadata: bool = False,
+    metadata_detail: MetadataDetail = MetadataDetail.BASIC,
 ) -> NormalizedContent:
     """Extract a validated DOCX directly from OOXML without modifying the source."""
     validate_source_document(source_path, SourceFormat.DOCX)
@@ -716,9 +775,19 @@ def extract_docx_content(
         body = root.find(_q(_W, "body"))
         if body is None:
             raise InvalidInputError("DOCX document has no body")
-        blocks = _blocks(body, state)
+        blocks = _blocks(body, state, element_path="/w:document/w:body")
         _warn_about_comment_anchors(state)
         _warn_about_revision_anchors(state)
+        metadata = None if metadata_detail is MetadataDetail.NONE else _core_properties(archive)
+        layout = LayoutMetadata()
+        if metadata_detail is MetadataDetail.LAYOUT:
+            layout = LayoutMetadata(LayoutAvailability.UNAVAILABLE)
+            state.warnings.append(
+                ConversionWarning(
+                    "LAYOUT_METADATA_UNAVAILABLE",
+                    "DOCX layout metadata requires a configured layout provider.",
+                )
+            )
         if any(name.startswith(("word/header", "word/footer")) for name in archive.namelist()):
             state.warnings.append(
                 ConversionWarning(
@@ -727,9 +796,12 @@ def extract_docx_content(
                 )
             )
         return NormalizedContent(
-            SourceFormat.DOCX,
-            tuple(blocks),
-            tuple(state.assets),
-            tuple(state.annotations),
-            tuple(state.warnings),
+            source_format=SourceFormat.DOCX,
+            blocks=tuple(blocks),
+            assets=tuple(state.assets),
+            annotations=tuple(state.annotations),
+            warnings=tuple(state.warnings),
+            metadata=metadata,
+            layout=layout,
+            source_sha256=file_sha256(source_path),
         )

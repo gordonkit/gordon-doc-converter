@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Callable
 from enum import IntEnum
 from importlib.metadata import version
@@ -23,11 +24,13 @@ from gordon_doc_converter.models import (
     DeploymentMode,
     EngineName,
     EngineProbeResult,
+    MetadataDetail,
     PageImageFormat,
     PageOrientation,
     RevisionMode,
 )
 from gordon_doc_converter.models_types import JsonValue
+from gordon_doc_converter.progress import ProgressEvent
 from gordon_doc_converter.raster import PdfiumPageRenderer, PdfRasterizer
 from gordon_doc_converter.service import DocumentConversionService
 from gordon_doc_converter.template import write_blank_html_template
@@ -102,6 +105,20 @@ def _render_probe(probe: EngineProbeResult) -> str:
     return f"{probe.engine.value}: {state}" + (f" ({details})" if details else "")
 
 
+def _progress_renderer(enabled: bool) -> Callable[[ProgressEvent], None] | None:
+    if not enabled:
+        return None
+
+    def render(event: ProgressEvent) -> None:
+        count = ""
+        if event.completed is not None and event.total is not None:
+            count = f" {event.completed}/{event.total}"
+        source = f" {event.source_name}" if event.source_name else ""
+        typer.echo(f"[{event.state.value}] {event.message}{count}{source}", err=True)
+
+    return render
+
+
 def _make_options(
     *,
     output_path: Path | None,
@@ -111,6 +128,7 @@ def _make_options(
     engine: EngineName | None,
     revision_mode: RevisionMode,
     comment_mode: CommentMode,
+    metadata_detail: MetadataDetail = MetadataDetail.BASIC,
     image_dpi: int = 144,
     image_format: PageImageFormat = PageImageFormat.PNG,
     image_quality: int = 90,
@@ -126,6 +144,7 @@ def _make_options(
         engine=engine,
         revision_mode=revision_mode,
         comment_mode=comment_mode,
+        metadata_detail=metadata_detail,
         image_dpi=image_dpi,
         image_format=image_format,
         image_quality=image_quality,
@@ -238,6 +257,10 @@ def convert(
     comment_mode: Annotated[
         CommentMode, typer.Option("--comments", help="Comment rendering mode.")
     ] = CommentMode.OMIT,
+    metadata_detail: Annotated[
+        MetadataDetail,
+        typer.Option("--metadata", help="Semantic artifact metadata detail."),
+    ] = MetadataDetail.BASIC,
     timeout_seconds: Annotated[
         float, typer.Option("--timeout", min=0.001, help="Conversion timeout in seconds.")
     ] = 120.0,
@@ -260,6 +283,13 @@ def convert(
     json_output: Annotated[
         bool, typer.Option("--json", help="Emit machine-readable JSON.")
     ] = False,
+    progress: Annotated[
+        bool | None,
+        typer.Option(
+            "--progress/--no-progress",
+            help="Show conversion phases on stderr; defaults to interactive terminals.",
+        ),
+    ] = None,
 ) -> None:
     """Convert one document."""
     try:
@@ -271,6 +301,7 @@ def convert(
             engine=engine,
             revision_mode=revision_mode,
             comment_mode=comment_mode,
+            metadata_detail=metadata_detail,
             image_dpi=image_dpi,
             image_format=image_format,
             image_quality=image_quality,
@@ -293,7 +324,8 @@ def convert(
         if gotenberg_url is None
         else DocumentConversionService(gotenberg_url=gotenberg_url)
     )
-    result = service.convert(request)
+    show_progress = progress if progress is not None else (not json_output and sys.stderr.isatty())
+    result = service.convert(request, progress_callback=_progress_renderer(show_progress))
     payload: dict[str, JsonValue] = {
         "command": "convert",
         "success": result.success,
@@ -374,6 +406,13 @@ def batch(
     json_output: Annotated[
         bool, typer.Option("--json", help="Emit machine-readable JSON.")
     ] = False,
+    progress: Annotated[
+        bool | None,
+        typer.Option(
+            "--progress/--no-progress",
+            help="Show conversion phases on stderr; defaults to interactive terminals.",
+        ),
+    ] = None,
 ) -> None:
     """Convert multiple documents sequentially with isolated item failures."""
     requests: list[ConversionRequest] = []
@@ -400,7 +439,11 @@ def batch(
         )
         raise typer.Exit(_error_exit_code(error.code)) from error
 
-    results = DocumentConversionService().convert_batch(requests)
+    show_progress = progress if progress is not None else (not json_output and sys.stderr.isatty())
+    results = DocumentConversionService().convert_batch(
+        requests,
+        progress_callback=_progress_renderer(show_progress),
+    )
     success = all(result.success for result in results)
     payload: dict[str, JsonValue] = {
         "command": "batch",

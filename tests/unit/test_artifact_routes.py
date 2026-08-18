@@ -26,10 +26,15 @@ def _pdf(path: Path, pages: int = 2) -> None:
         writer.write(stream)
 
 
-def test_docx_markdown_and_html_share_deterministic_assets(tmp_path: Path) -> None:
+def test_docx_semantic_formats_share_deterministic_assets(tmp_path: Path) -> None:
     request = ConversionRequest.from_source(
         DOCX_FIXTURE,
-        artifacts=(ArtifactType.MARKDOWN, ArtifactType.HTML),
+        artifacts=(
+            ArtifactType.MARKDOWN,
+            ArtifactType.HTML,
+            ArtifactType.YAML,
+            ArtifactType.JSON,
+        ),
         options=ConversionOptions(output_path=tmp_path / "繁中輸出"),
     )
 
@@ -39,9 +44,13 @@ def test_docx_markdown_and_html_share_deterministic_assets(tmp_path: Path) -> No
     assert [item.status for item in result.artifacts] == [
         ArtifactStatus.SUCCESS,
         ArtifactStatus.SUCCESS,
+        ArtifactStatus.SUCCESS,
+        ArtifactStatus.SUCCESS,
     ]
     assert (tmp_path / "繁中輸出.md").is_file()
     assert (tmp_path / "繁中輸出.html").is_file()
+    assert (tmp_path / "繁中輸出.yaml").is_file()
+    assert (tmp_path / "繁中輸出.json").is_file()
     assert "GordonKit" in (tmp_path / "繁中輸出.md").read_text(encoding="utf-8")
 
 
@@ -84,3 +93,26 @@ def test_multiple_artifacts_treat_output_as_a_shared_stem(tmp_path: Path) -> Non
     assert result.success is True
     assert (tmp_path / "bundle.md").is_file()
     assert (tmp_path / "bundle.pages" / "0001.png").is_file()
+
+
+def test_semantic_conversion_reports_observable_progress_phases(tmp_path: Path) -> None:
+    request = ConversionRequest.from_source(
+        DOCX_FIXTURE,
+        artifacts=(ArtifactType.JSON,),
+        options=ConversionOptions(output_path=tmp_path / "progress.json"),
+    )
+    events = []
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(
+        request,
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert [event.phase for event in events] == [
+        "validation",
+        "content-extraction",
+        "serialization",
+        "conversion",
+    ]
+    assert events[-1].state.value == "completed"

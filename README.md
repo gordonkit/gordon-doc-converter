@@ -18,21 +18,22 @@ and HTTP API are different ways to access the same conversion service.
 
 ## Supported format conversions
 
-| Input | DOCX | PDF | HTML | Markdown | ODT | Images |
-| --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | ✓ | ✓ | LO | PDF |
-| PDF | — | × | ✓ | ✓ | — | ✓ |
-| HTML | P | P+ | × | — | — | — |
-| Markdown | P | P+ | — | × | — | — |
-| ODT | LO | LO | — | — | × | — |
+| Input | DOCX | PDF | HTML | Markdown | YAML | JSON | ODT | Images |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOCX | × | Auto | ✓ | ✓ | ✓ | ✓ | LO | PDF |
+| PDF | — | × | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| HTML | P | P+ | × | — | — | — | — | — |
+| Markdown | P | P+ | — | × | — | — | — | — |
+| ODT | LO | LO | — | — | — | — | × | — |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
 `P+` Pandoc with a PDF backend · `PDF` via an intermediate PDF · `—` not supported ·
 `×` same format; not a conversion
 
-Page-image output is available as PNG or JPEG. Markdown, HTML, and image files are output
-artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for PDF/DOCX
-conversion. The project does not convert Markdown and HTML directly between each other.
+Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
+output artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for
+PDF/DOCX conversion. The project does not convert Markdown and HTML directly between each
+other.
 
 DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice; DOCX-to-PDF can use
 the selected Word, LibreOffice, or Gotenberg engine. ODT support targets ODF-CNS 15251 /
@@ -150,7 +151,8 @@ gordon-doc convert example.docx --to odt --engine libreoffice
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.html --to docx
 gordon-doc convert example.pdf --to images --dpi 144
-gordon-doc convert example.docx --to markdown --to html
+gordon-doc convert example.docx --to markdown --to html --to yaml --to json
+gordon-doc convert example.docx --to yaml --metadata layout --progress
 gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
 gordon-doc batch one.docx two.docx --output-dir converted --json
 gordon-doc version
@@ -158,10 +160,51 @@ gordon-doc version
 
 Use `--engine word-com`, `--engine libreoffice`, or a configured `--engine gotenberg` for
 strict explicit selection. Conversion options also include `--mode`, `--revisions`,
-`--comments`, `--timeout`, `--overwrite`, image format/quality/page selection, and an optional
-`--gotenberg-url`. Page images use `<stem>.pages/0001.png`; semantic artifacts use `.md`,
-`.html`, shared `.assets/`, and an annotation sidecar when present. Every command supports
-`--json` for automation.
+`--comments`, `--metadata`, `--timeout`, `--overwrite`, image format/quality/page selection,
+and an optional `--gotenberg-url`. Page images use `<stem>.pages/0001.png`; semantic artifacts
+use `.md`, `.html`, `.yaml`, `.json`, shared `.assets/`, and an annotation sidecar when present.
+YAML and JSON share a versioned heading/paragraph/list/table schema intended for downstream
+indexing. `--to json` writes that document artifact; the separate `--json` flag emits the CLI
+result contract for automation.
+
+Metadata detail is `none`, `basic` (the default allowlisted document properties), or `layout`.
+PDF physical pages are one-based and identify `pypdf` as their provider. DOCX physical pages
+and display page labels are omitted with an explicit unavailable capability until a layout
+provider is configured; the converter does not present inferred page numbers as exact.
+
+Structured artifacts include cross-format reverse locators. `source.sha256` identifies the
+exact source file, while each `source_anchor` includes a normalized-content SHA-256 for
+verification. DOCX blocks locate `word/document.xml` elements (and table cells by row/cell);
+PDF blocks locate their one-based physical page. PDF anchors currently identify a page rather
+than a bounding box; a future layout provider can add page coordinates without changing the
+DOCX locator contract. Optional locator fields are omitted instead of being serialized as null.
+
+```yaml
+schema_version: "1.3"
+source:
+    format: pdf
+    sha256: <source-file-sha256>
+root_blocks:
+    - id: block-000001
+        source_order: 0
+        kind: paragraph
+        physical_page_number: 1
+        text: Page text
+        source_anchor:
+            locator: pdf-page
+            page_number: 1
+            content_sha256: <normalized-content-sha256>
+```
+
+Byte offsets are deliberately not part of the stable locator contract. A DOCX offset points
+into a compressed ZIP member and changes when Office rewrites or recompresses the package. A
+PDF offset identifies serialized objects or streams and changes after optimization,
+linearization, or incremental saves. Use the source fingerprint plus OOXML element path or PDF
+page anchor instead. Byte offsets may be added later only as non-authoritative diagnostic hints.
+
+`convert` and `batch` show conversion phases automatically on interactive terminals. Progress
+is written only to stderr and is automatically disabled for `--json` or redirected output;
+use `--progress` or `--no-progress` to override the automatic choice.
 
 Stable exit codes are `0` for success, `2` for invalid input or an existing output, `3` for
 engine or capability unavailability, `4` for conversion failure, timeout, or missing output,

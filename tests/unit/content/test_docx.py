@@ -9,7 +9,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from gordon_doc_converter.content.docx import extract_docx_content
 from gordon_doc_converter.content.models import BlockKind, InlineKind
-from gordon_doc_converter.models import CommentMode, RevisionMode
+from gordon_doc_converter.models import CommentMode, MetadataDetail, RevisionMode
 
 _CONTENT_TYPES = """<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -49,6 +49,13 @@ _NUMBERING = """<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordproc
 <w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%3."/></w:lvl>
 </w:abstractNum><w:num w:numId="8"><w:abstractNumId w:val="4"/></w:num><w:num w:numId="9"><w:abstractNumId w:val="4"/></w:num>
 </w:numbering>"""
+_CORE_PROPERTIES = """<cp:coreProperties
+ xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:dcterms="http://purl.org/dc/terms/">
+<dc:title>公開報告</dc:title><dc:subject>測試</dc:subject><dc:creator>GordonKit</dc:creator>
+<cp:keywords>文件,轉換</cp:keywords><dcterms:created>2026-08-01T00:00:00Z</dcterms:created>
+<dcterms:modified>2026-08-02T00:00:00Z</dcterms:modified></cp:coreProperties>"""
 
 
 def _write_docx(path: Path) -> None:
@@ -60,6 +67,7 @@ def _write_docx(path: Path) -> None:
         archive.writestr("word/comments.xml", _COMMENTS)
         archive.writestr("word/media/image.png", b"public-image-data")
         archive.writestr("word/header1.xml", b"<header/>")
+        archive.writestr("docProps/core.xml", _CORE_PROPERTIES)
 
 
 def _write_structured_docx(path: Path) -> None:
@@ -125,6 +133,12 @@ def test_extract_docx_preserves_semantic_blocks_links_images_and_source(tmp_path
         BlockKind.TABLE,
     ]
     assert content.blocks[0].level == 1
+    assert content.source_sha256 is not None
+    assert len(content.source_sha256) == 64
+    assert content.blocks[0].source_anchor is not None
+    assert content.blocks[0].source_anchor.locator == "ooxml-element"
+    assert content.blocks[0].source_anchor.part == "word/document.xml"
+    assert content.blocks[0].source_anchor.element_path == "/w:document/w:body/w:p[1]"
     assert content.blocks[1].text == "保留新字"
     assert content.blocks[2].inlines[0].kind is InlineKind.LINK
     assert content.blocks[2].inlines[0].target == "https://example.test/a"
@@ -132,6 +146,8 @@ def test_extract_docx_preserves_semantic_blocks_links_images_and_source(tmp_path
     assert content.assets[0].filename == "asset-0001.png"
     assert content.assets[0].data == b"public-image-data"
     assert len(content.blocks[-1].rows) == 2
+    assert content.blocks[-1].source_anchor is not None
+    assert content.blocks[-1].source_anchor.element_path == "/w:document/w:body/w:tbl[1]"
     assert "INCOMPLETE_TABLE_STRUCTURE" in {warning.code for warning in content.warnings}
     assert "HEADER_FOOTER_OMITTED" in {warning.code for warning in content.warnings}
 
@@ -184,6 +200,23 @@ def test_comments_and_metadata_are_opt_in(tmp_path: Path) -> None:
     assert with_metadata.annotations[0].author == "作者"
     assert with_metadata.annotations[0].timestamp == "2026-02-03"
     assert "INEXACT_COMMENT_ANCHOR" in {warning.code for warning in retained.warnings}
+
+
+def test_document_metadata_detail_and_layout_capability_are_explicit(tmp_path: Path) -> None:
+    source = tmp_path / "metadata.docx"
+    _write_docx(source)
+
+    omitted = extract_docx_content(source, metadata_detail=MetadataDetail.NONE)
+    basic = extract_docx_content(source, metadata_detail=MetadataDetail.BASIC)
+    layout = extract_docx_content(source, metadata_detail=MetadataDetail.LAYOUT)
+
+    assert omitted.metadata is None
+    assert basic.metadata is not None
+    assert basic.metadata.title == "公開報告"
+    assert basic.metadata.creator == "GordonKit"
+    assert basic.layout.availability.value == "not-requested"
+    assert layout.layout.availability.value == "unavailable"
+    assert "LAYOUT_METADATA_UNAVAILABLE" in {warning.code for warning in layout.warnings}
 
 
 def test_content_controls_custom_heading_styles_and_chinese_numbering(tmp_path: Path) -> None:

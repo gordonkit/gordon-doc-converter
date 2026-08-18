@@ -13,8 +13,9 @@ from pypdf.generic import (
     NumberObject,
 )
 
-from gordon_doc_converter.content.models import PageContentKind
+from gordon_doc_converter.content.models import LayoutAvailability, PageContentKind
 from gordon_doc_converter.content.pdf import extract_pdf_content
+from gordon_doc_converter.models import MetadataDetail
 
 
 def _write_text_pdf(path: Path) -> None:
@@ -73,9 +74,25 @@ def test_pdf_extracts_text_with_one_based_page_provenance(tmp_path: Path) -> Non
 
     assert content.page_kinds == (PageContentKind.TEXT,)
     assert content.blocks[0].page_number == 1
+    assert content.source_sha256 is not None
+    assert len(content.source_sha256) == 64
+    assert content.blocks[0].source_anchor is not None
+    assert content.blocks[0].source_anchor.locator == "pdf-page"
+    assert content.blocks[0].source_anchor.page_number == 1
     assert "Hello PDF" in content.blocks[0].text
     assert not any(warning.code == "OCR_REQUIRED" for warning in content.warnings)
     assert "PDF_READING_ORDER_INFERRED" in {warning.code for warning in content.warnings}
+
+
+def test_pdf_layout_metadata_identifies_exact_physical_page_provider(tmp_path: Path) -> None:
+    source = tmp_path / "layout.pdf"
+    _write_text_pdf(source)
+
+    content = extract_pdf_content(source, metadata_detail=MetadataDetail.LAYOUT)
+
+    assert content.layout.availability is LayoutAvailability.AVAILABLE
+    assert content.layout.provider == "pypdf"
+    assert content.layout.confidence == "exact"
 
 
 def test_image_only_pdf_is_explicitly_classified_as_ocr_required(tmp_path: Path) -> None:

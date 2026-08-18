@@ -26,6 +26,7 @@ from gordon_doc_converter.models import (
     EngineProbeResult,
     SourceFormat,
 )
+from gordon_doc_converter.progress import ProgressCallback, ProgressEvent, ProgressState
 
 cli_module = importlib.import_module("gordon_doc_converter.cli.app")
 runner = CliRunner()
@@ -92,12 +93,37 @@ class StubService:
         del names
         return self.probes
 
-    def convert(self, request: ConversionRequest) -> ConversionResult:
+    def convert(
+        self,
+        request: ConversionRequest,
+        *,
+        progress_callback: ProgressCallback | None = None,
+    ) -> ConversionResult:
         self.requests.append(request)
+        if progress_callback is not None:
+            progress_callback(
+                ProgressEvent("rendering", ProgressState.RUNNING, "Rendering document")
+            )
         return self.conversion_results[0]
 
-    def convert_batch(self, requests: Iterable[ConversionRequest]) -> tuple[ConversionResult, ...]:
-        self.requests.extend(requests)
+    def convert_batch(
+        self,
+        requests: Iterable[ConversionRequest],
+        *,
+        progress_callback: ProgressCallback | None = None,
+    ) -> tuple[ConversionResult, ...]:
+        queued = tuple(requests)
+        self.requests.extend(queued)
+        if progress_callback is not None:
+            progress_callback(
+                ProgressEvent(
+                    "batch",
+                    ProgressState.COMPLETED,
+                    "Finished batch item",
+                    completed=len(queued),
+                    total=len(queued),
+                )
+            )
         return self.conversion_results
 
 
@@ -199,6 +225,8 @@ def test_convert_builds_request_and_emits_json(tmp_path: Path) -> None:
             "libreoffice",
             "--timeout",
             "9",
+            "--metadata",
+            "layout",
             "--overwrite",
             "--json",
         ],
@@ -214,6 +242,7 @@ def test_convert_builds_request_and_emits_json(tmp_path: Path) -> None:
     assert request.options.output_path == output
     assert request.options.engine is EngineName.LIBREOFFICE
     assert request.options.timeout_seconds == 9
+    assert request.options.metadata_detail.value == "layout"
     assert request.options.overwrite is True
 
 
@@ -238,6 +267,27 @@ def test_convert_without_rendering_engine_emits_clear_human_output(tmp_path: Pat
 
     assert result.exit_code == 0
     assert result.stdout == f"Converted without a rendering engine: {output}\n"
+
+
+def test_convert_progress_is_emitted_to_stderr_without_polluting_json(tmp_path: Path) -> None:
+    output = tmp_path / "output.json"
+    StubService.conversion_results = (_result(success=True, output_path=output),)
+
+    result = runner.invoke(
+        app,
+        [
+            "convert",
+            str(tmp_path / "input.docx"),
+            "--to",
+            "json",
+            "--progress",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["success"] is True
+    assert "[running] Rendering document" in result.stderr
 
 
 def test_convert_invalid_extension_returns_input_exit_and_json(tmp_path: Path) -> None:
@@ -303,3 +353,25 @@ def test_batch_preserves_results_and_returns_most_specific_exit(tmp_path: Path) 
         output_directory / "一.pdf",
         output_directory / "二.pdf",
     )
+
+
+def test_batch_progress_reports_completed_count_on_stderr(tmp_path: Path) -> None:
+    StubService.conversion_results = (
+        _result(success=True, output_path=tmp_path / "一.pdf"),
+        _result(success=True, output_path=tmp_path / "二.pdf"),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "batch",
+            str(tmp_path / "一.docx"),
+            str(tmp_path / "二.docx"),
+            "--progress",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["success"] is True
+    assert "2/2" in result.stderr

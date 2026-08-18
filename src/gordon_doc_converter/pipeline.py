@@ -45,6 +45,7 @@ from gordon_doc_converter.models import (
     SourceFormat,
 )
 from gordon_doc_converter.policies import EngineRejection, engine_order, select_engines
+from gordon_doc_converter.progress import ProgressCallback, ProgressEvent, ProgressState
 from gordon_doc_converter.raster import ImageFormat, PdfRasterizer, RasterOptions
 from gordon_doc_converter.validation import validate_pdf
 
@@ -139,6 +140,9 @@ def _output_stem(request: ConversionRequest) -> Path:
         ".odt",
         ".md",
         ".html",
+        ".yaml",
+        ".yml",
+        ".json",
     }:
         return configured.with_suffix("")
     return configured
@@ -230,14 +234,49 @@ class ConversionPipeline:
             requested_comment_mode=request.options.comment_mode,
         )
 
-    def convert(self, request: ConversionRequest) -> ConversionResult:
+    @staticmethod
+    def _report(
+        callback: ProgressCallback | None,
+        phase: str,
+        message: str,
+        *,
+        state: ProgressState = ProgressState.RUNNING,
+        engine: EngineName | None = None,
+        artifact: ArtifactType | None = None,
+    ) -> None:
+        if callback is not None:
+            callback(ProgressEvent(phase, state, message, engine=engine, artifact=artifact))
+
+    def convert(
+        self,
+        request: ConversionRequest,
+        *,
+        progress_callback: ProgressCallback | None = None,
+    ) -> ConversionResult:
         """Convert one supported request without exposing adapter-specific failures."""
+        self._report(progress_callback, "validation", "Validating conversion request")
         if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
-            return self._convert_markup(request)
-        if request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts:
-            return self._convert_office_files(request)
-        if request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
-            return self._convert_artifacts(request)
+            result = self._convert_markup(request, progress_callback)
+        elif request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts:
+            result = self._convert_office_files(request, progress_callback)
+        elif request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
+            result = self._convert_artifacts(request, progress_callback)
+        else:
+            result = self._convert_pdf(request, progress_callback)
+        self._report(
+            progress_callback,
+            "conversion",
+            "Conversion completed" if result.success else "Conversion failed",
+            state=ProgressState.COMPLETED if result.success else ProgressState.FAILED,
+        )
+        return result
+
+    def _convert_pdf(
+        self,
+        request: ConversionRequest,
+        progress_callback: ProgressCallback | None,
+    ) -> ConversionResult:
+        """Convert one DOCX to PDF through a policy-selected rendering engine."""
         started = perf_counter()
         output_path = request.options.output_path or request.source_path.with_suffix(".pdf")
         order: tuple[EngineName, ...] = ()
@@ -253,6 +292,7 @@ class ConversionPipeline:
             if output_path.exists() and not request.options.overwrite:
                 raise OutputExistsError("PDF output already exists")
             order = engine_order(request.options, self._environment)
+            self._report(progress_callback, "engine-selection", "Selecting rendering engine")
             probes = self.probe_engines(order)
             selection = select_engines(request.options, self._environment, probes)
         except ConversionError as error:
@@ -286,12 +326,26 @@ class ConversionPipeline:
                 engine = self._engines[name]
                 staging_path = workspace / f"attempt-{index + 1}.pdf"
                 try:
+                    self._report(
+                        progress_callback,
+                        "rendering",
+                        f"Rendering with {name.value}",
+                        engine=name,
+                        artifact=ArtifactType.PDF,
+                    )
                     execution = engine.convert(
                         request.source_path,
                         staging_path,
                         timeout_seconds=request.options.timeout_seconds,
                         revision_mode=request.options.revision_mode,
                         comment_mode=request.options.comment_mode,
+                    )
+                    self._report(
+                        progress_callback,
+                        "pdf-validation",
+                        "Validating rendered PDF",
+                        engine=name,
+                        artifact=ArtifactType.PDF,
                     )
                     output_size = self._validate_execution(execution, name, staging_path)
                 except ConversionError as error:
@@ -335,6 +389,13 @@ class ConversionPipeline:
 
                 warnings.extend(execution.warnings)
                 try:
+                    self._report(
+                        progress_callback,
+                        "publication",
+                        "Publishing validated PDF",
+                        engine=name,
+                        artifact=ArtifactType.PDF,
+                    )
                     _publish_pdf(
                         staging_path,
                         output_path,
@@ -377,7 +438,11 @@ class ConversionPipeline:
 
         raise AssertionError("engine selection produced no executable engine")
 
-    def _convert_office_files(self, request: ConversionRequest) -> ConversionResult:
+    def _convert_office_files(
+        self,
+        request: ConversionRequest,
+        progress_callback: ProgressCallback | None,
+    ) -> ConversionResult:
         """Convert DOCX/ODT files through the LibreOffice file adapter."""
         started = perf_counter()
         supported = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
@@ -458,6 +523,13 @@ class ConversionPipeline:
                     continue
                 staged = workspace / f"output-{index}{suffix}"
                 try:
+                    self._report(
+                        progress_callback,
+                        "rendering",
+                        f"Creating {artifact_type.value} artifact",
+                        engine=EngineName.LIBREOFFICE,
+                        artifact=artifact_type,
+                    )
                     execution = engine.convert_file(
                         request.source_path,
                         staged,
@@ -523,7 +595,11 @@ class ConversionPipeline:
             effective_comment_mode=(request.options.comment_mode if successful else None),
         )
 
-    def _convert_markup(self, request: ConversionRequest) -> ConversionResult:
+    def _convert_markup(
+        self,
+        request: ConversionRequest,
+        progress_callback: ProgressCallback | None,
+    ) -> ConversionResult:
         """Convert HTML or Markdown to validated A4 PDF or DOCX artifacts."""
         started = perf_counter()
         supported = {ArtifactType.PDF, ArtifactType.DOCX}
@@ -579,6 +655,12 @@ class ConversionPipeline:
                     continue
                 staged = workspace / f"output{suffix}"
                 try:
+                    self._report(
+                        progress_callback,
+                        "rendering",
+                        f"Creating {artifact_type.value} artifact",
+                        artifact=artifact_type,
+                    )
                     converter.convert(
                         request.source_path,
                         staged,
@@ -637,7 +719,11 @@ class ConversionPipeline:
             duration_seconds=perf_counter() - started,
         )
 
-    def _convert_artifacts(self, request: ConversionRequest) -> ConversionResult:
+    def _convert_artifacts(
+        self,
+        request: ConversionRequest,
+        progress_callback: ProgressCallback | None,
+    ) -> ConversionResult:
         """Produce independent semantic and raster artifacts with partial-failure reporting."""
         started = perf_counter()
         results: dict[ArtifactType, ArtifactResult] = {}
@@ -657,21 +743,37 @@ class ConversionPipeline:
         content_types = tuple(
             artifact
             for artifact in request.artifacts
-            if artifact in {ArtifactType.MARKDOWN, ArtifactType.HTML}
+            if artifact
+            in {
+                ArtifactType.MARKDOWN,
+                ArtifactType.HTML,
+                ArtifactType.YAML,
+                ArtifactType.JSON,
+            }
         )
         if content_types:
             try:
+                self._report(progress_callback, "content-extraction", "Extracting semantic content")
                 content = (
                     extract_docx_content(
                         request.source_path,
                         revision_mode=request.options.revision_mode,
                         comment_mode=request.options.comment_mode,
                         include_annotation_metadata=(request.options.include_annotation_metadata),
+                        metadata_detail=request.options.metadata_detail,
                     )
                     if request.source_format is SourceFormat.DOCX
-                    else extract_pdf_content(request.source_path)
+                    else extract_pdf_content(
+                        request.source_path,
+                        metadata_detail=request.options.metadata_detail,
+                    )
                 )
                 stem = _output_stem(request)
+                self._report(
+                    progress_callback,
+                    "serialization",
+                    "Writing semantic artifacts",
+                )
                 written = write_content_artifacts(
                     content,
                     stem,
@@ -698,11 +800,12 @@ class ConversionPipeline:
                     path = written.annotation_sidecar
                     shared_items.append(ArtifactItem(path, path.stat().st_size, "application/json"))
                 for artifact_type, path in written.artifacts:
-                    media_type = (
-                        "text/markdown; charset=utf-8"
-                        if artifact_type is ArtifactType.MARKDOWN
-                        else "text/html; charset=utf-8"
-                    )
+                    media_type = {
+                        ArtifactType.MARKDOWN: "text/markdown; charset=utf-8",
+                        ArtifactType.HTML: "text/html; charset=utf-8",
+                        ArtifactType.YAML: "application/yaml; charset=utf-8",
+                        ArtifactType.JSON: "application/json; charset=utf-8",
+                    }[artifact_type]
                     item = ArtifactItem(path, path.stat().st_size, media_type)
                     results[artifact_type] = ArtifactResult(
                         artifact_type,
@@ -745,7 +848,10 @@ class ConversionPipeline:
                             overwrite=True,
                         ),
                     )
-                    pdf_result = self.convert(pdf_request)
+                    pdf_result = self.convert(
+                        pdf_request,
+                        progress_callback=progress_callback,
+                    )
                     selected_engine = pdf_result.selected_engine
                     attempted_engines = pdf_result.attempted_engines
                     fallback_reason = pdf_result.fallback_reason
@@ -819,6 +925,12 @@ class ConversionPipeline:
                             )
                         )
                         try:
+                            self._report(
+                                progress_callback,
+                                "rasterization",
+                                "Rendering PDF pages as images",
+                                artifact=ArtifactType.PAGE_IMAGES,
+                            )
                             images = self._rasterizer.rasterize(
                                 pdf_source,
                                 directory,
