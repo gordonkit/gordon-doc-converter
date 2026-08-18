@@ -55,6 +55,7 @@ class ContentBlock:
     kind: BlockKind
     inlines: tuple[InlineSpan, ...] = ()
     level: int | None = None
+    list_level: int | None = None
     rows: tuple[tuple[tuple[InlineSpan, ...], ...], ...] = ()
     page_number: int | None = None
 

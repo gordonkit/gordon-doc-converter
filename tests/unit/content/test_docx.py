@@ -69,6 +69,8 @@ def _write_structured_docx(path: Path) -> None:
 <w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>範圍</w:t></w:r></w:p>
 <w:tbl><w:tr><w:tc><w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>表格項目</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
 <w:p><w:pPr><w:pStyle w:val="section"/><w:numPr><w:numId w:val="0"/></w:numPr></w:pPr><w:r><w:t>沿用樣式的正文</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="section"/><w:numPr><w:numId w:val="0"/></w:numPr><w:ind w:left="1600"/></w:pPr><w:r><w:t>(1)手動第一層</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="section"/><w:numPr><w:numId w:val="0"/></w:numPr><w:ind w:left="1700"/></w:pPr><w:r><w:t>A.手動第二層</w:t></w:r></w:p>
 </w:body></w:document>"""
     with ZipFile(path, "w", ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
@@ -196,14 +198,19 @@ def test_content_controls_custom_heading_styles_and_chinese_numbering(tmp_path: 
         BlockKind.HEADING,
         BlockKind.TABLE,
         BlockKind.PARAGRAPH,
+        BlockKind.LIST_ITEM,
+        BlockKind.LIST_ITEM,
     ]
-    assert [block.level for block in content.blocks] == [None, 1, 2, None, None]
+    assert [block.level for block in content.blocks] == [None, 1, 2, None, None, None, None]
+    assert [block.list_level for block in content.blocks] == [None, None, None, None, None, 0, 1]
     assert [block.text for block in content.blocks] == [
         "封面內容",
         "第壹章 總則",
         "一、 範圍",
         "",
         "沿用樣式的正文",
+        "(1)手動第一層",
+        "A.手動第二層",
     ]
     assert content.blocks[3].rows[0][0][0].text == "二、 "
     assert content.blocks[3].rows[0][0][1].text == "表格項目"

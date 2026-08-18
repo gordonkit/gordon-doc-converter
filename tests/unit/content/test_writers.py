@@ -32,7 +32,7 @@ def _content() -> NormalizedContent:
         blocks=(
             ContentBlock(
                 BlockKind.HEADING,
-                (InlineSpan(InlineKind.TEXT, "臺灣 <安全>"),),
+                (InlineSpan(InlineKind.TEXT, "臺灣 <安全>："),),
                 level=2,
             ),
             ContentBlock(
@@ -58,12 +58,28 @@ def _content() -> NormalizedContent:
                 ),
             ),
             ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "(1) 第一層"),),
+                list_level=3,
+            ),
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "第一層說明"),),
+                list_level=3,
+            ),
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "A. 第二層"),),
+                list_level=4,
+            ),
+            ContentBlock(
                 BlockKind.TABLE,
                 rows=(
                     ((InlineSpan(InlineKind.TEXT, "欄位"),),),
-                    ((InlineSpan(InlineKind.TEXT, "值|內容"),),),
+                    ((InlineSpan(InlineKind.TEXT, "值|內容\n第二行"),),),
                 ),
             ),
+            ContentBlock(BlockKind.PARAGRAPH),
         ),
         assets=(
             ContentAsset(
@@ -91,25 +107,53 @@ def test_markdown_is_deterministic_and_preserves_supported_semantics() -> None:
     second = render_markdown(content, asset_directory="文件.assets")
 
     assert first == second
-    assert "## 臺灣 <安全>" in first
+    assert "## 臺灣 <安全>\n" in first
+    assert "## 臺灣 <安全>：" not in first
     assert "<ins>新增</ins><del>刪除</del>危險連結" in first
     assert "javascript:" not in first
     assert "![插圖](文件.assets/asset-0001.png)" in first
     assert "[^comment-0001]" in first
-    assert "值\\|內容" in first
+    assert "值\\|內容<br>第二行" in first
+    assert "\n\n\n" not in first
+    assert "- (1) 第一層\n\n  第一層說明\n\n  - A\\. 第二層" in first
     assert first.endswith("\n")
 
 
 def test_html_escapes_content_and_never_emits_active_source_values() -> None:
     rendered = render_html(_content(), asset_directory="文件.assets")
 
-    assert "<h2>臺灣 &lt;安全&gt;</h2>" in rendered
+    assert "<h2>臺灣 &lt;安全&gt;：</h2>" in rendered
     assert "<ins>新增</ins><del>刪除</del>危險連結" in rendered
     assert "javascript:" not in rendered
     assert "<script" not in rendered.casefold()
     assert "onerror=" not in rendered.casefold()
     assert 'src="文件.assets/asset-0001.png"' in rendered
     assert "<table>" in rendered
+    assert (
+        "<ul>\n<li>(1) 第一層\n<p>第一層說明</p>\n<ul>\n<li>A. 第二層\n</li>\n</ul>\n</li>\n</ul>"
+    ) in rendered
+
+
+def test_markdown_normalizes_skipped_word_list_levels_and_tabs() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "(1) 第一層"),),
+                list_level=1,
+            ),
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "2. 跳層\t項目"),),
+                list_level=3,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="assets")
+
+    assert rendered == "- (1) 第一層\n  - 2\\. 跳層   項目\n"
 
 
 def test_writer_reuses_one_asset_manifest_and_writes_annotation_sidecar(tmp_path: Path) -> None:

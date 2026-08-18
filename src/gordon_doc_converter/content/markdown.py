@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlsplit
 
 from gordon_doc_converter.content.models import (
@@ -23,7 +24,7 @@ def _safe_target(target: str | None) -> str | None:
 
 
 def _escape_text(value: str) -> str:
-    escaped = value.replace("\\", "\\\\")
+    escaped = value.expandtabs(4).replace("\\", "\\\\")
     for character in ("*", "_", "`", "[", "]"):
         escaped = escaped.replace(character, f"\\{character}")
     return escaped
@@ -37,7 +38,10 @@ def _render_span(span: InlineSpan, asset_directory: str) -> str:
         return f"<del>{text}</del>"
     if span.kind is InlineKind.LINK:
         target = _safe_target(span.target)
-        return f"[{text}]({target})" if target is not None else text
+        link_text = text.strip()
+        if not link_text:
+            return ""
+        return f"[{link_text}]({target})" if target is not None else link_text
     if span.kind is InlineKind.IMAGE and span.asset_id is not None:
         return f"![{text or 'image'}]({asset_directory}/{span.asset_id})"
     if span.kind is InlineKind.COMMENT_REFERENCE and span.annotation_id is not None:
@@ -55,7 +59,14 @@ def _render_table(block: ContentBlock, asset_directory: str) -> list[str]:
     width = max(len(row) for row in block.rows)
     rows = [
         [
-            _render_inlines(cell, asset_directory).replace("|", "\\|")
+            "<br>".join(
+                line.strip()
+                for line in _render_inlines(cell, asset_directory)
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+                .split("\n")
+                if line.strip()
+            ).replace("|", "\\|")
             for cell in row + ((),) * (width - len(row))
         ]
         for row in block.rows
@@ -69,19 +80,57 @@ def _render_table(block: ContentBlock, asset_directory: str) -> list[str]:
 def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
     """Serialize normalized blocks into deterministic UTF-8-ready Markdown text."""
     lines: list[str] = []
-    for block in content.blocks:
+    list_levels: list[int] = []
+    for index, block in enumerate(content.blocks):
+        list_continuation = block.kind is BlockKind.PARAGRAPH and block.list_level is not None
+        if block.kind is not BlockKind.LIST_ITEM and not list_continuation:
+            list_levels.clear()
         if block.kind is BlockKind.TABLE:
             lines.extend(_render_table(block, asset_directory))
         else:
             text = _render_inlines(block.inlines, asset_directory)
+            if not text.strip():
+                continue
             if block.kind is BlockKind.HEADING:
                 level = min(max(block.level or 1, 1), 6)
-                lines.append(f"{'#' * level} {text}")
+                heading = " ".join(text.split()).rstrip(".,;:!。，；：！？ ")
+                lines.append(f"{'#' * level} {heading}")
             elif block.kind is BlockKind.LIST_ITEM:
-                lines.append(f"- {text}")
+                level = block.list_level or 0
+                while list_levels and level < list_levels[-1]:
+                    list_levels.pop()
+                if not list_levels or level > list_levels[-1]:
+                    list_levels.append(level)
+                depth = len(list_levels) - 1
+                text = re.sub(r"^([0-9A-Za-z]+)\.", r"\1\\.", text)
+                lines.append(f"{'  ' * depth}- {text}")
             else:
-                lines.append(text)
-        lines.append("")
+                depth = 0
+                if block.list_level is not None and list_levels:
+                    depth = max(
+                        next(
+                            (
+                                position
+                                for position, level in enumerate(list_levels)
+                                if level == block.list_level
+                            ),
+                            len(list_levels) - 1,
+                        ),
+                        0,
+                    )
+                indent = "  " * (depth + 1) if block.list_level is not None else ""
+                lines.append("\n".join(f"{indent}{line.rstrip()}" for line in text.splitlines()))
+        next_is_list = (
+            index + 1 < len(content.blocks)
+            and content.blocks[index + 1].kind is BlockKind.LIST_ITEM
+        )
+        if block.kind is not BlockKind.LIST_ITEM or not next_is_list:
+            lines.append("")
     while lines and lines[-1] == "":
         lines.pop()
-    return "\n".join(lines) + ("\n" if lines else "")
+    normalized: list[str] = []
+    for line in lines:
+        stripped = line.rstrip()
+        if stripped or not normalized or normalized[-1] != "":
+            normalized.append(stripped)
+    return "\n".join(normalized) + ("\n" if normalized else "")

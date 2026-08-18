@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
@@ -82,6 +83,7 @@ class _State:
     styles: dict[str, _Style]
     numbering: dict[str, _NumberingDefinition]
     counters: dict[str, list[int]]
+    manual_list_indents: list[tuple[int, int]]
     source_order: int = 0
 
     def annotation(
@@ -519,6 +521,46 @@ def _number_prefix(num_id: str | None, level: int | None, state: _State) -> str:
     return f"{rendered} " if rendered else ""
 
 
+_MANUAL_NUMBER = re.compile(
+    r"^(?:[\(（][0-9一二三四五六七八九十]+[\)）]|[A-Za-z][.)、]|[0-9]+[.)、])"
+)
+
+
+def _manual_list_level(
+    text: str, properties: ElementTree.Element | None, state: _State
+) -> int | None:
+    if not _MANUAL_NUMBER.match(text):
+        return None
+    indentation = properties.find(_q(_W, "ind")) if properties is not None else None
+    left = _integer_attribute(indentation, "left")
+    if left is None:
+        left = _integer_attribute(indentation, "start")
+    if left is None:
+        return None
+    hanging = _integer_attribute(indentation, "hanging") or 0
+    while state.manual_list_indents and left < state.manual_list_indents[-1][0]:
+        state.manual_list_indents.pop()
+    if not state.manual_list_indents or left > state.manual_list_indents[-1][0]:
+        state.manual_list_indents.append((left, hanging))
+    return len(state.manual_list_indents) - 1
+
+
+def _manual_continuation_level(properties: ElementTree.Element | None, state: _State) -> int | None:
+    indentation = properties.find(_q(_W, "ind")) if properties is not None else None
+    left = _integer_attribute(indentation, "left")
+    if left is None:
+        left = _integer_attribute(indentation, "start")
+    if left is None:
+        state.manual_list_indents.clear()
+        return None
+    for level in range(len(state.manual_list_indents) - 1, -1, -1):
+        marker_left, hanging = state.manual_list_indents[level]
+        if left >= marker_left - hanging:
+            return level
+    state.manual_list_indents.clear()
+    return None
+
+
 def _paragraph(element: ElementTree.Element, state: _State) -> ContentBlock:
     properties = element.find(_q(_W, "pPr"))
     style = properties.find(_q(_W, "pStyle")) if properties is not None else None
@@ -563,7 +605,28 @@ def _paragraph(element: ElementTree.Element, state: _State) -> ContentBlock:
     prefix = _number_prefix(num_id, list_level, state)
     if prefix:
         spans.insert(0, InlineSpan(InlineKind.TEXT, prefix))
-    return ContentBlock(kind, tuple(spans), level=heading_level)
+    manual_level = None
+    if kind is BlockKind.PARAGRAPH and numbering_disabled:
+        manual_level = _manual_list_level("".join(span.text for span in spans), properties, state)
+        if manual_level is not None:
+            kind = BlockKind.LIST_ITEM
+    continuation_level = None
+    if kind is BlockKind.PARAGRAPH and manual_level is None and state.manual_list_indents:
+        continuation_level = _manual_continuation_level(properties, state)
+    if heading_level is not None or (num_id is not None and kind is BlockKind.LIST_ITEM):
+        state.manual_list_indents.clear()
+    return ContentBlock(
+        kind,
+        tuple(spans),
+        level=heading_level,
+        list_level=(
+            list_level
+            if kind is BlockKind.LIST_ITEM and num_id is not None
+            else manual_level
+            if manual_level is not None
+            else continuation_level
+        ),
+    )
 
 
 def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
@@ -647,6 +710,7 @@ def extract_docx_content(
             _styles(archive),
             _numbering(archive),
             {},
+            [],
         )
         root = _parse_xml(archive, "word/document.xml")
         body = root.find(_q(_W, "body"))

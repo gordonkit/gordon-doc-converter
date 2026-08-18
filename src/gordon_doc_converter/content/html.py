@@ -47,19 +47,43 @@ def _render_inlines(inlines: tuple[InlineSpan, ...], asset_directory: str) -> st
 def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
     """Serialize normalized blocks to semantic HTML without active content."""
     body: list[str] = []
-    list_open = False
+    list_depth = 0
+    list_base: int | None = None
     for block in content.blocks:
-        if block.kind is not BlockKind.LIST_ITEM and list_open:
-            body.append("</ul>")
-            list_open = False
+        list_continuation = (
+            block.kind is BlockKind.PARAGRAPH and block.list_level is not None and list_depth > 0
+        )
+        if block.kind is not BlockKind.LIST_ITEM and not list_continuation and list_depth:
+            body.append("</li>")
+            while list_depth:
+                body.append("</ul>")
+                list_depth -= 1
+                if list_depth:
+                    body.append("</li>")
+            list_base = None
         if block.kind is BlockKind.HEADING:
             level = min(max(block.level or 1, 1), 6)
             body.append(f"<h{level}>{_render_inlines(block.inlines, asset_directory)}</h{level}>")
         elif block.kind is BlockKind.LIST_ITEM:
-            if not list_open:
+            level = block.list_level or 0
+            if list_base is None:
+                list_base = level
+            target_depth = max(level - list_base, 0) + 1
+            if not list_depth:
                 body.append("<ul>")
-                list_open = True
-            body.append(f"<li>{_render_inlines(block.inlines, asset_directory)}</li>")
+                list_depth = 1
+            elif target_depth == list_depth:
+                body.append("</li>")
+            elif target_depth < list_depth:
+                body.append("</li>")
+                while list_depth > target_depth:
+                    body.append("</ul>")
+                    list_depth -= 1
+                    body.append("</li>")
+            while list_depth < target_depth:
+                body.append("<ul>")
+                list_depth += 1
+            body.append(f"<li>{_render_inlines(block.inlines, asset_directory)}")
         elif block.kind is BlockKind.TABLE:
             body.append("<table>")
             for row_index, row in enumerate(block.rows):
@@ -73,6 +97,11 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
             body.append("</table>")
         else:
             body.append(f"<p>{_render_inlines(block.inlines, asset_directory)}</p>")
-    if list_open:
-        body.append("</ul>")
+    if list_depth:
+        body.append("</li>")
+        while list_depth:
+            body.append("</ul>")
+            list_depth -= 1
+            if list_depth:
+                body.append("</li>")
     return '<!doctype html>\n<html lang="en">\n<body>\n' + "\n".join(body) + "\n</body>\n</html>\n"
