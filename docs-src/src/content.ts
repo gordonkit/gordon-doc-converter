@@ -258,7 +258,7 @@ export const pages: Page[] = [
           en: "The specification describes document conversion, engine discovery, health, readiness, and version endpoints. Protected requests use a Bearer token.",
           "zh-TW": "規格包含文件轉換、引擎探索、存活檢查、就緒檢查與版本端點。受保護的 request 使用 Bearer token。",
         },
-        code: "# Protected: requires Authorization: Bearer <api-key>\nPOST /conversions?engine=libreoffice|gotenberg\nGET  /engines\n\n# Unprotected operational metadata\nGET  /live     # {\"status\": \"ok\"}\nGET  /ready    # 200 ready, 503 not-ready\nGET  /version  # {\"version\": \"0.5.0\"}",
+        code: "# Protected: requires Authorization: Bearer <api-key>\nPOST /conversions?engine=libreoffice|gotenberg\nGET  /engines\n\n# Unprotected operational metadata\nGET  /live     # {\"status\": \"ok\"}\nGET  /ready    # 200 ready, 503 not-ready\nGET  /version  # {\"version\": \"0.5.1\"}",
       },
       {
         id: "api-status-errors",

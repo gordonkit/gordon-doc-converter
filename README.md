@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE)
 [![Development Status: Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md)
 
 [Documentation](https://docs.gordonkit.com/)
 
@@ -122,7 +122,7 @@ GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
 
 Use `gateway-gotenberg` instead to run the API with a separate Gotenberg renderer. Container
 profiles, security notes, and smoke checks are documented in
-[docker/README.md](docker/README.md).
+[container documentation](https://github.com/gordonkit/gordon-doc-converter/blob/main/docker/README.md).
 
 ### HTTP API
 
@@ -208,11 +208,12 @@ English/Traditional Chinese navigation, search, responsive layouts, and a light/
 The generated API contract is available at `docs/openapi.json`, and the read-only Swagger UI
 is available at `docs/swagger/index.html`. Run `npm run openapi:check` to detect a stale export.
 
-Browse the [documentation index](docs/index.html) for the technical reference, user guide,
+Browse the [documentation index](https://docs.gordonkit.com/) for the technical reference, user guide,
 compatibility notes, and development standards. Use its language control for Traditional
-Chinese, or see [README.zh-TW.md](README.zh-TW.md).
+Chinese, or see the [Traditional Chinese README](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md).
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
-[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).
+Apache License 2.0. See [LICENSE](https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE),
+[NOTICE](https://github.com/gordonkit/gordon-doc-converter/blob/main/NOTICE), and
+[THIRD_PARTY_NOTICES.txt](https://github.com/gordonkit/gordon-doc-converter/blob/main/THIRD_PARTY_NOTICES.txt).

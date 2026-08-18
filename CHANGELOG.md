@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-18
+
+### Fixed
+
+- Use absolute GitHub and documentation URLs in the package README so links work on PyPI.
+
 ## [0.5.0] - 2026-08-18
 
 ### Added
