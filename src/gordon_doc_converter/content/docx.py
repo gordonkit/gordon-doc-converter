@@ -31,6 +31,7 @@ _W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 _A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 _PR = "http://schemas.openxmlformats.org/package/2006/relationships"
+_MC = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 
 
 def _q(namespace: str, name: str) -> str:
@@ -41,6 +42,28 @@ def _q(namespace: str, name: str) -> str:
 class _Relationship:
     target: str
     external: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _Style:
+    name: str
+    based_on: str | None
+    outline_level: int | None
+    num_id: str | None
+    list_level: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class _NumberLevel:
+    start: int
+    number_format: str
+    level_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class _NumberingDefinition:
+    abstract_id: str
+    levels: dict[int, _NumberLevel]
 
 
 @dataclass(slots=True)
@@ -56,6 +79,9 @@ class _State:
     asset_by_part: dict[str, ContentAsset]
     comments: dict[str, ElementTree.Element]
     emitted_comments: set[str]
+    styles: dict[str, _Style]
+    numbering: dict[str, _NumberingDefinition]
+    counters: dict[str, list[int]]
     source_order: int = 0
 
     def annotation(
@@ -102,6 +128,92 @@ def _relationships(archive: ZipFile) -> dict[str, _Relationship]:
         for element in root.findall(_q(_PR, "Relationship"))
         if element.get("Id")
     }
+
+
+def _integer_attribute(element: ElementTree.Element | None, name: str) -> int | None:
+    if element is None:
+        return None
+    value = element.get(_q(_W, name))
+    return int(value) if value is not None and value.isdigit() else None
+
+
+def _styles(archive: ZipFile) -> dict[str, _Style]:
+    if "word/styles.xml" not in archive.namelist():
+        return {}
+    root = _parse_xml(archive, "word/styles.xml")
+    styles: dict[str, _Style] = {}
+    for element in root.findall(_q(_W, "style")):
+        style_id = element.get(_q(_W, "styleId"))
+        if not style_id:
+            continue
+        properties = element.find(_q(_W, "pPr"))
+        num_properties = properties.find(_q(_W, "numPr")) if properties is not None else None
+        name = element.find(_q(_W, "name"))
+        based_on = element.find(_q(_W, "basedOn"))
+        num_id = num_properties.find(_q(_W, "numId")) if num_properties is not None else None
+        styles[style_id] = _Style(
+            name.get(_q(_W, "val"), "") if name is not None else "",
+            based_on.get(_q(_W, "val")) if based_on is not None else None,
+            _integer_attribute(
+                properties.find(_q(_W, "outlineLvl")) if properties is not None else None,
+                "val",
+            ),
+            num_id.get(_q(_W, "val")) if num_id is not None else None,
+            _integer_attribute(
+                num_properties.find(_q(_W, "ilvl")) if num_properties is not None else None,
+                "val",
+            ),
+        )
+    return styles
+
+
+def _number_level(element: ElementTree.Element) -> _NumberLevel:
+    start = _integer_attribute(element.find(_q(_W, "start")), "val") or 1
+    number_format = element.find(_q(_W, "numFmt"))
+    level_text = element.find(_q(_W, "lvlText"))
+    return _NumberLevel(
+        start,
+        number_format.get(_q(_W, "val"), "decimal") if number_format is not None else "decimal",
+        level_text.get(_q(_W, "val"), "") if level_text is not None else "",
+    )
+
+
+def _numbering(archive: ZipFile) -> dict[str, _NumberingDefinition]:
+    if "word/numbering.xml" not in archive.namelist():
+        return {}
+    root = _parse_xml(archive, "word/numbering.xml")
+    abstract: dict[str, dict[int, _NumberLevel]] = {}
+    for definition in root.findall(_q(_W, "abstractNum")):
+        identifier = definition.get(_q(_W, "abstractNumId"))
+        if identifier:
+            abstract[identifier] = {
+                level: _number_level(element)
+                for element in definition.findall(_q(_W, "lvl"))
+                if (level := _integer_attribute(element, "ilvl")) is not None
+            }
+    numbering: dict[str, _NumberingDefinition] = {}
+    for instance in root.findall(_q(_W, "num")):
+        num_id = instance.get(_q(_W, "numId"))
+        abstract_id = instance.find(_q(_W, "abstractNumId"))
+        if not num_id or abstract_id is None:
+            continue
+        abstract_value = abstract_id.get(_q(_W, "val"), "")
+        levels = dict(abstract.get(abstract_value, {}))
+        for override in instance.findall(_q(_W, "lvlOverride")):
+            level = _integer_attribute(override, "ilvl")
+            if level is None:
+                continue
+            replacement = override.find(_q(_W, "lvl"))
+            if replacement is not None:
+                levels[level] = _number_level(replacement)
+            start_override = _integer_attribute(override.find(_q(_W, "startOverride")), "val")
+            if start_override is not None and level in levels:
+                current = levels[level]
+                levels[level] = _NumberLevel(
+                    start_override, current.number_format, current.level_text
+                )
+        numbering[num_id] = _NumberingDefinition(abstract_value, levels)
+    return numbering
 
 
 def _media_type(filename: str) -> str:
@@ -158,17 +270,25 @@ def _comment_reference_span(element: ElementTree.Element, state: _State) -> Inli
     return InlineSpan(InlineKind.COMMENT_REFERENCE, annotation_id=identifier)
 
 
-def _run_spans(element: ElementTree.Element, state: _State) -> list[InlineSpan]:
-    spans: list[InlineSpan] = []
+def _run_text(element: ElementTree.Element) -> str:
     text_parts: list[str] = []
-    for child in element.iter():
+    for child in element:
+        if child.tag == _q(_W, "txbxContent"):
+            continue
         if child.tag in {_q(_W, "t"), _q(_W, "delText")}:
             text_parts.append(child.text or "")
         elif child.tag == _q(_W, "tab"):
             text_parts.append("\t")
         elif child.tag == _q(_W, "br"):
             text_parts.append("\n")
-    text = "".join(text_parts)
+        else:
+            text_parts.append(_run_text(child))
+    return "".join(text_parts)
+
+
+def _run_spans(element: ElementTree.Element, state: _State) -> list[InlineSpan]:
+    spans: list[InlineSpan] = []
+    text = _run_text(element)
     if text:
         spans.append(InlineSpan(InlineKind.TEXT, text))
     for drawing in element.iter(_q(_A, "blip")):
@@ -269,22 +389,181 @@ def _warn_about_revision_anchors(state: _State) -> None:
         )
 
 
+def _resolved_style(style_id: str, state: _State) -> _Style | None:
+    chain: list[_Style] = []
+    seen: set[str] = set()
+    while style_id and style_id not in seen:
+        seen.add(style_id)
+        style = state.styles.get(style_id)
+        if style is None:
+            break
+        chain.append(style)
+        style_id = style.based_on or ""
+    if not chain:
+        return None
+    return _Style(
+        next((item.name for item in chain if item.name), ""),
+        None,
+        next((item.outline_level for item in chain if item.outline_level is not None), None),
+        next((item.num_id for item in chain if item.num_id is not None), None),
+        next((item.list_level for item in chain if item.list_level is not None), None),
+    )
+
+
+def _heading_level(style_id: str, style: _Style | None) -> int | None:
+    if style is not None and style.outline_level is not None and style.outline_level < 6:
+        return style.outline_level + 1
+    names = {style_id.casefold().replace(" ", "")}
+    if style is not None:
+        names.add(style.name.casefold().replace(" ", ""))
+    for name in names:
+        if name.startswith("heading") and name[7:].isdigit():
+            return min(max(int(name[7:]), 1), 6)
+        if name.startswith("標題") and name[2:].isdigit():
+            return min(max(int(name[2:]), 1), 6)
+    chinese_levels = {"章名": 1, "節名": 2, "小節": 3, "小小節": 4}
+    return next((chinese_levels[name] for name in names if name in chinese_levels), None)
+
+
+def _traditional_number(value: int, *, financial: bool = False) -> str:
+    digits = "零壹貳參肆伍陸柒捌玖" if financial else "零一二三四五六七八九"
+    units = ("", "拾", "佰", "仟") if financial else ("", "十", "百", "千")
+    if value <= 0 or value >= 10000:
+        return str(value)
+    result = ""
+    pending_zero = False
+    for position in range(3, -1, -1):
+        divisor = 10**position
+        digit, value = divmod(value, divisor)
+        if digit:
+            if pending_zero and result:
+                result += digits[0]
+            if not (digit == 1 and position == 1 and not result and not financial):
+                result += digits[digit]
+            result += units[position]
+            pending_zero = False
+        elif result and value:
+            pending_zero = True
+    return result
+
+
+def _format_number(value: int, number_format: str) -> str:
+    if number_format in {"ideographTraditional", "taiwaneseCountingThousand"}:
+        return _traditional_number(value)
+    if number_format == "ideographLegalTraditional":
+        return _traditional_number(value, financial=True)
+    if number_format == "lowerLetter":
+        return chr(ord("a") + (value - 1) % 26)
+    if number_format == "upperLetter":
+        return chr(ord("A") + (value - 1) % 26)
+    if number_format in {"lowerRoman", "upperRoman"}:
+        parts: list[str] = []
+        remainder = value
+        for amount, token in (
+            (1000, "M"),
+            (900, "CM"),
+            (500, "D"),
+            (400, "CD"),
+            (100, "C"),
+            (90, "XC"),
+            (50, "L"),
+            (40, "XL"),
+            (10, "X"),
+            (9, "IX"),
+            (5, "V"),
+            (4, "IV"),
+            (1, "I"),
+        ):
+            while remainder >= amount:
+                parts.append(token)
+                remainder -= amount
+        rendered = "".join(parts)
+        return rendered.lower() if number_format == "lowerRoman" else rendered
+    return str(value)
+
+
+def _number_prefix(num_id: str | None, level: int | None, state: _State) -> str:
+    if num_id is None:
+        return ""
+    numbering = state.numbering.get(num_id)
+    if numbering is None:
+        return ""
+    levels = numbering.levels
+    list_level = level or 0
+    definition = levels.get(list_level)
+    if definition is None:
+        return ""
+    counters = state.counters.setdefault(num_id, [0] * 9)
+    counters[list_level] = counters[list_level] + 1 if counters[list_level] else definition.start
+    for sibling_id, sibling_counters in state.counters.items():
+        sibling = state.numbering.get(sibling_id)
+        if sibling is None or sibling.abstract_id != numbering.abstract_id:
+            continue
+        for deeper in range(list_level + 1, len(sibling_counters)):
+            sibling_counters[deeper] = 0
+    if definition.number_format == "bullet":
+        return f"{definition.level_text} "
+    rendered = definition.level_text
+    for referenced_level in range(9):
+        placeholder = f"%{referenced_level + 1}"
+        if placeholder not in rendered:
+            continue
+        referenced = levels.get(referenced_level)
+        value = counters[referenced_level]
+        replacement = (
+            _format_number(value, referenced.number_format)
+            if referenced is not None and value
+            else ""
+        )
+        rendered = rendered.replace(placeholder, replacement)
+    return f"{rendered} " if rendered else ""
+
+
 def _paragraph(element: ElementTree.Element, state: _State) -> ContentBlock:
     properties = element.find(_q(_W, "pPr"))
     style = properties.find(_q(_W, "pStyle")) if properties is not None else None
     style_value = style.get(_q(_W, "val"), "") if style is not None else ""
-    heading_level: int | None = None
-    normalized_style = style_value.casefold().replace(" ", "")
-    if normalized_style.startswith("heading") and normalized_style[7:].isdigit():
-        heading_level = min(max(int(normalized_style[7:]), 1), 6)
+    style_definition = _resolved_style(style_value, state)
+    heading_level = _heading_level(style_value, style_definition)
     numbering = properties.find(_q(_W, "numPr")) if properties is not None else None
+    num_id_element = numbering.find(_q(_W, "numId")) if numbering is not None else None
+    level_element = numbering.find(_q(_W, "ilvl")) if numbering is not None else None
+    num_id = (
+        num_id_element.get(_q(_W, "val"))
+        if num_id_element is not None
+        else style_definition.num_id
+        if style_definition is not None
+        else None
+    )
+    numbering_disabled = num_id_element is not None and num_id == "0"
+    if numbering_disabled:
+        num_id = None
+    list_level = (
+        _integer_attribute(level_element, "val")
+        if level_element is not None
+        else style_definition.list_level
+        if style_definition is not None
+        else None
+    )
+    custom_heading_names = {"章名", "節名", "小節", "小小節"}
+    if (
+        heading_level is not None
+        and style_definition is not None
+        and style_definition.name in custom_heading_names
+        and numbering_disabled
+    ):
+        heading_level = None
     if heading_level is not None:
         kind = BlockKind.HEADING
-    elif numbering is not None:
+    elif num_id is not None:
         kind = BlockKind.LIST_ITEM
     else:
         kind = BlockKind.PARAGRAPH
-    return ContentBlock(kind, tuple(_inline_children(element, state)), level=heading_level)
+    spans = _inline_children(element, state)
+    prefix = _number_prefix(num_id, list_level, state)
+    if prefix:
+        spans.insert(0, InlineSpan(InlineKind.TEXT, prefix))
+    return ContentBlock(kind, tuple(spans), level=heading_level)
 
 
 def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
@@ -297,7 +576,7 @@ def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
             for paragraph in cell.findall(_q(_W, "p")):
                 if spans:
                     spans.append(InlineSpan(InlineKind.TEXT, "\n"))
-                spans.extend(_inline_children(paragraph, state))
+                spans.extend(_paragraph(paragraph, state).inlines)
             cells.append(tuple(spans))
         widths.add(len(cells))
         rows.append(tuple(cells))
@@ -309,6 +588,38 @@ def _table(element: ElementTree.Element, state: _State) -> ContentBlock:
             )
         )
     return ContentBlock(BlockKind.TABLE, rows=tuple(rows))
+
+
+def _textbox_contents(element: ElementTree.Element) -> list[ElementTree.Element]:
+    contents: list[ElementTree.Element] = []
+    for child in element:
+        if child.tag == _q(_W, "txbxContent"):
+            contents.append(child)
+        elif child.tag == _q(_MC, "AlternateContent"):
+            choice = child.find(_q(_MC, "Choice"))
+            fallback = child.find(_q(_MC, "Fallback"))
+            selected = choice if choice is not None else fallback
+            if selected is not None:
+                contents.extend(_textbox_contents(selected))
+        else:
+            contents.extend(_textbox_contents(child))
+    return contents
+
+
+def _blocks(element: ElementTree.Element, state: _State) -> list[ContentBlock]:
+    blocks: list[ContentBlock] = []
+    for child in element:
+        if child.tag == _q(_W, "p"):
+            for textbox in _textbox_contents(child):
+                blocks.extend(_blocks(textbox, state))
+            paragraph = _paragraph(child, state)
+            if paragraph.inlines:
+                blocks.append(paragraph)
+        elif child.tag == _q(_W, "tbl"):
+            blocks.append(_table(child, state))
+        elif child.tag in {_q(_W, "sdt"), _q(_W, "sdtContent"), _q(_W, "customXml")}:
+            blocks.extend(_blocks(child, state))
+    return blocks
 
 
 def extract_docx_content(
@@ -333,17 +644,15 @@ def extract_docx_content(
             {},
             _load_comments(archive, comment_mode),
             set(),
+            _styles(archive),
+            _numbering(archive),
+            {},
         )
         root = _parse_xml(archive, "word/document.xml")
         body = root.find(_q(_W, "body"))
         if body is None:
             raise InvalidInputError("DOCX document has no body")
-        blocks: list[ContentBlock] = []
-        for child in body:
-            if child.tag == _q(_W, "p"):
-                blocks.append(_paragraph(child, state))
-            elif child.tag == _q(_W, "tbl"):
-                blocks.append(_table(child, state))
+        blocks = _blocks(body, state)
         _warn_about_comment_anchors(state)
         _warn_about_revision_anchors(state)
         if any(name.startswith(("word/header", "word/footer")) for name in archive.namelist()):

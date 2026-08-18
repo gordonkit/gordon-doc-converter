@@ -36,6 +36,19 @@ _DOCUMENT = """<w:document
 _COMMENTS = """<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 <w:comment w:id="7" w:author="作者" w:date="2026-02-03"><w:p><w:r><w:t>註解內容</w:t></w:r></w:p></w:comment>
 </w:comments>"""
+_STYLES = """<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:style w:type="paragraph" w:styleId="chapter"><w:name w:val="章名"/><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="8"/></w:numPr></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="section"><w:name w:val="節名"/><w:basedOn w:val="base"/><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="8"/></w:numPr></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="detail"><w:name w:val="小節"/><w:pPr><w:numPr><w:ilvl w:val="2"/><w:numId w:val="9"/></w:numPr></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="base"><w:name w:val="基底"/></w:style>
+</w:styles>"""
+_NUMBERING = """<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum w:abstractNumId="4">
+<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="ideographLegalTraditional"/><w:lvlText w:val="第%1章"/></w:lvl>
+<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="ideographTraditional"/><w:lvlText w:val="%2、"/></w:lvl>
+<w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%3."/></w:lvl>
+</w:abstractNum><w:num w:numId="8"><w:abstractNumId w:val="4"/></w:num><w:num w:numId="9"><w:abstractNumId w:val="4"/></w:num>
+</w:numbering>"""
 
 
 def _write_docx(path: Path) -> None:
@@ -47,6 +60,51 @@ def _write_docx(path: Path) -> None:
         archive.writestr("word/comments.xml", _COMMENTS)
         archive.writestr("word/media/image.png", b"public-image-data")
         archive.writestr("word/header1.xml", b"<header/>")
+
+
+def _write_structured_docx(path: Path) -> None:
+    document = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:sdt><w:sdtContent><w:p><w:r><w:t>封面內容</w:t></w:r></w:p></w:sdtContent></w:sdt>
+<w:p><w:pPr><w:pStyle w:val="chapter"/></w:pPr><w:r><w:t>總則</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>範圍</w:t></w:r></w:p>
+<w:tbl><w:tr><w:tc><w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>表格項目</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+<w:p><w:pPr><w:pStyle w:val="section"/><w:numPr><w:numId w:val="0"/></w:numPr></w:pPr><w:r><w:t>沿用樣式的正文</w:t></w:r></w:p>
+</w:body></w:document>"""
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", document)
+        archive.writestr("word/styles.xml", _STYLES)
+        archive.writestr("word/numbering.xml", _NUMBERING)
+
+
+def _write_textbox_docx(path: Path) -> None:
+    document = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><w:body>
+<w:p><w:r><mc:AlternateContent>
+<mc:Choice Requires="wps"><w:txbxContent><w:p><w:r><w:t>目錄</w:t></w:r></w:p></w:txbxContent></mc:Choice>
+<mc:Fallback><w:txbxContent><w:p><w:r><w:t>目錄</w:t></w:r></w:p></w:txbxContent></mc:Fallback>
+</mc:AlternateContent></w:r><w:r><w:t>壹、基金概況</w:t><w:tab/><w:t>1</w:t></w:r></w:p>
+</w:body></w:document>"""
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", document)
+
+
+def _write_restart_docx(path: Path) -> None:
+    document = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>第一節</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="detail"/></w:pPr><w:r><w:t>甲</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="detail"/></w:pPr><w:r><w:t>乙</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>第二節</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="detail"/></w:pPr><w:r><w:t>丙</w:t></w:r></w:p>
+</w:body></w:document>"""
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", document)
+        archive.writestr("word/styles.xml", _STYLES)
+        archive.writestr("word/numbering.xml", _NUMBERING)
 
 
 def test_extract_docx_preserves_semantic_blocks_links_images_and_source(tmp_path: Path) -> None:
@@ -124,3 +182,52 @@ def test_comments_and_metadata_are_opt_in(tmp_path: Path) -> None:
     assert with_metadata.annotations[0].author == "作者"
     assert with_metadata.annotations[0].timestamp == "2026-02-03"
     assert "INEXACT_COMMENT_ANCHOR" in {warning.code for warning in retained.warnings}
+
+
+def test_content_controls_custom_heading_styles_and_chinese_numbering(tmp_path: Path) -> None:
+    source = tmp_path / "structured.docx"
+    _write_structured_docx(source)
+
+    content = extract_docx_content(source)
+
+    assert [block.kind for block in content.blocks] == [
+        BlockKind.PARAGRAPH,
+        BlockKind.HEADING,
+        BlockKind.HEADING,
+        BlockKind.TABLE,
+        BlockKind.PARAGRAPH,
+    ]
+    assert [block.level for block in content.blocks] == [None, 1, 2, None, None]
+    assert [block.text for block in content.blocks] == [
+        "封面內容",
+        "第壹章 總則",
+        "一、 範圍",
+        "",
+        "沿用樣式的正文",
+    ]
+    assert content.blocks[3].rows[0][0][0].text == "二、 "
+    assert content.blocks[3].rows[0][0][1].text == "表格項目"
+
+
+def test_textbox_compatibility_fallback_is_not_duplicated_or_merged(tmp_path: Path) -> None:
+    source = tmp_path / "textbox.docx"
+    _write_textbox_docx(source)
+
+    content = extract_docx_content(source)
+
+    assert [block.text for block in content.blocks] == ["目錄", "壹、基金概況\t1"]
+
+
+def test_parent_restarts_child_numbering_across_num_instances(tmp_path: Path) -> None:
+    source = tmp_path / "restart.docx"
+    _write_restart_docx(source)
+
+    content = extract_docx_content(source)
+
+    assert [block.text for block in content.blocks] == [
+        "一、 第一節",
+        "1. 甲",
+        "2. 乙",
+        "二、 第二節",
+        "1. 丙",
+    ]
