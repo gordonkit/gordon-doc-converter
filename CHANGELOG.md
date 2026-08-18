@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-18
+
+### Added
+
+- DOCX semantic extraction for content controls, custom heading styles, Word numbering,
+  Traditional Chinese numbering formats, text boxes, and nested list depth.
+- Markdown and HTML nested-list serialization with continuation paragraphs.
+
+### Changed
+
+- Markdown output now normalizes Word list levels and generated tables for markdownlint.
+- Runtime container builds apply available Debian security updates before installing
+  profile packages.
+
+### Fixed
+
+- Restore content omitted from DOCX content controls and avoid duplicate compatibility
+  representations from text boxes.
+- Preserve numbering in table cells and restart child numbering across related Word
+  numbering instances.
+
 ## [0.4.0] - 2026-08-14
 
 ### Added
