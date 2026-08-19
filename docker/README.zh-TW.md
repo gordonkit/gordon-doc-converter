@@ -13,7 +13,7 @@
 
 - `<namespace>/gordon-doc-converter`
 
-例如 `v0.5.1` 會發布 `0.5.1`、`0.5` 與 `latest` 三個 image tag。目前映像目標平台為
+例如 `v0.6.0` 會發布 `0.6.0`、`0.6` 與 `latest` 三個 image tag。目前映像目標平台為
 `linux/amd64`。
 
 映像 entrypoint 預設執行 CLI；第一個參數傳入 `api` 則會啟動 HTTP API：
@@ -140,8 +140,8 @@ DOCX-to-PDF 轉換。通過後才發布 Python distribution，並以 Buildx 推�
 與 build provenance 的映像：
 
 ```console
-git tag -s v0.5.1 -m "Release v0.5.1"
-git push origin v0.5.1
+git tag -s v0.6.0 -m "Release v0.6.0"
+git push origin v0.6.0
 ```
 
 Tag 必須與 `pyproject.toml` 的版本一致。PyPI 與 Docker Hub 是獨立 registry，因此 Python

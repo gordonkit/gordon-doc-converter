@@ -13,7 +13,7 @@ Tagged releases publish one Docker Hub repository:
 
 - `<namespace>/gordon-doc-converter`
 
-A release tag such as `v0.5.1` publishes the image tags `0.5.1`, `0.5`, and `latest` for
+A release tag such as `v0.6.0` publishes the image tags `0.6.0`, `0.6`, and `latest` for
 that repository. The image currently targets `linux/amd64`.
 
 The image entrypoint runs the CLI by default. Pass `api` as the first argument to start the
@@ -143,8 +143,8 @@ LibreOffice and gateway-plus-Gotenberg Compose profiles. It then publishes the P
 distribution and pushes the image with Buildx, SBOM attestations, and build provenance:
 
 ```console
-git tag -s v0.5.1 -m "Release v0.5.1"
-git push origin v0.5.1
+git tag -s v0.6.0 -m "Release v0.6.0"
+git push origin v0.6.0
 ```
 
 The tag must match the version in `pyproject.toml`. PyPI and Docker Hub are independent
