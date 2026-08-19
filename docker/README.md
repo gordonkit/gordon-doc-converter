@@ -30,35 +30,90 @@ The Compose file builds `gordonkit/gordon-doc-converter:local` from the current 
 Use it for development and validation; use a versioned Docker Hub tag for deployments that
 must be reproducible.
 
-Set a strong `GORDON_DOC_API_KEY` before starting an API profile. Conversion requests use
+## CLI profile
+
+The CLI profile does not require an API key. Run this command from the repository root in
+Bash or PowerShell; the current directory is mounted at `/work`:
+
+```console
+docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite
+```
+
+## API profiles
+
+Set a strong `GORDON_DOC_API_KEY` before starting an API profile. Create an untracked `.env`
+file in the repository root so the same Compose commands work in Bash and PowerShell:
+
+```dotenv
+GORDON_DOC_API_KEY=replace-with-a-strong-random-value
+```
+
+The key is created and managed by the deployer; it is not issued by an external service. Do
+not commit `.env`. Conversion requests use
 the DOCX bytes as the request body, the OOXML MIME type as `Content-Type`, and the original
 basename in `X-Filename`. The API performs bounded OOXML validation and accepts injectable
 authentication, malware-scanning, and content-free telemetry hooks. Production ingress must
 also cap request bodies and provide distributed rate limiting when multiple replicas are used.
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-  --profile standalone-lo up --build
-curl --fail http://localhost:8000/live
-curl --fail -H "Authorization: Bearer replace-me" \
-  -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
-  -H "X-Filename: sample.docx" --data-binary @sample.docx \
-  http://localhost:8000/conversions --output converted.pdf
+### Standalone LibreOffice API
+
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --detach --build
 ```
 
-To use Gotenberg, start the gateway profile. Compose attaches the API and Gotenberg services
+Bash:
+
+```bash
+set -a; . ./.env; set +a
+curl --fail http://127.0.0.1:8000/live
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=libreoffice" --output report-api.pdf
+```
+
+PowerShell:
+
+```powershell
+$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/live'
+$headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
+```
+
+### Gotenberg gateway API
+
+Compose attaches the API and Gotenberg services
 to the same `gordon-doc` network, waits for Gotenberg to become healthy, and configures the API
 to call `http://gotenberg:3000`:
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-  --profile gateway-gotenberg up --build
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --detach --build
+```
+
+Bash:
+
+```bash
+set -a; . ./.env; set +a
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=gotenberg" --output report-gb.pdf
+```
+
+PowerShell:
+
+```powershell
+$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
+$headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
 ```
 
 When `GORDON_DOC_GOTENBERG_URL` is configured, the API explicitly defaults to Gotenberg.
 Connection or conversion failure is returned to the caller and does not silently fall back to
 the included LibreOffice engine. Use the `standalone-lo` profile when local rendering is the
 intended policy.
+
+Stop either API profile after testing:
+
+```console
+docker compose -f docker/compose.yaml --profile standalone-lo down
+docker compose -f docker/compose.yaml --profile gateway-gotenberg down
+```
 
 The image runs as a non-root user with a read-only root filesystem and bounded `/tmp` tmpfs.
 Uploaded and generated documents are deleted before each request returns. No Microsoft Office

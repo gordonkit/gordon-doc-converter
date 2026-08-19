@@ -1,6 +1,7 @@
 # Local planning and temporary working files
 .temp/
 /manual-fixtures/
+/.env
 
 # Python virtual environments
 .venv/

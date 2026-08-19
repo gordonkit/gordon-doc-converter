@@ -34,3 +34,19 @@ def test_compose_connects_gateway_and_gotenberg_on_shared_network() -> None:
     assert "GORDON_DOC_GOTENBERG_URL: http://gotenberg:3000" in content
     assert content.count('networks: ["gordon-doc"]') == 4
     assert "name: gordon-doc" in content
+
+
+def test_compose_does_not_require_api_key_for_cli_profile() -> None:
+    content = (_ROOT / "docker/compose.yaml").read_text(encoding="utf-8")
+
+    assert "${GORDON_DOC_API_KEY:?" not in content
+    assert content.count("GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:-}") == 2
+
+
+def test_container_entrypoint_requires_api_key_only_for_api() -> None:
+    content = (_ROOT / "docker/entrypoint.sh").read_text(encoding="utf-8")
+
+    api_branch = content.split('if [ "${1:-}" = "api" ]; then', maxsplit=1)[1]
+    assert '[ -z "${GORDON_DOC_API_KEY:-}" ]' in api_branch
+    assert "exit 64" in api_branch
+    assert 'exec gordon-doc "$@"' in content

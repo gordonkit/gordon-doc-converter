@@ -28,42 +28,86 @@ docker run --rm --publish 8000:8000 \
 Compose 檔案會從目前 source tree 建置 `gordonkit/gordon-doc-converter:local`，適合開發與
 驗證。需要可重現部署時，請使用 Docker Hub 的明確版本 tag。
 
+## CLI Profile
+
+CLI profile 不需要 API 金鑰。請在 repository 根目錄透過 Bash 或 PowerShell 執行；目前
+目錄會掛載至 `/work`：
+
+```console
+docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite
+```
+
 ## API Profiles
 
-啟動 API profile 前，請設定高強度 `GORDON_DOC_API_KEY`。轉換 request body 為 DOCX bytes，
+啟動 API profile 前，請設定高強度 `GORDON_DOC_API_KEY`。在 repository 根目錄建立不納入
+版本控制的 `.env`，即可讓 Bash 與 PowerShell 使用相同的 Compose 指令：
+
+```dotenv
+GORDON_DOC_API_KEY=replace-with-a-strong-random-value
+```
+
+此金鑰由部署者自行產生及管理，並非由外部服務核發；請勿提交 `.env`。轉換 request body
+為 DOCX bytes，
 `Content-Type` 使用 OOXML MIME type，並透過 `X-Filename` 傳入原始 basename。API 會執行有
 資源限制的 OOXML 驗證，並提供可注入的認證、malware scanning 與不含文件內容的 telemetry
 hooks。多 replica 正式環境仍須由 ingress 限制 request body 並提供分散式 rate limiting。
 
-使用內建 LibreOffice：
+### 單體 LibreOffice API
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-  --profile standalone-lo up --build
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --detach --build
 ```
 
-使用 Gotenberg：
+Bash：
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-  --profile gateway-gotenberg up --build
+```bash
+set -a; . ./.env; set +a
+curl --fail http://127.0.0.1:8000/live
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=libreoffice" --output report-api.pdf
 ```
+
+PowerShell：
+
+```powershell
+$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/live'
+$headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
+```
+
+### Gotenberg Gateway API
 
 Compose 會將 API 與 Gotenberg service 加入同一個 `gordon-doc` network，等待 Gotenberg
-健康後再啟動 API，並將 API 設為呼叫 `http://gotenberg:3000`。
+健康後再啟動 API，並將 API 設為呼叫 `http://gotenberg:3000`：
+
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --detach --build
+```
+
+Bash：
+
+```bash
+set -a; . ./.env; set +a
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=gotenberg" --output report-gb.pdf
+```
+
+PowerShell：
+
+```powershell
+$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
+$headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
+```
 
 設定 `GORDON_DOC_GOTENBERG_URL` 後，API 會明確以 Gotenberg 為預設引擎。連線或轉換失敗
 會回傳給呼叫端，不會靜默改用映像內建的 LibreOffice。若政策要求本機排版，請使用
 `standalone-lo` profile。
 
-API 啟動後可執行：
+測試後可停止對應的 API profile：
 
-```sh
-curl --fail http://localhost:8000/live
-curl --fail -H "Authorization: Bearer replace-me" \
-  -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
-  -H "X-Filename: sample.docx" --data-binary @sample.docx \
-  http://localhost:8000/conversions --output converted.pdf
+```console
+docker compose -f docker/compose.yaml --profile standalone-lo down
+docker compose -f docker/compose.yaml --profile gateway-gotenberg down
 ```
 
 映像以非 root 使用者、唯讀 root filesystem 與有限 `/tmp` tmpfs 執行。每個 request 回傳前

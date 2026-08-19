@@ -51,16 +51,16 @@ export const pages: Page[] = [
     title: { en: "Overview", "zh-TW": "總覽" },
     heading: { en: "GordonKit Document Converter", "zh-TW": "GordonKit 文件轉換器" },
     summary: {
-      en: "An open-source project in the GordonKit ecosystem for diagnosable, multi-engine document conversion on Python 3.12+.",
-      "zh-TW": "GordonKit 生態系中的開源專案，為 Python 3.12+ 提供可診斷的多引擎文件轉換能力。",
+      en: "Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API.",
+      "zh-TW": "將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。",
     },
     sections: [
       {
         id: "about-project",
         title: { en: "About this project", "zh-TW": "關於此專案" },
         body: {
-          en: "Document Converter is one project within GordonKit, not the entire GordonKit platform. It provides a stable Python library and CLI contract while delegating document rendering to Microsoft Word, LibreOffice, Gotenberg, or Pandoc. Engine policy, fallback reporting, validation, and publishing remain explicit and observable.",
-          "zh-TW": "Document Converter 是 GordonKit 旗下的一個專案，並不代表完整的 GordonKit 平台。它提供穩定的 Python 函式庫與 CLI 契約，並將文件排版委派給 Microsoft Word、LibreOffice、Gotenberg 或 Pandoc；引擎政策、fallback 報告、驗證與發布流程皆明確且可觀測。",
+          en: "This open-source GordonKit project orchestrates Microsoft Word, LibreOffice, Gotenberg, or Pandoc for document rendering. It keeps engine selection, validation, fallback reporting, and conversion results explicit and diagnosable.",
+          "zh-TW": "此 GordonKit 開源專案負責協調 Microsoft Word、LibreOffice、Gotenberg 或 Pandoc 進行文件排版，並讓引擎選擇、驗證、fallback 報告與轉換結果保持明確且可診斷。",
         },
       },
       {
@@ -110,23 +110,23 @@ export const pages: Page[] = [
         table: {
           caption: { en: "Supported input and output formats", "zh-TW": "支援的輸入與輸出格式" },
           headers: {
-            en: ["Input", "DOCX", "PDF", "HTML", "Markdown", "YAML", "JSON", "ODT", "Images"],
-            "zh-TW": ["輸入", "DOCX", "PDF", "HTML", "Markdown", "YAML", "JSON", "ODT", "頁圖"],
+            en: ["Input", "DOCX", "PDF", "ODT", "HTML", "Markdown", "YAML", "JSON", "Images"],
+            "zh-TW": ["輸入", "DOCX", "PDF", "ODT", "HTML", "Markdown", "YAML", "JSON", "頁圖"],
           },
           rows: {
             en: [
-              ["DOCX", "", "Auto", "✓", "✓", "✓", "✓", "LO", "PDF"],
-              ["PDF", "—", "", "✓", "✓", "✓", "✓", "—", "✓"],
-              ["HTML", "P", "P+", "", "—", "—", "—", "—", "—"],
-              ["Markdown", "P", "P+", "—", "", "—", "—", "—", "—"],
-              ["ODT", "LO", "LO", "—", "—", "—", "—", "", "—"],
+              ["DOCX", "", "Auto", "LO", "✓", "✓", "✓", "✓", "PDF"],
+              ["PDF", "—", "", "—", "✓", "✓", "✓", "✓", "✓"],
+              ["ODT", "LO", "LO", "", "—", "—", "—", "—", "—"],
+              ["HTML", "P", "P+", "—", "", "—", "—", "—", "—"],
+              ["Markdown", "P", "P+", "—", "—", "", "—", "—", "—"],
             ],
             "zh-TW": [
-              ["DOCX", "", "Auto", "✓", "✓", "✓", "✓", "LO", "PDF"],
-              ["PDF", "—", "", "✓", "✓", "✓", "✓", "—", "✓"],
-              ["HTML", "P", "P+", "", "—", "—", "—", "—", "—"],
-              ["Markdown", "P", "P+", "—", "", "—", "—", "—", "—"],
-              ["ODT", "LO", "LO", "—", "—", "—", "—", "", "—"],
+              ["DOCX", "", "Auto", "LO", "✓", "✓", "✓", "✓", "PDF"],
+              ["PDF", "—", "", "—", "✓", "✓", "✓", "✓", "✓"],
+              ["ODT", "LO", "LO", "", "—", "—", "—", "—", "—"],
+              ["HTML", "P", "P+", "—", "", "—", "—", "—", "—"],
+              ["Markdown", "P", "P+", "—", "—", "", "—", "—", "—"],
             ],
           },
           legend: {
@@ -312,9 +312,12 @@ export const pages: Page[] = [
     summary: { en: "Use one hardened image for one-off CLI work, a self-contained API, or remote Gotenberg rendering.", "zh-TW": "以單一強化映像支援單次 CLI 作業、完整單體 API 或遠端 Gotenberg 排版。" },
     sections: [
       { id: "profiles", title: { en: "Choose a profile", "zh-TW": "選擇 Profile" }, body: { en: "Every Compose service is opt-in and uses the same GordonKit image. Use cli for local commands, standalone-lo for the API with included LibreOffice, or gateway-gotenberg for the API backed by a separate renderer.", "zh-TW": "所有 Compose service 都必須明確選用，且共用同一個 GordonKit 映像。cli 適合本機命令；standalone-lo 使用內建 LibreOffice；gateway-gotenberg 則讓 API 搭配獨立排版服務。" }, note: { en: "Always pass --profile. Running compose up without a profile starts no services.", "zh-TW": "務必傳入 --profile；未指定 profile 時，compose up 不會啟動任何服務。" } },
-      { id: "cli-profile", title: { en: "CLI profile", "zh-TW": "CLI Profile" }, body: { en: "CLI mode uses included LibreOffice and mounts the current directory at /work. It is suited to local, one-off conversions without running an HTTP service.", "zh-TW": "CLI 模式使用內建 LibreOffice，並將目前目錄掛載至 /work，適合不啟動 HTTP service 的本機單次轉換。" }, code: "docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/report.docx --output /work/report.pdf" },
+      { id: "cli-profile", title: { en: "CLI profile", "zh-TW": "CLI Profile" }, body: { en: "CLI mode uses included LibreOffice, mounts the current directory at /work, and does not require an API key. The same one-line command works in Bash and PowerShell.", "zh-TW": "CLI 模式使用內建 LibreOffice、將目前目錄掛載至 /work，且不需要 API 金鑰；相同的單行指令可用於 Bash 與 PowerShell。" }, code: "docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite" },
       { id: "standalone-profile", title: { en: "Standalone LibreOffice API", "zh-TW": "單體 LibreOffice API" }, body: { en: "Run the authenticated API and LibreOffice in one container when simple deployment and local rendering matter more than independent renderer scaling.", "zh-TW": "需要簡單部署與本機排版，且不需獨立擴展 renderer 時，可在同一容器執行具認證的 API 與 LibreOffice。" }, code: "# .env\nGORDON_DOC_API_KEY=replace-me\n\ndocker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build" },
       { id: "gateway-profile", title: { en: "Gotenberg gateway", "zh-TW": "Gotenberg Gateway" }, body: { en: "Run the API with a separate Gotenberg service when renderer isolation and independent service health are preferred. Compose connects both services to the gordon-doc network and waits for Gotenberg to become healthy. Configuring the Gotenberg URL explicitly selects that engine; failures do not silently fall back to LibreOffice.", "zh-TW": "偏好 renderer 隔離與獨立服務健康狀態時，可讓 API 搭配個別 Gotenberg service；Compose 會將兩者連至 gordon-doc network，並等待 Gotenberg 健康後再啟動 API。設定 Gotenberg URL 代表明確選用該引擎；失敗時不會靜默改用 LibreOffice。" }, code: "docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --build" },
+      { id: "container-bash", title: { en: "Bash API request", "zh-TW": "Bash API 請求" }, body: { en: "Load the deployer-managed key from .env, then select the engine explicitly and save the PDF response.", "zh-TW": "從 .env 載入部署者管理的金鑰，明確指定引擎並儲存 PDF 回應。" }, code: "set -a; . ./.env; set +a\ncurl --fail-with-body -H \"Authorization: Bearer $GORDON_DOC_API_KEY\" -H \"Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document\" -H \"X-Filename: report.docx\" --data-binary @report.docx \"http://127.0.0.1:8000/conversions?engine=gotenberg\" --output report-gb.pdf" },
+      { id: "container-powershell", title: { en: "PowerShell API request", "zh-TW": "PowerShell API 請求" }, body: { en: "PowerShell can read the same .env file and save the binary response with Invoke-WebRequest. Use engine=libreoffice with the standalone profile.", "zh-TW": "PowerShell 可讀取相同的 .env，並以 Invoke-WebRequest 儲存二進位回應；使用 standalone profile 時請改為 engine=libreoffice。" }, code: "$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')\n$headers = @{ Authorization = \"Bearer $env:GORDON_DOC_API_KEY\"; 'X-Filename' = 'report.docx' }\nInvoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\\report.docx -OutFile .\\report-gb.pdf" },
+      { id: "container-stop", title: { en: "Stop the services", "zh-TW": "停止服務" }, body: { en: "Stop the profile after local testing. The generated PDF remains on the host.", "zh-TW": "本機測試後停止對應 profile；已產生的 PDF 會保留在主機。" }, code: "docker compose -f docker/compose.yaml --profile standalone-lo down\ndocker compose -f docker/compose.yaml --profile gateway-gotenberg down" },
       { id: "published-image", title: { en: "Published image", "zh-TW": "正式發布映像" }, body: { en: "Tagged releases publish one linux/amd64 image at gordonkit/gordon-doc-converter. The default entrypoint runs the CLI; pass api to start the HTTP service. Prefer an explicit version tag for reproducible deployments.", "zh-TW": "正式版本會發布單一 linux/amd64 映像至 gordonkit/gordon-doc-converter。預設 entrypoint 執行 CLI；傳入 api 則啟動 HTTP service。需要可重現部署時，請使用明確版本 tag。" }, code: "docker run --rm gordonkit/gordon-doc-converter:0.5.1 version\ndocker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:0.5.1 api" },
       { id: "health", title: { en: "Operations and security", "zh-TW": "維運與安全" }, body: { en: "All profiles run as a non-root user with a read-only root filesystem, a bounded temporary filesystem, and no-new-privileges. API profiles require a strong key; production ingress must also enforce request-size and distributed rate limits.", "zh-TW": "所有 profile 都以非 root 使用者、唯讀 root filesystem、有限 tmpfs 與 no-new-privileges 執行。API profile 必須使用高強度 key；正式環境 ingress 也應限制 request 大小並提供分散式 rate limit。" }, code: "python docker/smoke.py --token replace-me --docx sample.docx", note: { en: "Do not commit the .env file or customer documents. The smoke client checks liveness, authenticated engine discovery, and optionally an end-to-end PDF conversion.", "zh-TW": "請勿提交 .env 或客戶文件。Smoke client 會檢查存活狀態、經認證的引擎探索，以及選用的端到端 PDF 轉換。" } },
     ],

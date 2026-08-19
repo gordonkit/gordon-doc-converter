@@ -15,12 +15,12 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 
 ## Supported format conversions
 
-| Input | DOCX | PDF | HTML | ODT | Markdown | YAML | JSON | Images |
+| Input | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | Images |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | ✓ | LO | ✓ | ✓ | ✓ | PDF |
-| PDF | — | × | ✓ | — | ✓ | ✓ | ✓ | ✓ |
-| HTML | P | P+ | × | — | — | — | — | — |
-| ODT | LO | LO | — | × | — | — | — | — |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
+| PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ODT | LO | LO | × | — | — | — | — | — |
+| HTML | P | P+ | — | × | — | — | — | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
@@ -104,18 +104,22 @@ gordon-doc convert example.docx --output example.pdf
 ### Containers
 
 Use the single container image when you do not want to install Python or LibreOffice on the
-host. The `cli` profile mounts the current directory at `/work`:
+host. The `cli` profile mounts the current directory at `/work` and does not require an API
+key. This command is the same in Bash and PowerShell:
 
 ```console
 docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/example.docx --output /work/example.pdf
 ```
 
 For a private HTTP service with LibreOffice in the same image, set an API key and start the
-`standalone-lo` profile:
+`standalone-lo` profile. A `.env` file works in Bash and PowerShell:
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-    --profile standalone-lo up --build
+```dotenv
+GORDON_DOC_API_KEY=replace-with-a-strong-random-value
+```
+
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build
 ```
 
 Use `gateway-gotenberg` instead to run the same API image with a separate Gotenberg renderer
@@ -136,6 +140,10 @@ curl --fail -H "Authorization: Bearer replace-me" \
     -H "X-Filename: example.docx" --data-binary @example.docx \
     http://localhost:8000/conversions --output example.pdf
 ```
+
+On PowerShell, use `Invoke-WebRequest -InFile ... -OutFile ...`. Complete Bash and PowerShell
+examples for the LibreOffice and Gotenberg profiles, including shutdown, are in the
+[container documentation](docker/README.md).
 
 Install `.[images]` for PDFium/Pillow rasterization, `.[gotenberg]` for the remote adapter,
 `.[api]` for FastAPI, or `.[word]` for Windows COM.

@@ -15,12 +15,12 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 
 ## 支援的格式轉換
 
-| 輸入格式 | DOCX | PDF | HTML | ODT | Markdown | YAML | JSON | 圖片 |
+| 輸入格式 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 圖片 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | ✓ | LO | ✓ | ✓ | ✓ | PDF |
-| PDF | — | × | ✓ | — | ✓ | ✓ | ✓ | ✓ |
-| HTML | P | P+ | × | — | — | — | — | — |
-| ODT | LO | LO | — | × | — | — | — | — |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
+| PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ODT | LO | LO | × | — | — | — | — | — |
+| HTML | P | P+ | — | × | — | — | — | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` 依政策自動選擇引擎 · `✓` 內建支援 · `LO` LibreOffice · `P` Pandoc ·
@@ -95,7 +95,7 @@ gordon-doc convert 範例.docx --output 範例.pdf
 ### 容器
 
 若不想在主機安裝 Python 或 LibreOffice，可使用單一容器映像。`cli` 執行模式會將目前
-目錄掛載至 `/work`：
+目錄掛載至 `/work`，且不需要 API 金鑰。以下單行指令可同時用於 Bash 與 PowerShell：
 
 ```console
 docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/範例.docx --output /work/範例.pdf
@@ -103,9 +103,12 @@ docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/�
 
 若要啟動內含 LibreOffice 的內部 HTTP 服務，請設定 API 金鑰並啟動 `standalone-lo`：
 
-```sh
-GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
-    --profile standalone-lo up --build
+```dotenv
+GORDON_DOC_API_KEY=replace-with-a-strong-random-value
+```
+
+```console
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build
 ```
 
 若要使用獨立的 Gotenberg 排版服務，請改用 `gateway-gotenberg`；相同的 API 映像會透過
@@ -125,6 +128,10 @@ curl --fail -H "Authorization: Bearer replace-me" \
     -H "X-Filename: 範例.docx" --data-binary @範例.docx \
     http://localhost:8000/conversions --output 範例.pdf
 ```
+
+PowerShell 請使用 `Invoke-WebRequest -InFile ... -OutFile ...`。LibreOffice 與 Gotenberg
+profiles 的 Bash、PowerShell 完整啟動、轉換及停止服務範例，請參閱
+[繁中容器文件](docker/README.zh-TW.md)。
 
 PDFium／Pillow 點陣化功能使用 `.[images]`；遠端配接器使用 `.[gotenberg]`；FastAPI
 使用 `.[api]`；Windows COM 使用 `.[word]`。

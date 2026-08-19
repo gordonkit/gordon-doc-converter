@@ -7,7 +7,7 @@ services:
     image: gordonkit/gordon-doc-converter:local
     command: ["api"]
     environment:
-      GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:?set GORDON_DOC_API_KEY}
+      GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:-}
     ports: ["8000:8000"]
     read_only: true
     tmpfs: ["/tmp:size=512m,mode=1777"]
@@ -22,7 +22,7 @@ services:
     image: gordonkit/gordon-doc-converter:local
     command: ["api"]
     environment:
-      GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:?set GORDON_DOC_API_KEY}
+      GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:-}
       GORDON_DOC_GOTENBERG_URL: http://gotenberg:3000
     ports: ["8000:8000"]
     read_only: true
