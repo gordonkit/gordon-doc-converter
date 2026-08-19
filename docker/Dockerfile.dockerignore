@@ -6,3 +6,5 @@
 !THIRD_PARTY_NOTICES.txt
 !src/
 !src/**
+!docker/
+!docker/entrypoint.sh

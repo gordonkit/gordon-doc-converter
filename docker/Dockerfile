@@ -3,7 +3,7 @@ FROM python:3.12-slim AS builder
 WORKDIR /build
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[api]"
+RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[api,gotenberg]"
 
 FROM python:3.12-slim
 
@@ -17,11 +17,14 @@ RUN apt-get update \
     && useradd --create-home --uid 10001 gordon
 COPY --from=builder /wheels /wheels
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.txt /usr/share/licenses/gordon-doc-converter/
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+COPY docker/entrypoint.sh /usr/local/bin/gordon-doc-entrypoint
+RUN pip install --no-cache-dir /wheels/* \
+    && rm -rf /wheels \
+    && chmod 755 /usr/local/bin/gordon-doc-entrypoint
 USER gordon
-WORKDIR /app
+WORKDIR /work
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/home/gordon
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl --fail http://127.0.0.1:8000/ready || exit 1
-CMD ["uvicorn", "gordon_doc_converter.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["gordon-doc-entrypoint"]

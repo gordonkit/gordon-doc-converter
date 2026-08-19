@@ -261,78 +261,69 @@ jobs:
     if: needs.changes.outputs.containers == 'true'
     needs: changes
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [cli, standalone-lo, gateway-gotenberg]
     steps:
       - uses: actions/checkout@v4
-      - name: Build profile
-        run: >-
-          docker build
-          --file docker/Dockerfile.${{ matrix.profile }}
-          --tag gordon-doc-${{ matrix.profile }}:${{ github.sha }}
-          .
+      - name: Build image
+        run: docker build --file docker/Dockerfile --tag gordon-doc:${{ github.sha }} .
       - name: Verify legal documents in image
         run: >-
           docker run --rm --entrypoint sh
-          gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          gordon-doc:${{ github.sha }}
           -c 'test -r /usr/share/licenses/gordon-doc-converter/LICENSE
           && test -r /usr/share/licenses/gordon-doc-converter/NOTICE
           && test -r /usr/share/licenses/gordon-doc-converter/THIRD_PARTY_NOTICES.txt'
       - name: Smoke CLI entry point
-        if: matrix.profile == 'cli'
-        run: docker run --rm gordon-doc-cli:${{ github.sha }} version
+        run: docker run --rm gordon-doc:${{ github.sha }} version
       - name: Generate CycloneDX SBOM
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          image-ref: gordon-doc:${{ github.sha }}
           format: cyclonedx
-          output: sbom-${{ matrix.profile }}.cdx.json
+          output: sbom-container.cdx.json
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ matrix.profile }}
-          path: sbom-${{ matrix.profile }}.cdx.json
+          name: sbom-container
+          path: sbom-container.cdx.json
           if-no-files-found: error
       - name: Scan image for fixed high and critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: gordon-doc-${{ matrix.profile }}:${{ github.sha }}
+          image-ref: gordon-doc:${{ github.sha }}
           format: table
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
 
-  api-smoke:
+  compose-smoke:
     if: needs.changes.outputs.containers == 'true'
     needs: changes
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [standalone-lo, gateway-gotenberg]
+    env:
+      GORDON_DOC_API_KEY: smoke-token
     steps:
       - uses: actions/checkout@v4
-      - name: Build standalone API
-        run: docker build --file docker/Dockerfile.standalone-lo --tag gordon-doc-api:smoke .
-      - name: Start read-only non-root API
+      - name: Start ${{ matrix.profile }} profile
         run: >-
-          docker run --detach --name gordon-doc-api
-          --read-only --tmpfs /tmp:size=512m,mode=1777
-          --security-opt no-new-privileges
-          --publish 8000:8000
-          --env GORDON_DOC_API_KEY=smoke-token
-          gordon-doc-api:smoke
-      - name: Wait for readiness and exercise API
-        run: |
-          for _attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:8000/ready; then
-              python docker/smoke.py --token smoke-token
-              exit 0
-            fi
-            sleep 2
-          done
-          docker logs gordon-doc-api
-          exit 1
-      - if: always()
-        run: docker rm --force gordon-doc-api || true
+          docker compose -f docker/compose.yaml
+          --profile ${{ matrix.profile }} up --build --detach --wait
+      - name: Convert DOCX to PDF
+        run: >-
+          python docker/smoke.py
+          --token smoke-token
+          --docx tests/fixtures/docx/cjk/a4-portrait.docx
+      - name: Show service logs
+        if: failure()
+        run: docker compose -f docker/compose.yaml logs
+      - name: Stop services
+        if: always()
+        run: >-
+          docker compose -f docker/compose.yaml
+          --profile ${{ matrix.profile }} down --volumes
 
   libreoffice:
     if: needs.changes.outputs.libreoffice == 'true'

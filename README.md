@@ -103,8 +103,8 @@ gordon-doc convert example.docx --output example.pdf
 
 ### Containers
 
-Use a container when you do not want to install Python or LibreOffice on the host. The `cli`
-profile mounts the current directory at `/work`:
+Use the single container image when you do not want to install Python or LibreOffice on the
+host. The `cli` profile mounts the current directory at `/work`:
 
 ```console
 docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/example.docx --output /work/example.pdf
@@ -118,9 +118,11 @@ GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
     --profile standalone-lo up --build
 ```
 
-Use `gateway-gotenberg` instead to run the API with a separate Gotenberg renderer. Container
-profiles, security notes, and smoke checks are documented in
+Use `gateway-gotenberg` instead to run the same API image with a separate Gotenberg renderer
+on a shared Docker network. Container profiles, security notes, and smoke checks are documented in
 [container documentation](https://github.com/gordonkit/gordon-doc-converter/blob/main/docker/README.md).
+Tagged releases publish `gordonkit/gordon-doc-converter` to Docker Hub. The required repository
+variables, secrets, and release steps are documented there.
 
 ### HTTP API
 

@@ -3,19 +3,24 @@ services:
     profiles: ["standalone-lo"]
     build:
       context: ..
-      dockerfile: docker/Dockerfile.standalone-lo
+      dockerfile: docker/Dockerfile
+    image: gordonkit/gordon-doc-converter:local
+    command: ["api"]
     environment:
       GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:?set GORDON_DOC_API_KEY}
     ports: ["8000:8000"]
     read_only: true
     tmpfs: ["/tmp:size=512m,mode=1777"]
     security_opt: ["no-new-privileges:true"]
+    networks: ["gordon-doc"]
 
   gateway-gotenberg:
     profiles: ["gateway-gotenberg"]
     build:
       context: ..
-      dockerfile: docker/Dockerfile.gateway-gotenberg
+      dockerfile: docker/Dockerfile
+    image: gordonkit/gordon-doc-converter:local
+    command: ["api"]
     environment:
       GORDON_DOC_API_KEY: ${GORDON_DOC_API_KEY:?set GORDON_DOC_API_KEY}
       GORDON_DOC_GOTENBERG_URL: http://gotenberg:3000
@@ -26,6 +31,7 @@ services:
     depends_on:
       gotenberg:
         condition: service_healthy
+    networks: ["gordon-doc"]
 
   gotenberg:
     profiles: ["gateway-gotenberg"]
@@ -38,13 +44,20 @@ services:
     read_only: true
     tmpfs: ["/tmp:size=512m,mode=1777"]
     security_opt: ["no-new-privileges:true"]
+    networks: ["gordon-doc"]
 
   cli:
     profiles: ["cli"]
     build:
       context: ..
-      dockerfile: docker/Dockerfile.cli
+      dockerfile: docker/Dockerfile
+    image: gordonkit/gordon-doc-converter:local
     volumes: ["${PWD:-.}:/work"]
     read_only: true
     tmpfs: ["/tmp:size=512m,mode=1777"]
     security_opt: ["no-new-privileges:true"]
+    networks: ["gordon-doc"]
+
+networks:
+  gordon-doc:
+    name: gordon-doc

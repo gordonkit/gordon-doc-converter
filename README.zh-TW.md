@@ -94,8 +94,8 @@ gordon-doc convert 範例.docx --output 範例.pdf
 
 ### 容器
 
-若不想在主機安裝 Python 或 LibreOffice，可使用容器。`cli` 執行模式會將目前目錄掛載至
-`/work`：
+若不想在主機安裝 Python 或 LibreOffice，可使用單一容器映像。`cli` 執行模式會將目前
+目錄掛載至 `/work`：
 
 ```console
 docker compose -f docker/compose.yaml --profile cli run --rm cli convert /work/範例.docx --output /work/範例.pdf
@@ -108,8 +108,10 @@ GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
     --profile standalone-lo up --build
 ```
 
-若要使用獨立的 Gotenberg 排版服務，請改用 `gateway-gotenberg`。容器執行模式、安全性說明
-與基本檢查請參閱[容器文件](docker/README.md)。
+若要使用獨立的 Gotenberg 排版服務，請改用 `gateway-gotenberg`；相同的 API 映像會透過
+共用 Docker network 連線 Gotenberg。容器執行模式、安全性說明與基本檢查請參閱
+[容器文件](docker/README.md)。正式版本 tag 會將 `gordonkit/gordon-doc-converter` 單一映像
+發布至 Docker Hub；所需 repository 變數、secrets 與發行步驟也記錄於該文件。
 
 ### HTTP API
 
