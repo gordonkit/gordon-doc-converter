@@ -109,9 +109,11 @@ GORDON_DOC_API_KEY=replace-me docker compose -f docker/compose.yaml \
 ```
 
 若要使用獨立的 Gotenberg 排版服務，請改用 `gateway-gotenberg`；相同的 API 映像會透過
-共用 Docker network 連線 Gotenberg。容器執行模式、安全性說明與基本檢查請參閱
-[容器文件](docker/README.md)。正式版本 tag 會將 `gordonkit/gordon-doc-converter` 單一映像
-發布至 Docker Hub；所需 repository 變數、secrets 與發行步驟也記錄於該文件。
+共用 Docker network 連線 Gotenberg。設定 `GORDON_DOC_GOTENBERG_URL` 後，API 會明確以
+Gotenberg 為預設引擎；Gotenberg 請求失敗時不會靜默改用 LibreOffice。容器執行模式、
+安全性說明與基本檢查請參閱[繁中容器文件](docker/README.zh-TW.md)。正式版本 tag 會將
+`gordonkit/gordon-doc-converter` 單一映像發布至 Docker Hub；所需 repository 變數、
+secrets 與發行步驟也記錄於該文件。
 
 ### HTTP API
 
