@@ -339,7 +339,25 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install LibreOffice Writer
-        run: sudo apt-get update && sudo apt-get install --yes libreoffice-writer
+        timeout-minutes: 15
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          if [[ -f /etc/apt/apt-mirrors.txt ]]; then
+            sudo sed --in-place \
+              's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
+              /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=15 \
+            -o Acquire::https::Timeout=15 \
+            update
+          sudo apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=15 \
+            -o Acquire::https::Timeout=15 \
+            install --yes --no-install-recommends libreoffice-writer
       - run: uv sync --dev --locked
       - run: >-
           uv run pytest -m integration
@@ -360,9 +378,26 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install LibreOffice Writer and open CJK fonts
-        run: >-
-          sudo apt-get update && sudo apt-get install --yes
-          libreoffice-writer fonts-noto-cjk
+        timeout-minutes: 15
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          if [[ -f /etc/apt/apt-mirrors.txt ]]; then
+            sudo sed --in-place \
+              's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
+              /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=15 \
+            -o Acquire::https::Timeout=15 \
+            update
+          sudo apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=15 \
+            -o Acquire::https::Timeout=15 \
+            install --yes --no-install-recommends \
+            libreoffice-writer fonts-noto-cjk
       - run: uv sync --dev --locked
       - run: uv run python scripts/generate_cjk_fixtures.py --check
       - run: uv run pytest -m integration tests/integration/libreoffice/test_cjk_fixtures.py
