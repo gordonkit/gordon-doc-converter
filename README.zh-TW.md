@@ -233,13 +233,14 @@ npm ci
 npm run build
 ```
 
-產生的網站位於 `docs/`，並使用相對連結。網站發布於
-[docs.gordonkit.com](https://docs.gordonkit.com/)，支援英文／繁體中文導覽、搜尋、響應式
-版面及亮色／暗色主題。API 契約位於 `docs/openapi.json`，唯讀 Swagger UI 位於
+產生的網站位於 `docs/`，並發布於 [docs.gordonkit.com](https://docs.gordonkit.com/)。建置會在
+`/en/<topic>/` 與 `/zh-TW/<topic>/` 產生可索引頁面，包含在地化 metadata、canonical、語言
+alternate、結構化資料、sitemap 與 robots 指示。網站也支援雙語導覽、搜尋、響應式版面及
+亮色／暗色主題。API 契約位於 `docs/openapi.json`，唯讀 Swagger UI 位於
 `docs/swagger/index.html`。可執行 `npm run openapi:check` 檢查匯出內容是否已過期。
 
-請從[線上文件](https://docs.gordonkit.com/)瀏覽技術參考、使用指南、相容性說明與開發規範，
-並使用語言選單切換英文或繁體中文。
+請從[英文文件](https://docs.gordonkit.com/en/overview/)或
+[繁體中文文件](https://docs.gordonkit.com/zh-TW/overview/)瀏覽技術參考、使用指南、相容性說明與開發規範。
 
 ## 授權
 

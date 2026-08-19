@@ -167,7 +167,8 @@ export const pages: Page[] = [
     id: "cli",
     category: "getting-started",
     title: { en: "CLI reference", "zh-TW": "CLI 指令參考" },
-    summary: { en: "Convert, inspect, compare, and automate from the terminal.", "zh-TW": "從終端機執行轉換、檢查、比較與自動化。" },
+    heading: { en: "Document conversion CLI reference", "zh-TW": "文件轉換 CLI 指令參考" },
+    summary: { en: "Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison.", "zh-TW": "使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" },
     sections: [
       { id: "cli-overview", title: { en: "Command overview", "zh-TW": "指令總覽" }, body: { en: "Start here to choose the command for your task. All commands support --json for machine-readable output.", "zh-TW": "請先從此表選擇適合工作的指令。所有指令都支援 --json，以輸出機器可讀的結果。" }, table: { caption: { en: "CLI command overview", "zh-TW": "CLI 指令總覽" }, headers: { en: ["Command", "Use it for"], "zh-TW": ["指令", "適用情境"] }, rows: { en: [["doctor", "Check runtime health and renderer availability"], ["engines", "Inspect configured engines and capabilities"], ["convert", "Convert one DOCX, ODT, PDF, HTML, or Markdown file"], ["template", "Create an editable A4 HTML starter"], ["compare", "Compare two PDFs and optionally write visual diffs"], ["batch", "Convert multiple DOCX files with isolated failures"], ["version", "Print the installed package version"]], "zh-TW": [["doctor", "檢查執行環境健康狀態與 renderer 可用性"], ["engines", "查看已設定引擎及其能力"], ["convert", "轉換單一 DOCX、ODT、PDF、HTML 或 Markdown 檔案"], ["template", "建立可編輯的 A4 HTML 起始範本"], ["compare", "比較兩個 PDF，並可輸出視覺差異檔"], ["batch", "批次轉換多個 DOCX，且各檔案失敗互相隔離"], ["version", "印出已安裝套件版本"]] }, legend: { en: ["Run gordon-doc <command> --help for the installed command contract."], "zh-TW": ["請以 gordon-doc <command> --help 檢視目前安裝版本的指令契約。"] }, alignLeft: true } },
       { id: "cli-install", title: { en: "Install and command shape", "zh-TW": "安裝與指令形式" }, body: { en: "The gordon-doc command is installed with the package. Run gordon-doc --help or gordon-doc <command> --help to view the option values accepted by the installed version. Commands print a concise human result by default; add --json whenever another program consumes the output.", "zh-TW": "安裝套件時會一併安裝 gordon-doc。可用 gordon-doc --help 或 gordon-doc <command> --help 檢視目前安裝版本接受的選項值。預設輸出簡潔的人類可讀結果；若由其他程式處理輸出，請加入 --json。" }, code: "python -m pip install gordon-doc-converter\ngordon-doc version\ngordon-doc convert --help" },
@@ -186,7 +187,8 @@ export const pages: Page[] = [
     id: "library",
     category: "getting-started",
     title: { en: "Python library", "zh-TW": "Python 函式庫" },
-    summary: { en: "Embed typed conversion requests, results, batches, and diagnostics in Python applications.", "zh-TW": "在 Python 應用程式中整合具型別的轉換請求、結果、批次與診斷。" },
+    heading: { en: "Python document conversion library", "zh-TW": "Python 文件轉換函式庫" },
+    summary: { en: "Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics.", "zh-TW": "在 Python 應用程式加入具型別的 DOCX、PDF、HTML、Markdown、YAML、JSON 與圖片轉換，並使用引擎中立的請求、結果、批次及診斷。" },
     sections: [
       { id: "library-overview", title: { en: "Library overview", "zh-TW": "函式庫總覽" }, body: { en: "The public API uses engine-neutral typed models. Choose the smallest entry point that meets the integration need.", "zh-TW": "公開 API 使用引擎中立的具型別模型。請依整合需求選擇最精簡的入口。" }, table: { caption: { en: "Python library entry points", "zh-TW": "Python 函式庫入口" }, headers: { en: ["Entry point", "Use it for"], "zh-TW": ["入口", "適用情境"] }, rows: { en: [["ConversionRequest.from_source", "Infer and validate source format from a path"], ["convert(request)", "Run one conversion and receive ConversionResult"], ["DocumentConversionService", "Inject engines or use service methods directly"], ["convert_batch(requests)", "Run sequential, failure-isolated conversions"], ["probe_engines()", "Discover renderer availability and annotation capabilities"], ["result.to_dict()", "Produce stable JSON-compatible result data"]], "zh-TW": [["ConversionRequest.from_source", "由路徑推斷並驗證來源格式"], ["convert(request)", "執行單一轉換並取得 ConversionResult"], ["DocumentConversionService", "注入引擎，或直接使用 service 方法"], ["convert_batch(requests)", "執行依序且失敗隔離的轉換"], ["probe_engines()", "探索 renderer 可用性與註解能力"], ["result.to_dict()", "產生穩定、JSON 相容的結果資料"]] }, legend: { en: ["Use ConversionOptions to set policy and output behaviour."], "zh-TW": ["使用 ConversionOptions 設定政策與輸出行為。"] }, alignLeft: true, firstColumnWidth: "wide" } },
       { id: "library-single", title: { en: "Single conversion", "zh-TW": "單檔轉換" }, body: { en: "ConversionRequest.from_source validates the allowlisted extension and infers the source format. convert returns a ConversionResult rather than raising for ordinary conversion failures, so inspect success and error before reading artifacts. ConversionError is reserved for invalid requests and related contract errors.", "zh-TW": "ConversionRequest.from_source 會驗證允許的副檔名並推斷來源格式。convert 對一般轉換失敗會回傳 ConversionResult，而非直接拋出例外，因此讀取 artifacts 前請先檢查 success 與 error。ConversionError 用於無效請求及相關契約錯誤。" }, code: "from pathlib import Path\nfrom gordon_doc_converter import ConversionRequest, convert\n\nresult = convert(ConversionRequest.from_source(Path('report.docx')))\nif not result.success:\n    raise RuntimeError(result.error.message if result.error else 'conversion failed')\nprint(result.artifacts[0].path)" },
@@ -198,7 +200,8 @@ export const pages: Page[] = [
     id: "api",
     category: "getting-started",
     title: { en: "HTTP API", "zh-TW": "HTTP API" },
-    summary: { en: "Run the authenticated FastAPI adapter and explore its OpenAPI contract.", "zh-TW": "啟動具認證的 FastAPI adapter，並瀏覽其 OpenAPI 契約。" },
+    heading: { en: "DOCX to PDF HTTP API", "zh-TW": "DOCX 轉 PDF HTTP API" },
+    summary: { en: "Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract.", "zh-TW": "部署具認證的 FastAPI 私有 DOCX 轉 PDF 服務，搭配 LibreOffice 或 Gotenberg、健康檢查、流量限制與 OpenAPI 3.1 契約。" },
     sections: [
       { id: "api-overview", title: { en: "API overview", "zh-TW": "API 總覽" }, body: { en: "The private HTTP adapter exposes a deliberately small DOCX-to-PDF surface. Use the endpoints below for conversion, diagnostics, and deployment health checks.", "zh-TW": "私有 HTTP adapter 刻意提供精簡的 DOCX 轉 PDF 介面。請使用下表端點執行轉換、診斷與部署健康檢查。" }, table: { caption: { en: "HTTP API endpoints", "zh-TW": "HTTP API 端點" }, headers: { en: ["Endpoint", "Authentication", "Purpose"], "zh-TW": ["端點", "認證", "用途"] }, rows: { en: [["POST /conversions", "Bearer token", "Convert uploaded DOCX bytes to a PDF"], ["GET /engines", "Bearer token", "List configured renderer capabilities"], ["GET /live", "None", "Confirm the process is alive"], ["GET /ready", "None", "Check that the default renderer is ready"], ["GET /version", "None", "Return the package version"]], "zh-TW": [["POST /conversions", "Bearer token", "將上傳的 DOCX 位元組轉換為 PDF"], ["GET /engines", "Bearer token", "列出已設定 renderer 的能力"], ["GET /live", "無", "確認程序仍在運行"], ["GET /ready", "無", "確認預設 renderer 是否就緒"], ["GET /version", "無", "回傳套件版本"]] }, legend: { en: ["Protected endpoints require Authorization: Bearer <api-key> when an API key is configured."], "zh-TW": ["設定 API key 時，受保護端點必須提供 Authorization: Bearer <api-key>。"] }, alignLeft: true, firstColumnWidth: "w48", secondColumnWidth: "w40" } },
       {
@@ -237,16 +240,16 @@ export const pages: Page[] = [
         links: [
           {
             label: { en: "View OpenAPI JSON", "zh-TW": "檢視 OpenAPI JSON" },
-            href: "./openapi.json",
+            href: "/openapi.json",
           },
           {
             label: { en: "Download OpenAPI JSON", "zh-TW": "下載 OpenAPI JSON" },
-            href: "./openapi.json",
+            href: "/openapi.json",
             download: true,
           },
           {
             label: { en: "Open Swagger UI", "zh-TW": "開啟 Swagger UI" },
-            href: "./swagger/",
+            href: "/swagger/",
           },
         ],
         note: {
@@ -279,7 +282,8 @@ export const pages: Page[] = [
     id: "architecture",
     category: "development",
     title: { en: "Architecture", "zh-TW": "系統架構" },
-    summary: { en: "Understand the boundaries that keep conversion portable and testable.", "zh-TW": "理解維持轉換流程可攜且可測試的架構邊界。" },
+    heading: { en: "Document converter architecture", "zh-TW": "文件轉換器系統架構" },
+    summary: { en: "Understand GordonKit's portable document conversion architecture, including the application service, engine protocol, policy orchestration, adapters, and PDF validation.", "zh-TW": "了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。" },
     sections: [
       { id: "dependency-flow", title: { en: "Dependency flow", "zh-TW": "相依流向" }, body: { en: "Library and CLI callers enter through the application service. The orchestrator applies policy before invoking a shared engine protocol and validating the resulting PDF.", "zh-TW": "函式庫與 CLI 呼叫皆進入 application service，由 orchestrator 套用政策後，再呼叫共用 engine protocol 並驗證產出的 PDF。" }, code: "Library / CLI\n  -> Application service\n  -> Orchestrator and policy\n  -> Engine protocol\n  -> PDF validation" },
       { id: "adapter-rules", title: { en: "Adapter rules", "zh-TW": "Adapter 規則" }, body: { en: "Platform APIs and subprocesses stay inside engine adapters. Windows-only dependencies are imported lazily so the core package remains portable.", "zh-TW": "平台 API 與 subprocess 限制在引擎 adapter 內。Windows 專用相依套件採延遲匯入，確保核心套件維持跨平台。" } },
@@ -289,7 +293,8 @@ export const pages: Page[] = [
     id: "contributing",
     category: "development",
     title: { en: "Contributing", "zh-TW": "參與開發" },
-    summary: { en: "Set up the repository and run the full quality suite.", "zh-TW": "設定開發環境並執行完整品質檢查。" },
+    heading: { en: "Contribute to GordonKit", "zh-TW": "參與 GordonKit 開發" },
+    summary: { en: "Set up the GordonKit Document Converter development environment with uv, then format, lint, type-check, and test Python contributions before opening a pull request.", "zh-TW": "使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。" },
     sections: [
       { id: "setup", title: { en: "Local setup", "zh-TW": "本機設定" }, body: { en: "The project uses uv for reproducible Python dependency management.", "zh-TW": "專案使用 uv 管理可重現的 Python 相依套件。" }, code: "uv sync --dev --all-extras" },
       { id: "quality", title: { en: "Quality checks", "zh-TW": "品質檢查" }, body: { en: "Format, lint, type-check, and test before opening a pull request.", "zh-TW": "提出 Pull Request 前，請完成格式化、lint、型別檢查與測試。" }, code: "uv run ruff format --check .\nuv run ruff check .\nuv run mypy src\nuv run pytest" },
@@ -299,7 +304,8 @@ export const pages: Page[] = [
     id: "deployment",
     category: "operations",
     title: { en: "Deployment modes", "zh-TW": "部署模式" },
-    summary: { en: "Choose an engine policy that matches desktop, server, or container execution.", "zh-TW": "依桌面、伺服器或容器環境選擇適合的引擎政策。" },
+    heading: { en: "Document conversion deployment modes", "zh-TW": "文件轉換部署模式" },
+    summary: { en: "Choose Word COM, LibreOffice, or Gotenberg conversion policies for interactive Windows desktops, servers, and containers without silent engine fallback.", "zh-TW": "為互動式 Windows 桌面、伺服器與容器選擇 Word COM、LibreOffice 或 Gotenberg 文件轉換政策，且不會靜默切換引擎。" },
     sections: [
       { id: "desktop", title: { en: "Desktop", "zh-TW": "桌面模式" }, body: { en: "Interactive Windows desktops may automatically select Word COM when licensed Word is available.", "zh-TW": "互動式 Windows 桌面在具備合法授權 Word 時，可自動選用 Word COM。" } },
       { id: "server-container", title: { en: "Server and container", "zh-TW": "伺服器與容器" }, body: { en: "Server mode prefers Gotenberg then LibreOffice. The container includes LibreOffice and can use an external Gotenberg service; it never auto-selects Word COM.", "zh-TW": "伺服器模式依序偏好 Gotenberg、LibreOffice。容器內含 LibreOffice，也可使用外部 Gotenberg service，且絕不自動選用 Word COM。" }, note: { en: "Rendering may differ between Word and LibreOffice. Test representative documents before rollout.", "zh-TW": "Word 與 LibreOffice 的排版可能不同，正式上線前應以代表性文件測試。" } },
@@ -309,7 +315,8 @@ export const pages: Page[] = [
     id: "containers",
     category: "operations",
     title: { en: "Containers", "zh-TW": "容器化" },
-    summary: { en: "Use one hardened image for one-off CLI work, a self-contained API, or remote Gotenberg rendering.", "zh-TW": "以單一強化映像支援單次 CLI 作業、完整單體 API 或遠端 Gotenberg 排版。" },
+    heading: { en: "Docker document conversion", "zh-TW": "Docker 文件轉換" },
+    summary: { en: "Run document conversion in Docker Compose with a hardened GordonKit image, bundled LibreOffice, an authenticated API, or an isolated Gotenberg renderer.", "zh-TW": "透過 Docker Compose 與強化的 GordonKit 映像執行文件轉換，可使用內建 LibreOffice、具認證 API 或隔離的 Gotenberg renderer。" },
     sections: [
       { id: "profiles", title: { en: "Choose a profile", "zh-TW": "選擇 Profile" }, body: { en: "Every Compose service is opt-in and uses the same GordonKit image. Use cli for local commands, standalone-lo for the API with included LibreOffice, or gateway-gotenberg for the API backed by a separate renderer.", "zh-TW": "所有 Compose service 都必須明確選用，且共用同一個 GordonKit 映像。cli 適合本機命令；standalone-lo 使用內建 LibreOffice；gateway-gotenberg 則讓 API 搭配獨立排版服務。" }, note: { en: "Always pass --profile. Running compose up without a profile starts no services.", "zh-TW": "務必傳入 --profile；未指定 profile 時，compose up 不會啟動任何服務。" } },
       { id: "cli-profile", title: { en: "CLI profile", "zh-TW": "CLI Profile" }, body: { en: "CLI mode uses included LibreOffice, mounts the current directory at /work, and does not require an API key. The same one-line command works in Bash and PowerShell.", "zh-TW": "CLI 模式使用內建 LibreOffice、將目前目錄掛載至 /work，且不需要 API 金鑰；相同的單行指令可用於 Bash 與 PowerShell。" }, code: "docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite" },
@@ -326,7 +333,8 @@ export const pages: Page[] = [
     id: "roadmap",
     category: "project",
     title: { en: "Roadmap", "zh-TW": "產品藍圖" },
-    summary: { en: "Track the stable core and intentionally staged delivery areas.", "zh-TW": "掌握穩定核心與分階段交付範圍。" },
+    heading: { en: "GordonKit project roadmap", "zh-TW": "GordonKit 專案藍圖" },
+    summary: { en: "Review the GordonKit Document Converter roadmap, current Python library, CLI, API, container, semantic artifact, and document comparison capabilities.", "zh-TW": "查看 GordonKit 文件轉換器藍圖，以及目前 Python 函式庫、CLI、API、容器、語意 artifact 與文件比較能力。" },
     sections: [
       { id: "current", title: { en: "Current scope", "zh-TW": "目前範圍" }, body: { en: "The core library, CLI, conversion adapters, semantic artifacts, comparison tools, authenticated API adapter, and container profiles are available.", "zh-TW": "目前已提供核心函式庫、CLI、轉換 adapters、語意 artifacts、比較工具、具認證的 API adapter 與容器 profiles。" } },
       { id: "principles", title: { en: "Project principles", "zh-TW": "專案原則" }, body: { en: "GordonKit favors explicit policy, portable contracts, isolated external processes, and diagnostic results over hidden convenience.", "zh-TW": "GordonKit 重視明確政策、可攜契約、隔離外部程序與可診斷結果，不以隱藏行為換取表面便利。" } },
@@ -336,7 +344,8 @@ export const pages: Page[] = [
     id: "security",
     category: "project",
     title: { en: "Security", "zh-TW": "安全性" },
-    summary: { en: "Handle documents and execution environments as untrusted input.", "zh-TW": "將文件與執行環境視為不受信任輸入。" },
+    heading: { en: "Secure document conversion", "zh-TW": "安全文件轉換" },
+    summary: { en: "Secure untrusted document conversion with extension, MIME, OOXML, file-size, and decompression validation, isolated execution, and private vulnerability reporting.", "zh-TW": "透過副檔名、MIME、OOXML、檔案大小與解壓縮驗證、隔離執行及私密漏洞回報，安全處理不受信任的文件轉換。" },
     sections: [
       { id: "input", title: { en: "Input handling", "zh-TW": "輸入處理" }, body: { en: "Validate extensions, MIME types, and OOXML structure. Apply size and decompression limits before processing untrusted documents.", "zh-TW": "驗證副檔名、MIME type 與 OOXML 結構；處理不受信任文件前套用大小與解壓縮限制。" } },
       { id: "reporting", title: { en: "Report a vulnerability", "zh-TW": "回報漏洞" }, body: { en: "Use the private reporting process described in SECURITY.md. Do not disclose sensitive document samples in public issues.", "zh-TW": "請依 SECURITY.md 的私密流程回報，勿在公開 issue 揭露敏感文件樣本。" } },

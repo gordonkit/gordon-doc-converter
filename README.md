@@ -254,15 +254,17 @@ npm ci
 npm run build
 ```
 
-The generated site is self-contained under `docs/` and uses relative links. It is published
-at [docs.gordonkit.com](https://docs.gordonkit.com/). Its single documentation index supports
-English/Traditional Chinese navigation, search, responsive layouts, and a light/dark theme.
+The generated site is self-contained under `docs/` and is published at
+[docs.gordonkit.com](https://docs.gordonkit.com/). It generates indexable pages under
+`/en/<topic>/` and `/zh-TW/<topic>/` with localized metadata, canonical and alternate links,
+structured data, a sitemap, and robots directives. The site also supports bilingual navigation,
+search, responsive layouts, and a light/dark theme.
 The generated API contract is available at `docs/openapi.json`, and the read-only Swagger UI
 is available at `docs/swagger/index.html`. Run `npm run openapi:check` to detect a stale export.
 
-Browse the [documentation index](https://docs.gordonkit.com/) for the technical reference, user guide,
-compatibility notes, and development standards. Use its language control for Traditional
-Chinese, or see the [Traditional Chinese README](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md).
+Browse the [English documentation](https://docs.gordonkit.com/en/overview/) or
+[Traditional Chinese documentation](https://docs.gordonkit.com/zh-TW/overview/) for the technical
+reference, user guide, compatibility notes, and development standards.
 
 ## License
 

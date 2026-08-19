@@ -21,6 +21,31 @@ const labels = {
   "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件", license: "Apache-2.0 授權", notices: "第三方授權聲明" },
 };
 
+const siteUrl = "https://docs.gordonkit.com";
+
+function routeHref(locale: Locale, pageId: string): string {
+  return `/${locale}/${pageId}/`;
+}
+
+function updateMeta(selector: string, content: string): void {
+  document.head.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", content);
+}
+
+function updateAlternate(hreflang: string, href: string): void {
+  document.head.querySelector<HTMLLinkElement>(`link[rel="alternate"][hreflang="${hreflang}"]`)?.setAttribute("href", href);
+}
+
+function readRoute(): { locale?: Locale; pageId?: string } {
+  const [localeSegment, pageSegment] = location.pathname.split("/").filter(Boolean);
+  const routeLocale = localeSegment === "en" || localeSegment === "zh-TW" ? localeSegment : undefined;
+  const routePage = pages.some((item) => item.id === pageSegment) ? pageSegment : undefined;
+  const legacyPage = location.hash.slice(1).split("/")[0];
+  return {
+    locale: routeLocale,
+    pageId: routePage ?? (pages.some((item) => item.id === legacyPage) ? legacyPage : undefined),
+  };
+}
+
 function Logo() {
   return (
     <span className="whitespace-nowrap font-normal tracking-normal text-ink dark:text-white">
@@ -30,9 +55,10 @@ function Logo() {
 }
 
 function App() {
-  const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem("gk-locale") as Locale) || "en");
+  const initialRoute = readRoute();
+  const [locale, setLocale] = useState<Locale>(() => initialRoute.locale ?? (localStorage.getItem("gk-locale") as Locale) ?? "en");
   const [dark, setDark] = useState(() => localStorage.getItem("gk-theme") === "dark" || (!localStorage.getItem("gk-theme") && matchMedia("(prefers-color-scheme: dark)").matches));
-  const [pageId, setPageId] = useState(() => location.hash.slice(1).split("/")[0] || "overview");
+  const [pageId, setPageId] = useState(() => initialRoute.pageId ?? "overview");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -48,17 +74,39 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = locale;
     localStorage.setItem("gk-locale", locale);
-    document.title = `${page.heading?.[locale] ?? page.title[locale]} | GordonKit Docs`;
+    const title = `${page.heading?.[locale] ?? page.title[locale]} | GordonKit Docs`;
+    const description = page.summary[locale];
+    const canonicalUrl = `${siteUrl}${routeHref(locale, page.id)}`;
+    document.title = title;
+    document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", canonicalUrl);
+    updateAlternate("en", `${siteUrl}${routeHref("en", page.id)}`);
+    updateAlternate("zh-Hant-TW", `${siteUrl}${routeHref("zh-TW", page.id)}`);
+    updateAlternate("x-default", `${siteUrl}${routeHref("en", page.id)}`);
+    updateMeta('meta[name="description"]', description);
+    updateMeta('meta[property="og:title"]', title);
+    updateMeta('meta[property="og:description"]', description);
+    updateMeta('meta[property="og:url"]', canonicalUrl);
+    updateMeta('meta[name="twitter:title"]', title);
+    updateMeta('meta[name="twitter:description"]', description);
   }, [locale, page]);
 
   useEffect(() => {
-    const onHashChange = () => setPageId(location.hash.slice(1).split("/")[0] || "overview");
-    addEventListener("hashchange", onHashChange);
-    return () => removeEventListener("hashchange", onHashChange);
+    const onRouteChange = () => {
+      const route = readRoute();
+      setLocale(route.locale ?? "en");
+      setPageId(route.pageId ?? "overview");
+    };
+    addEventListener("popstate", onRouteChange);
+    addEventListener("hashchange", onRouteChange);
+    return () => {
+      removeEventListener("popstate", onRouteChange);
+      removeEventListener("hashchange", onRouteChange);
+    };
   }, []);
 
-  const navigate = (id: string) => {
-    location.hash = id;
+  const navigate = (id: string, targetLocale: Locale = locale) => {
+    history.pushState(null, "", routeHref(targetLocale, id));
+    setLocale(targetLocale);
     setPageId(id);
     setMobileOpen(false);
     scrollTo({ top: 0, behavior: "smooth" });
@@ -73,12 +121,12 @@ function App() {
       <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-[#11161d]/95">
         <div className="flex h-full items-center px-4 lg:px-6">
           <button className="mr-3 p-1.5 text-slate-500 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t.menu}><Bars3Icon className="h-6 w-6" /></button>
-          <button onClick={() => navigate("overview")}><Logo /></button>
+          <a href={routeHref(locale, "overview")} onClick={(event) => { event.preventDefault(); navigate("overview"); }}><Logo /></a>
           <button className="ml-auto flex h-9 w-44 items-center gap-2 border border-slate-300 bg-slate-50 px-3 text-sm text-slate-500 transition hover:border-slate-400 md:w-64 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400" onClick={() => setSearchOpen(true)}>
             <MagnifyingGlassIcon className="h-4 w-4" /><span className="truncate">{t.search}</span>
           </button>
           <div className="ml-3 flex items-center border-l border-slate-200 pl-3 dark:border-slate-800">
-            <button className="icon-button" onClick={() => setLocale(locale === "en" ? "zh-TW" : "en")} aria-label="Change language"><LanguageIcon className="h-5 w-5" /><span className="hidden text-xs font-semibold sm:block">{locale === "en" ? "EN" : "繁中"}</span></button>
+            <button className="icon-button" onClick={() => navigate(page.id, locale === "en" ? "zh-TW" : "en")} aria-label="Change language"><LanguageIcon className="h-5 w-5" /><span className="hidden text-xs font-semibold sm:block">{locale === "en" ? "EN" : "繁中"}</span></button>
             <button className="icon-button" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}</button>
             <a className="icon-button hidden sm:flex" href="https://github.com/gordonkit/gordon-doc-converter" aria-label="GitHub"><CodeBracketIcon className="h-5 w-5" /></a>
           </div>
@@ -93,7 +141,7 @@ function App() {
               <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-500">{category.label[locale]}</p>
               <div className="space-y-0.5">
                 {pages.filter((item) => item.category === category.id).map((item) => (
-                  <button key={item.id} onClick={() => navigate(item.id)} className={`w-full border-l-2 px-3 py-2 text-left text-sm transition ${item.id === page.id ? "border-signal bg-white font-semibold text-ink shadow-sm dark:bg-slate-900 dark:text-white" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-ink dark:text-slate-400 dark:hover:text-white"}`}>{item.title[locale]}</button>
+                  <a key={item.id} href={routeHref(locale, item.id)} onClick={(event) => { event.preventDefault(); navigate(item.id); }} className={`block w-full border-l-2 px-3 py-2 text-left text-sm transition ${item.id === page.id ? "border-signal bg-white font-semibold text-ink shadow-sm dark:bg-slate-900 dark:text-white" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-ink dark:text-slate-400 dark:hover:text-white"}`}>{item.title[locale]}</a>
                 ))}
               </div>
             </div>
@@ -123,20 +171,20 @@ function App() {
             ))}
           </div>
           <nav className="mt-16 grid grid-cols-2 gap-4 border-t border-slate-200 pt-8 dark:border-slate-800">
-            {pageIndex > 0 ? <PageLink direction="previous" label={t.previous} title={pages[pageIndex - 1].title[locale]} onClick={() => navigate(pages[pageIndex - 1].id)} /> : <span />}
-            {pageIndex < pages.length - 1 && <PageLink direction="next" label={t.next} title={pages[pageIndex + 1].title[locale]} onClick={() => navigate(pages[pageIndex + 1].id)} />}
+            {pageIndex > 0 ? <PageLink direction="previous" label={t.previous} title={pages[pageIndex - 1].title[locale]} href={routeHref(locale, pages[pageIndex - 1].id)} onClick={() => navigate(pages[pageIndex - 1].id)} /> : <span />}
+            {pageIndex < pages.length - 1 && <PageLink direction="next" label={t.next} title={pages[pageIndex + 1].title[locale]} href={routeHref(locale, pages[pageIndex + 1].id)} onClick={() => navigate(pages[pageIndex + 1].id)} />}
           </nav>
         </article>
         <footer className="mx-auto flex max-w-4xl flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 px-6 py-6 text-xs text-slate-500 sm:px-10 dark:border-slate-800 dark:text-slate-400">
           <a href="https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE" target="_blank" rel="noreferrer" className="hover:text-ink dark:hover:text-white">{t.license}</a>
-          <a href="./THIRD_PARTY_NOTICES.txt" className="hover:text-ink dark:hover:text-white">{t.notices}</a>
+          <a href="/THIRD_PARTY_NOTICES.txt" className="hover:text-ink dark:hover:text-white">{t.notices}</a>
         </footer>
       </main>
 
       <aside className="fixed bottom-0 right-0 top-16 hidden w-60 border-l border-slate-200 px-7 py-12 dark:border-slate-800 xl:block">
         <p className="mb-4 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{t.onPage}</p>
         <nav className="space-y-3 border-l border-slate-200 dark:border-slate-700">
-          {page.sections.map((section) => <a key={section.id} href={`#${page.id}/${section.id}`} onClick={(event) => { event.preventDefault(); document.getElementById(section.id)?.scrollIntoView({ behavior: "smooth" }); }} className="block border-l-2 border-transparent pl-4 text-sm text-slate-500 transition hover:border-signal hover:text-ink dark:hover:text-white">{section.title[locale]}</a>)}
+          {page.sections.map((section) => <a key={section.id} href={`#${section.id}`} onClick={(event) => { event.preventDefault(); history.replaceState(null, "", `#${section.id}`); document.getElementById(section.id)?.scrollIntoView({ behavior: "smooth" }); }} className="block border-l-2 border-transparent pl-4 text-sm text-slate-500 transition hover:border-signal hover:text-ink dark:hover:text-white">{section.title[locale]}</a>)}
         </nav>
       </aside>
 
@@ -228,13 +276,13 @@ function ResourceLinks({ links, locale }: { links: NonNullable<(typeof pages)[nu
   );
 }
 
-function PageLink({ direction, label, title, onClick }: { direction: "previous" | "next"; label: string; title: string; onClick: () => void }) {
-  return <button onClick={onClick} className={`group flex min-w-0 items-center gap-3 border border-slate-200 p-4 text-left transition hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600 ${direction === "next" ? "justify-end text-right" : ""}`}>{direction === "previous" && <ChevronLeftIcon className="h-5 w-5 shrink-0" />}<span className="min-w-0"><span className="block text-xs text-slate-500">{label}</span><span className="mt-1 block truncate text-sm font-semibold text-ink dark:text-white">{title}</span></span>{direction === "next" && <ChevronRightIcon className="h-5 w-5 shrink-0" />}</button>;
+function PageLink({ direction, label, title, href, onClick }: { direction: "previous" | "next"; label: string; title: string; href: string; onClick: () => void }) {
+  return <a href={href} onClick={(event) => { event.preventDefault(); onClick(); }} className={`group flex min-w-0 items-center gap-3 border border-slate-200 p-4 text-left transition hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600 ${direction === "next" ? "justify-end text-right" : ""}`}>{direction === "previous" && <ChevronLeftIcon className="h-5 w-5 shrink-0" />}<span className="min-w-0"><span className="block text-xs text-slate-500">{label}</span><span className="mt-1 block truncate text-sm font-semibold text-ink dark:text-white">{title}</span></span>{direction === "next" && <ChevronRightIcon className="h-5 w-5 shrink-0" />}</a>;
 }
 
 function SearchDialog({ locale, query, setQuery, matches, close, navigate }: { locale: Locale; query: string; setQuery: (value: string) => void; matches: typeof pages; close: () => void; navigate: (id: string) => void }) {
   const t = labels[locale];
-  return <div className="fixed inset-0 z-[60] flex items-start justify-center bg-ink/60 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={close}><div className="w-full max-w-2xl overflow-hidden border border-slate-300 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#151b23]" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true"><div className="flex items-center border-b border-slate-200 px-4 dark:border-slate-700"><MagnifyingGlassIcon className="h-5 w-5 text-slate-400" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t.search} className="h-14 flex-1 bg-transparent px-3 text-base text-ink outline-none placeholder:text-slate-400 dark:text-white" /><button className="icon-button" onClick={close} aria-label={t.close}><XMarkIcon className="h-5 w-5" /></button></div><div className="max-h-[55vh] overflow-y-auto p-2"><p className="px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{t.results}</p>{matches.length ? matches.map((item) => <button key={item.id} onClick={() => { navigate(item.id); close(); }} className="block w-full border-l-2 border-transparent px-3 py-3 text-left hover:border-signal hover:bg-slate-50 dark:hover:bg-slate-900"><span className="block font-semibold text-ink dark:text-white">{item.title[locale]}</span><span className="mt-1 block truncate text-sm text-slate-500">{item.summary[locale]}</span></button>) : <p className="px-3 py-8 text-center text-sm text-slate-500">{t.noResults}</p>}</div></div></div>;
+  return <div className="fixed inset-0 z-[60] flex items-start justify-center bg-ink/60 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={close}><div className="w-full max-w-2xl overflow-hidden border border-slate-300 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#151b23]" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true"><div className="flex items-center border-b border-slate-200 px-4 dark:border-slate-700"><MagnifyingGlassIcon className="h-5 w-5 text-slate-400" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t.search} className="h-14 flex-1 bg-transparent px-3 text-base text-ink outline-none placeholder:text-slate-400 dark:text-white" /><button className="icon-button" onClick={close} aria-label={t.close}><XMarkIcon className="h-5 w-5" /></button></div><div className="max-h-[55vh] overflow-y-auto p-2"><p className="px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{t.results}</p>{matches.length ? matches.map((item) => <a key={item.id} href={routeHref(locale, item.id)} onClick={(event) => { event.preventDefault(); navigate(item.id); close(); }} className="block w-full border-l-2 border-transparent px-3 py-3 text-left hover:border-signal hover:bg-slate-50 dark:hover:bg-slate-900"><span className="block font-semibold text-ink dark:text-white">{item.title[locale]}</span><span className="mt-1 block truncate text-sm text-slate-500">{item.summary[locale]}</span></a>) : <p className="px-3 py-8 text-center text-sm text-slate-500">{t.noResults}</p>}</div></div></div>;
 }
 
 export default App;

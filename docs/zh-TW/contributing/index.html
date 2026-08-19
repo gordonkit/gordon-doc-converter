@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。" />
+    <title>參與 GordonKit 開發 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/contributing/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/contributing/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/contributing/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/contributing/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="參與 GordonKit 開發 | GordonKit Docs" />
+    <meta property="og:description" content="使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-TW/contributing/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="參與 GordonKit 開發 | GordonKit Docs" />
+    <meta name="twitter:description" content="使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"參與 GordonKit 開發","description":"使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。","inLanguage":"zh-TW","url":"https://docs.gordonkit.com/zh-TW/contributing/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-TW/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-TW/overview/">總覽</a> <a href="/zh-TW/cli/">CLI 指令參考</a> <a href="/zh-TW/library/">Python 函式庫</a> <a href="/zh-TW/api/">HTTP API</a> <a href="/zh-TW/architecture/">系統架構</a> <a href="/zh-TW/contributing/">參與開發</a> <a href="/zh-TW/deployment/">部署模式</a> <a href="/zh-TW/containers/">容器化</a> <a href="/zh-TW/roadmap/">產品藍圖</a> <a href="/zh-TW/security/">安全性</a></nav></header>
+    <main><article>
+      <p>開發指南</p>
+      <h1>參與 GordonKit 開發</h1>
+      <p>使用 uv 設定 GordonKit 文件轉換器開發環境，並在提出 Pull Request 前完成 Python 格式化、lint、型別檢查與測試。</p>
+      <section id="setup">
+      <h2>本機設定</h2>
+      <p>專案使用 uv 管理可重現的 Python 相依套件。</p>
+      <pre><code>uv sync --dev --all-extras</code></pre>
+    </section><section id="quality">
+      <h2>品質檢查</h2>
+      <p>提出 Pull Request 前，請完成格式化、lint、型別檢查與測試。</p>
+      <pre><code>uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

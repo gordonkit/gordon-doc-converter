@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
+    <title>文件轉換 CLI 指令參考 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/cli/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/cli/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="文件轉換 CLI 指令參考 | GordonKit Docs" />
+    <meta property="og:description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-TW/cli/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="文件轉換 CLI 指令參考 | GordonKit Docs" />
+    <meta name="twitter:description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"文件轉換 CLI 指令參考","description":"使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。","inLanguage":"zh-TW","url":"https://docs.gordonkit.com/zh-TW/cli/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-TW/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-TW/overview/">總覽</a> <a href="/zh-TW/cli/">CLI 指令參考</a> <a href="/zh-TW/library/">Python 函式庫</a> <a href="/zh-TW/api/">HTTP API</a> <a href="/zh-TW/architecture/">系統架構</a> <a href="/zh-TW/contributing/">參與開發</a> <a href="/zh-TW/deployment/">部署模式</a> <a href="/zh-TW/containers/">容器化</a> <a href="/zh-TW/roadmap/">產品藍圖</a> <a href="/zh-TW/security/">安全性</a></nav></header>
+    <main><article>
+      <p>快速開始</p>
+      <h1>文件轉換 CLI 指令參考</h1>
+      <p>使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。</p>
+      <section id="cli-overview">
+      <h2>指令總覽</h2>
+      <p>請先從此表選擇適合工作的指令。所有指令都支援 --json，以輸出機器可讀的結果。</p>
+
+      <table><caption>CLI 指令總覽</caption>
+        <thead><tr><th>指令</th><th>適用情境</th></tr></thead>
+        <tbody><tr><td>doctor</td><td>檢查執行環境健康狀態與 renderer 可用性</td></tr><tr><td>engines</td><td>查看已設定引擎及其能力</td></tr><tr><td>convert</td><td>轉換單一 DOCX、ODT、PDF、HTML 或 Markdown 檔案</td></tr><tr><td>template</td><td>建立可編輯的 A4 HTML 起始範本</td></tr><tr><td>compare</td><td>比較兩個 PDF，並可輸出視覺差異檔</td></tr><tr><td>batch</td><td>批次轉換多個 DOCX，且各檔案失敗互相隔離</td></tr><tr><td>version</td><td>印出已安裝套件版本</td></tr></tbody>
+      </table>
+    </section><section id="cli-install">
+      <h2>安裝與指令形式</h2>
+      <p>安裝套件時會一併安裝 gordon-doc。可用 gordon-doc --help 或 gordon-doc &lt;command&gt; --help 檢視目前安裝版本接受的選項值。預設輸出簡潔的人類可讀結果；若由其他程式處理輸出，請加入 --json。</p>
+      <pre><code>python -m pip install gordon-doc-converter
+gordon-doc version
+gordon-doc convert --help</code></pre>
+    </section><section id="diagnostics">
+      <h2>環境診斷與版本</h2>
+      <p>正式轉換前可先使用 doctor：它會回報偵測到的平台、是否為互動式工作階段，以及各 renderer 的可用性。engines 只列出 renderer 能力，不判定整體健康狀態。version 回傳已安裝套件版本。若沒有可用引擎，doctor 會以 exit code 3 結束。</p>
+      <pre><code>gordon-doc doctor
+gordon-doc engines --json
+gordon-doc version --json</code></pre>
+    </section><section id="convert">
+      <h2>轉換單一文件</h2>
+      <p>convert 接受 DOCX、ODT、PDF、HTML 與 Markdown 輸入。未指定 --to 時，DOCX、ODT、HTML、Markdown 會輸出 PDF；PDF 輸入則必須指定 --to。可重複使用 --to 取得多個 artifact。--output 適用於單一檔案 artifact；省略時服務會在來源旁推導安全的輸出名稱，除非提供 --overwrite，否則不會覆寫既有檔案。</p>
+      <pre><code>gordon-doc convert report.docx --output report.pdf
+gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.pdf --to images --dpi 144</code></pre>
+    </section><section id="conversion-options">
+      <h2>轉換政策與輸出選項</h2>
+      <p>--engine word-com、libreoffice 或 gotenberg 會要求使用指定的 DOCX 轉 PDF 引擎；明確指定時絕不 fallback。--mode 選擇自動政策：desktop、server、container、strict-word 或 strict-libreoffice。修訂模式可用 --revisions final、original 或 markup；註解模式可用 --comments omit、appendix 或 markup，但仍取決於引擎支援。--timeout 單位為秒。HTML 與 Markdown 可用 --orientation portrait 或 landscape 選擇 A4 版面。--gotenberg-url 為本次呼叫提供 Gotenberg base URL。</p>
+      <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.html --to pdf --orientation landscape
+gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
+    </section><section id="structured-artifacts">
+      <h2>結構化 YAML 與 JSON Artifact</h2>
+      <p>--to yaml 與 --to json 會序列化同一份具版本的語意文件。Schema 1.3 保留接近 Markdown 的標題、段落、清單及表格文字，同時保存有意義的連結、圖片、修訂、註解、來源順序、metadata 與反向 locator。重複使用 --to 可只擷取一次並同時寫出兩種格式。--metadata 接受 none、basic 或 layout；沒有資料的選用值會直接省略，不會輸出 null。--to json 產生文件 artifact；不同用途的 --json 則將 CLI 執行結果寫到 stdout。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
+gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.docx --to json --json</code></pre>
+    </section><section id="source-anchors">
+      <h2>反向定位與來源驗證</h2>
+      <p>結構化 artifact 以 source.sha256 識別完全相同的輸入檔，並以 source_anchor.content_sha256 驗證每個正規化 block 或表格儲存格。DOCX anchor 使用 OOXML part 與 element path；Word 有提供時另含原生段落 ID，表格儲存格則在 path 加上 row/cell 索引。PDF anchor 使用從 1 起算的實體頁。PDF 頁內座標目前尚未提供，未來可由 layout provider 擴充。file offset 並非穩定 locator：DOCX 重新壓縮，以及 PDF 最佳化或增量儲存，都可能在可見內容不變時改變 offset。</p>
+
+      <table><caption>反向定位欄位</caption>
+        <thead><tr><th>欄位</th><th>用途</th></tr></thead>
+        <tbody><tr><td>source.sha256</td><td>確認完全相同的來源檔案版本</td></tr><tr><td>source_anchor.locator</td><td>選擇 ooxml-element、ooxml-table-cell 或 pdf-page</td></tr><tr><td>part + element_path</td><td>定位 word/document.xml 內的 DOCX element</td></tr><tr><td>native_id</td><td>來源有提供時使用 Word paraId</td></tr><tr><td>page_number</td><td>以從 1 起算的實體頁定位 PDF block</td></tr><tr><td>content_sha256</td><td>定位來源後驗證正規化文字</td></tr></tbody>
+      </table>
+    </section><section id="progress">
+      <h2>轉換進度</h2>
+      <p>convert 與 batch 在互動終端會自動顯示階段式進度。進度只寫入 stderr，因此重導向的 stdout 與機器可讀結果不會被污染。--json 會關閉自動進度；可用 --progress 強制顯示，或用 --no-progress 關閉。batch 顯示已完成檔案數／總檔案數，而非虛構的時間百分比。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --progress
+gordon-doc convert report.docx --to json --no-progress
+gordon-doc batch one.docx two.docx --output-dir converted --progress</code></pre>
+    </section><section id="images-template">
+      <h2>頁面影像與 HTML 範本</h2>
+      <p>使用 --to images 將 PDF 來源，或由 DOCX 產生的 PDF，轉為頁面影像。--dpi 可設 1 至 600；--image-format 為 png 或 jpeg；--quality 套用於 JPEG；可重複使用 --page（從 1 起算）選擇頁面；--background 設定影像背景色。影像輸出為名為 &lt;stem&gt;.pages 的目錄，內含連號檔案。template 會建立可編輯的 A4 HTML 起始範本；除非提供 --overwrite，否則會保護既有檔案。</p>
+      <pre><code>gordon-doc convert report.pdf --to images --image-format jpeg --quality 85 --page 1 --page 3
+gordon-doc template report.html --orientation landscape</code></pre>
+    </section><section id="compare-batch">
+      <h2>比較 PDF 與批次轉換</h2>
+      <p>compare 會檢查 PDF 結構、字型、大小與渲染後的像素。可設定 --diff-dir 儲存不同頁面的 PNG，並以 --dpi 控制比較的點陣解析度。batch 會依序轉換一或多個 DOCX，並隔離各檔案失敗；其輸出固定為 PDF。--output-dir 將每個產生的 PDF 放進指定目錄。只要任何項目失敗，batch 的 exit code 就會是非零；--json 則保留完整的逐項結果供 CI 報告使用。</p>
+      <pre><code>gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
+gordon-doc batch one.docx two.docx --output-dir converted --mode server --json</code></pre>
+    </section><section id="automation">
+      <h2>JSON 結果與 Exit Code</h2>
+      <p>所有指令均接受 --json。成功轉換的 payload 包含選用與嘗試過的引擎、artifact 路徑與中繼資料、耗時、實際採用的註解模式、warning 與 fallback 資訊。失敗結果包含穩定的錯誤碼、安全訊息、可得時的引擎名稱與 retryable 旗標。exit code 0 表示成功；2 表示輸入無效或輸出已存在；3 表示引擎／能力不可用；4 表示轉換失敗、逾時或無輸出；5 表示 PDF 驗證失敗。</p>
+      <pre><code>gordon-doc convert report.docx --json
+# PowerShell: stop a script if conversion fails
+gordon-doc convert report.docx --output report.pdf
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

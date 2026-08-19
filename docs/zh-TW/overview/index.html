@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。" />
+    <title>GordonKit 文件轉換器 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/overview/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/overview/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/overview/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/overview/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="GordonKit 文件轉換器 | GordonKit Docs" />
+    <meta property="og:description" content="將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-TW/overview/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="GordonKit 文件轉換器 | GordonKit Docs" />
+    <meta name="twitter:description" content="將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"GordonKit 文件轉換器","description":"將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。","inLanguage":"zh-TW","url":"https://docs.gordonkit.com/zh-TW/overview/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-TW/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-TW/overview/">總覽</a> <a href="/zh-TW/cli/">CLI 指令參考</a> <a href="/zh-TW/library/">Python 函式庫</a> <a href="/zh-TW/api/">HTTP API</a> <a href="/zh-TW/architecture/">系統架構</a> <a href="/zh-TW/contributing/">參與開發</a> <a href="/zh-TW/deployment/">部署模式</a> <a href="/zh-TW/containers/">容器化</a> <a href="/zh-TW/roadmap/">產品藍圖</a> <a href="/zh-TW/security/">安全性</a></nav></header>
+    <main><article>
+      <p>快速開始</p>
+      <h1>GordonKit 文件轉換器</h1>
+      <p>將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。</p>
+      <section id="about-project">
+      <h2>關於此專案</h2>
+      <p>此 GordonKit 開源專案負責協調 Microsoft Word、LibreOffice、Gotenberg 或 Pandoc 進行文件排版，並讓引擎選擇、驗證、fallback 報告與轉換結果保持明確且可診斷。</p>
+
+    </section><section id="interfaces">
+      <h2>使用介面</h2>
+      <p>依工作流程選擇適合的介面。所有介面都透過同一個 application service，並保留結構化結果、引擎政策與診斷資訊。</p>
+
+      <section><h3>Python 函式庫</h3><p>使用具型別的公開契約，執行單檔轉換、隔離式批次、引擎探測與 service injection。</p><code>from gordon_doc_converter import convert</code></section>
+      <section><h3>CLI</h3><p>執行轉換、比較與引擎檢查，並輸出穩定 JSON 結果供 script 與 CI 流程使用。</p><code>gordon-doc convert report.docx --to pdf</code></section>
+      <section><h3>HTTP API</h3><p>安裝 FastAPI extra，建立具認證 hooks、流量限制與有限並行能力的私有部署。</p><code>POST /conversions</code></section>
+    </section><section id="format-support">
+      <h2>格式支援</h2>
+      <p>下表整理本專案的主要轉換能力；部分路徑需安裝選用引擎或輸出套件，條件標示於表格中。</p>
+
+      <table><caption>支援的輸入與輸出格式</caption>
+        <thead><tr><th>輸入</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>頁圖</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>不適用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>—</td><td>不適用</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不適用</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>HTML</td><td>P</td><td>P+</td><td>—</td><td>不適用</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Markdown</td><td>P</td><td>P+</td><td>—</td><td>—</td><td>不適用</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+      </table><aside>DOCX 轉 PDF 的自動模式會依環境選擇可用引擎：互動式 Windows 優先使用 Word COM，伺服器依序使用 Gotenberg、LibreOffice，其他主機則優先使用 LibreOffice。明確指定引擎與 strict 模式絕不 fallback；不同引擎的排版結果可能有差異。</aside>
+    </section><section id="install">
+      <h2>安裝</h2>
+      <p>先安裝核心套件，再依部署需求加入選用能力。</p>
+      <pre><code>uv add gordon-doc-converter
+uv add &#39;gordon-doc-converter[images,gotenberg]&#39;</code></pre>
+    </section><section id="first-conversion">
+      <h2>第一次轉換</h2>
+      <p>從來源路徑建立請求。服務會選擇政策允許的引擎、驗證暫存輸出，並只在驗證成功後發布。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+request = ConversionRequest.from_source(Path(&quot;report.docx&quot;))
+result = convert(request)
+print(result.artifacts[0].path)</code></pre><aside>明確指定引擎時採嚴格模式，絕不會靜默 fallback。</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

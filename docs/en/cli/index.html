@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
+    <title>Document conversion CLI reference | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/en/cli/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/cli/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="Document conversion CLI reference | GordonKit Docs" />
+    <meta property="og:description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
+    <meta property="og:url" content="https://docs.gordonkit.com/en/cli/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Document conversion CLI reference | GordonKit Docs" />
+    <meta name="twitter:description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Document conversion CLI reference","description":"Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison.","inLanguage":"en","url":"https://docs.gordonkit.com/en/cli/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/en/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/en/overview/">Overview</a> <a href="/en/cli/">CLI reference</a> <a href="/en/library/">Python library</a> <a href="/en/api/">HTTP API</a> <a href="/en/architecture/">Architecture</a> <a href="/en/contributing/">Contributing</a> <a href="/en/deployment/">Deployment modes</a> <a href="/en/containers/">Containers</a> <a href="/en/roadmap/">Roadmap</a> <a href="/en/security/">Security</a></nav></header>
+    <main><article>
+      <p>Getting Started</p>
+      <h1>Document conversion CLI reference</h1>
+      <p>Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison.</p>
+      <section id="cli-overview">
+      <h2>Command overview</h2>
+      <p>Start here to choose the command for your task. All commands support --json for machine-readable output.</p>
+
+      <table><caption>CLI command overview</caption>
+        <thead><tr><th>Command</th><th>Use it for</th></tr></thead>
+        <tbody><tr><td>doctor</td><td>Check runtime health and renderer availability</td></tr><tr><td>engines</td><td>Inspect configured engines and capabilities</td></tr><tr><td>convert</td><td>Convert one DOCX, ODT, PDF, HTML, or Markdown file</td></tr><tr><td>template</td><td>Create an editable A4 HTML starter</td></tr><tr><td>compare</td><td>Compare two PDFs and optionally write visual diffs</td></tr><tr><td>batch</td><td>Convert multiple DOCX files with isolated failures</td></tr><tr><td>version</td><td>Print the installed package version</td></tr></tbody>
+      </table>
+    </section><section id="cli-install">
+      <h2>Install and command shape</h2>
+      <p>The gordon-doc command is installed with the package. Run gordon-doc --help or gordon-doc &lt;command&gt; --help to view the option values accepted by the installed version. Commands print a concise human result by default; add --json whenever another program consumes the output.</p>
+      <pre><code>python -m pip install gordon-doc-converter
+gordon-doc version
+gordon-doc convert --help</code></pre>
+    </section><section id="diagnostics">
+      <h2>Diagnostics and version</h2>
+      <p>Use doctor before a production run: it reports the detected platform, whether the session is interactive, and the availability of each renderer. engines lists renderer capabilities without determining overall health. version returns the installed package version. doctor exits with code 3 when no engine is available.</p>
+      <pre><code>gordon-doc doctor
+gordon-doc engines --json
+gordon-doc version --json</code></pre>
+    </section><section id="convert">
+      <h2>Convert one document</h2>
+      <p>convert accepts DOCX, ODT, PDF, HTML, and Markdown input. With no --to it creates PDF for DOCX, ODT, HTML, or Markdown; PDF input always requires --to. Repeat --to to request several artifacts. --output is appropriate for one single-file artifact; without it, the service derives a safe sibling output name and refuses to replace an existing file unless --overwrite is present.</p>
+      <pre><code>gordon-doc convert report.docx --output report.pdf
+gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.pdf --to images --dpi 144</code></pre>
+    </section><section id="conversion-options">
+      <h2>Conversion policy and output options</h2>
+      <p>--engine word-com, libreoffice, or gotenberg requires that exact DOCX-to-PDF engine; explicit selection never falls back. --mode selects automatic policy: desktop, server, container, strict-word, or strict-libreoffice. Tracked changes use --revisions final, original, or markup; comments use --comments omit, appendix, or markup, subject to engine support. --timeout is in seconds. For HTML and Markdown, --orientation portrait or landscape chooses A4 layout. --gotenberg-url supplies the Gotenberg base URL for this invocation.</p>
+      <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.html --to pdf --orientation landscape
+gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
+    </section><section id="structured-artifacts">
+      <h2>Structured YAML and JSON artifacts</h2>
+      <p>--to yaml and --to json serialize the same versioned semantic document. Schema 1.3 keeps Markdown-like heading, paragraph, list, and table text while preserving meaningful links, images, revisions, annotations, source order, metadata, and reverse locators. Repeat --to to extract once and write both formats. --metadata accepts none, basic, or layout; optional values with no data are omitted rather than written as null. --to json writes a document artifact, while the separate --json flag writes the CLI result contract to stdout.</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
+gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.docx --to json --json</code></pre>
+    </section><section id="source-anchors">
+      <h2>Reverse location and source verification</h2>
+      <p>Structured artifacts identify the exact input with source.sha256 and verify each normalized block or table cell with source_anchor.content_sha256. DOCX anchors use the OOXML part and element path, with a native paragraph ID when Word supplies one; table cells extend the path with row and cell indexes. PDF anchors use the one-based physical page. PDF page coordinates are not yet available and can be added by a future layout provider. File offsets are not stable locators: DOCX recompression and PDF optimization or incremental saves change them without changing the visible content.</p>
+
+      <table><caption>Reverse locator fields</caption>
+        <thead><tr><th>Field</th><th>Purpose</th></tr></thead>
+        <tbody><tr><td>source.sha256</td><td>Confirm the exact source file version</td></tr><tr><td>source_anchor.locator</td><td>Select ooxml-element, ooxml-table-cell, or pdf-page</td></tr><tr><td>part + element_path</td><td>Locate a DOCX element inside word/document.xml</td></tr><tr><td>native_id</td><td>Use Word paraId when the source provides it</td></tr><tr><td>page_number</td><td>Locate a PDF block on a one-based physical page</td></tr><tr><td>content_sha256</td><td>Verify normalized text after locating the source</td></tr></tbody>
+      </table>
+    </section><section id="progress">
+      <h2>Conversion progress</h2>
+      <p>convert and batch show phase-based progress automatically on interactive terminals. Progress is emitted only on stderr, so redirected stdout and machine-readable results remain clean. --json disables automatic progress; use --progress to force it or --no-progress to suppress it. Batch progress reports completed files over total files rather than an invented time percentage.</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --progress
+gordon-doc convert report.docx --to json --no-progress
+gordon-doc batch one.docx two.docx --output-dir converted --progress</code></pre>
+    </section><section id="images-template">
+      <h2>Page images and HTML template</h2>
+      <p>Use --to images to rasterize a PDF source or the PDF produced from a DOCX source. --dpi accepts 1 through 600; --image-format is png or jpeg; --quality applies to JPEG; repeat --page with one-based page numbers to select pages; --background sets the image background colour. Image output is a directory named &lt;stem&gt;.pages containing numbered files. template writes an editable A4 HTML starting point and protects existing files unless --overwrite is supplied.</p>
+      <pre><code>gordon-doc convert report.pdf --to images --image-format jpeg --quality 85 --page 1 --page 3
+gordon-doc template report.html --orientation landscape</code></pre>
+    </section><section id="compare-batch">
+      <h2>Compare PDFs and convert batches</h2>
+      <p>compare examines PDF structure, fonts, sizes, and rendered pixels. Set --diff-dir to save PNGs for pages that differ, and use --dpi to control comparison raster resolution. batch converts one or more DOCX files sequentially, isolating each file failure; it always targets PDF. --output-dir stores each generated PDF in the chosen directory. The batch exit code is non-zero when any item fails, while --json retains every item result for CI reporting.</p>
+      <pre><code>gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
+gordon-doc batch one.docx two.docx --output-dir converted --mode server --json</code></pre>
+    </section><section id="automation">
+      <h2>JSON results and exit codes</h2>
+      <p>All commands accept --json. Successful conversion payloads include the selected and attempted engines, artifact paths and metadata, duration, effective annotation modes, warnings, and fallback information. Failures include a stable error code, safe message, engine when known, and retryable flag. Exit code 0 means success; 2 means invalid input or output already exists; 3 means engine/capability unavailable; 4 means conversion failed, timed out, or produced no output; and 5 means PDF validation failed.</p>
+      <pre><code>gordon-doc convert report.docx --json
+# PowerShell: stop a script if conversion fails
+gordon-doc convert report.docx --output report.pdf
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

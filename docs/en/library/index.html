@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics." />
+    <title>Python document conversion library | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/en/library/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/library/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/library/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/library/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="Python document conversion library | GordonKit Docs" />
+    <meta property="og:description" content="Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics." />
+    <meta property="og:url" content="https://docs.gordonkit.com/en/library/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Python document conversion library | GordonKit Docs" />
+    <meta name="twitter:description" content="Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics." />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Python document conversion library","description":"Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics.","inLanguage":"en","url":"https://docs.gordonkit.com/en/library/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/en/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/en/overview/">Overview</a> <a href="/en/cli/">CLI reference</a> <a href="/en/library/">Python library</a> <a href="/en/api/">HTTP API</a> <a href="/en/architecture/">Architecture</a> <a href="/en/contributing/">Contributing</a> <a href="/en/deployment/">Deployment modes</a> <a href="/en/containers/">Containers</a> <a href="/en/roadmap/">Roadmap</a> <a href="/en/security/">Security</a></nav></header>
+    <main><article>
+      <p>Getting Started</p>
+      <h1>Python document conversion library</h1>
+      <p>Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics.</p>
+      <section id="library-overview">
+      <h2>Library overview</h2>
+      <p>The public API uses engine-neutral typed models. Choose the smallest entry point that meets the integration need.</p>
+
+      <table><caption>Python library entry points</caption>
+        <thead><tr><th>Entry point</th><th>Use it for</th></tr></thead>
+        <tbody><tr><td>ConversionRequest.from_source</td><td>Infer and validate source format from a path</td></tr><tr><td>convert(request)</td><td>Run one conversion and receive ConversionResult</td></tr><tr><td>DocumentConversionService</td><td>Inject engines or use service methods directly</td></tr><tr><td>convert_batch(requests)</td><td>Run sequential, failure-isolated conversions</td></tr><tr><td>probe_engines()</td><td>Discover renderer availability and annotation capabilities</td></tr><tr><td>result.to_dict()</td><td>Produce stable JSON-compatible result data</td></tr></tbody>
+      </table>
+    </section><section id="library-single">
+      <h2>Single conversion</h2>
+      <p>ConversionRequest.from_source validates the allowlisted extension and infers the source format. convert returns a ConversionResult rather than raising for ordinary conversion failures, so inspect success and error before reading artifacts. ConversionError is reserved for invalid requests and related contract errors.</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+result = convert(ConversionRequest.from_source(Path(&#39;report.docx&#39;)))
+if not result.success:
+    raise RuntimeError(result.error.message if result.error else &#39;conversion failed&#39;)
+print(result.artifacts[0].path)</code></pre>
+    </section><section id="library-options">
+      <h2>Options and strict policy</h2>
+      <p>Use ConversionOptions to choose output paths, overwrite behaviour, timeout, deployment mode, an explicit engine, annotation handling, metadata detail, and image settings. EngineName is strict: an unavailable explicitly chosen engine produces a diagnosable failure rather than a silent alternative. ArtifactType can request PDF, DOCX, ODT, HTML, Markdown, YAML, JSON, or page images where the route supports it.</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import (
+    ArtifactType, ConversionOptions, ConversionRequest, convert,
+)
+
+request = ConversionRequest.from_source(
+    Path(&#39;report.docx&#39;),
+    artifacts=(ArtifactType.YAML, ArtifactType.JSON),
+    options=ConversionOptions(output_path=Path(&#39;report&#39;)),
+)
+result = convert(request)</code></pre>
+    </section><section id="library-service">
+      <h2>Batches, probes, and result handling</h2>
+      <p>DocumentConversionService supports dependency injection for engines and environment-aware orchestration. convert_batch processes requests sequentially and keeps failures isolated. probe_engines returns EngineProbeResult entries with availability, version, supported revision modes, and comment modes. Results serialize through to_dict() to stable JSON-compatible primitives for logs or APIs; do not log document contents or sensitive paths.</p>
+      <pre><code>from gordon_doc_converter import DocumentConversionService
+
+service = DocumentConversionService()
+for probe in service.probe_engines():
+    print(probe.engine, probe.available, probe.version)
+
+results = service.convert_batch(requests)
+payload = [result.to_dict() for result in results]</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

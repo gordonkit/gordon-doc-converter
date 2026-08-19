@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。" />
+    <title>文件轉換器系統架構 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/architecture/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/architecture/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/architecture/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/architecture/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:title" content="文件轉換器系統架構 | GordonKit Docs" />
+    <meta property="og:description" content="了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-TW/architecture/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="文件轉換器系統架構 | GordonKit Docs" />
+    <meta name="twitter:description" content="了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"文件轉換器系統架構","description":"了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。","inLanguage":"zh-TW","url":"https://docs.gordonkit.com/zh-TW/architecture/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-TW/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-TW/overview/">總覽</a> <a href="/zh-TW/cli/">CLI 指令參考</a> <a href="/zh-TW/library/">Python 函式庫</a> <a href="/zh-TW/api/">HTTP API</a> <a href="/zh-TW/architecture/">系統架構</a> <a href="/zh-TW/contributing/">參與開發</a> <a href="/zh-TW/deployment/">部署模式</a> <a href="/zh-TW/containers/">容器化</a> <a href="/zh-TW/roadmap/">產品藍圖</a> <a href="/zh-TW/security/">安全性</a></nav></header>
+    <main><article>
+      <p>開發指南</p>
+      <h1>文件轉換器系統架構</h1>
+      <p>了解 GordonKit 可攜式文件轉換架構，包括 application service、引擎協定、政策協調、adapter 與 PDF 驗證。</p>
+      <section id="dependency-flow">
+      <h2>相依流向</h2>
+      <p>函式庫與 CLI 呼叫皆進入 application service，由 orchestrator 套用政策後，再呼叫共用 engine protocol 並驗證產出的 PDF。</p>
+      <pre><code>Library / CLI
+  -&gt; Application service
+  -&gt; Orchestrator and policy
+  -&gt; Engine protocol
+  -&gt; PDF validation</code></pre>
+    </section><section id="adapter-rules">
+      <h2>Adapter 規則</h2>
+      <p>平台 API 與 subprocess 限制在引擎 adapter 內。Windows 專用相依套件採延遲匯入，確保核心套件維持跨平台。</p>
+
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

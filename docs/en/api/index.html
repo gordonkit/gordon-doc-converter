@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract." />
+    <title>DOCX to PDF HTTP API | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-CaD0TgAG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-Czp80ahq.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/en/api/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/api/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/api/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/api/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="DOCX to PDF HTTP API | GordonKit Docs" />
+    <meta property="og:description" content="Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract." />
+    <meta property="og:url" content="https://docs.gordonkit.com/en/api/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DOCX to PDF HTTP API | GordonKit Docs" />
+    <meta name="twitter:description" content="Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract." />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"DOCX to PDF HTTP API","description":"Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract.","inLanguage":"en","url":"https://docs.gordonkit.com/en/api/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/en/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/en/overview/">Overview</a> <a href="/en/cli/">CLI reference</a> <a href="/en/library/">Python library</a> <a href="/en/api/">HTTP API</a> <a href="/en/architecture/">Architecture</a> <a href="/en/contributing/">Contributing</a> <a href="/en/deployment/">Deployment modes</a> <a href="/en/containers/">Containers</a> <a href="/en/roadmap/">Roadmap</a> <a href="/en/security/">Security</a></nav></header>
+    <main><article>
+      <p>Getting Started</p>
+      <h1>DOCX to PDF HTTP API</h1>
+      <p>Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract.</p>
+      <section id="api-overview">
+      <h2>API overview</h2>
+      <p>The private HTTP adapter exposes a deliberately small DOCX-to-PDF surface. Use the endpoints below for conversion, diagnostics, and deployment health checks.</p>
+
+      <table><caption>HTTP API endpoints</caption>
+        <thead><tr><th>Endpoint</th><th>Authentication</th><th>Purpose</th></tr></thead>
+        <tbody><tr><td>POST /conversions</td><td>Bearer token</td><td>Convert uploaded DOCX bytes to a PDF</td></tr><tr><td>GET /engines</td><td>Bearer token</td><td>List configured renderer capabilities</td></tr><tr><td>GET /live</td><td>None</td><td>Confirm the process is alive</td></tr><tr><td>GET /ready</td><td>None</td><td>Check that the default renderer is ready</td></tr><tr><td>GET /version</td><td>None</td><td>Return the package version</td></tr></tbody>
+      </table>
+    </section><section id="start-api">
+      <h2>Start the API</h2>
+      <p>Install the optional API dependencies, set a strong API key, and run the application factory on port 8000.</p>
+      <pre><code>uv sync --extra api
+$env:GORDON_DOC_API_KEY = &quot;replace-me&quot;
+uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000</code></pre><aside>The environment-variable example uses PowerShell. Keep this API private and do not commit API keys.</aside>
+    </section><section id="api-convert">
+      <h2>Convert a document</h2>
+      <p>POST /conversions accepts only a DOCX request body and returns application/pdf. Send the original basename in X-Filename, the DOCX OOXML MIME type in Content-Type, and a Bearer token when an API key is configured. The optional engine query parameter accepts libreoffice or gotenberg; Word COM is deliberately unavailable through the API. The server stages the upload in a temporary directory, validates the OOXML package and limits, calls the configured malware-scan hook, and deletes temporary files before the response returns.</p>
+      <pre><code>curl --fail-with-body \
+  -H &quot;Authorization: Bearer replace-me&quot; \
+  -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; \
+  -H &quot;X-Filename: report.docx&quot; \
+  --data-binary @report.docx \
+  &quot;http://127.0.0.1:8000/conversions?engine=libreoffice&quot; \
+  --output report.pdf</code></pre><aside>The HTTP adapter is intentionally narrower than the library and CLI: it exposes authenticated DOCX-to-PDF conversion only. Keep it behind private network controls and TLS in production.</aside>
+    </section><section id="api-documentation">
+      <h2>Interactive API documentation</h2>
+      <p>The documentation site publishes the generated OpenAPI 3.1 contract and a bundled, read-only Swagger UI. You can inspect the JSON in your browser or download it for code generation and validation tools.</p>
+      <a href="/openapi.json">View OpenAPI JSON</a> <a href="/openapi.json">Download OpenAPI JSON</a> <a href="/swagger/">Open Swagger UI</a><aside>The hosted Swagger UI is read-only. Use the API server&#39;s /docs page when you need Try it out against a configured private deployment.</aside>
+    </section><section id="api-endpoints">
+      <h2>Available endpoints</h2>
+      <p>The specification describes document conversion, engine discovery, health, readiness, and version endpoints. Protected requests use a Bearer token.</p>
+      <pre><code># Protected: requires Authorization: Bearer &lt;api-key&gt;
+POST /conversions?engine=libreoffice|gotenberg
+GET  /engines
+
+# Unprotected operational metadata
+GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
+GET  /ready    # 200 ready, 503 not-ready
+GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+    </section><section id="api-status-errors">
+      <h2>Status codes and operational limits</h2>
+      <p>A successful conversion returns 200 with a PDF attachment. Invalid engine choices or input return 400; missing or invalid credentials return 401; an oversized source returns 413; renderer failures return 422; exhausted rate or concurrency capacity returns 429; internal staging or service faults return 500; and unavailable authentication or malware scanning returns 503. /ready checks the configured default engine rather than merely reporting that the process is alive. The built-in fixed-window rate limit and concurrency limit are process-local, so production deployments with multiple replicas must enforce distributed limits at the ingress or gateway too.</p>
+
+    </section><section id="api-configuration">
+      <h2>Configuration and integration hooks</h2>
+      <p>create_app accepts ApiSettings or environment defaults. GORDON_DOC_API_KEY enables the default constant-time Bearer-token comparison. GORDON_DOC_GOTENBERG_URL configures a Gotenberg adapter and makes Gotenberg the default engine; otherwise LibreOffice is used. ApiSettings also controls conversion timeout, maximum concurrent conversions, fixed-window request rate, and input limits. Supply auth_hook, malware_scan_hook, and telemetry_hook when integrating private identity, scanning, or observability systems. Telemetry receives content-free fields only; never emit document contents, credentials, or customer paths.</p>
+      <pre><code>from gordon_doc_converter.api.app import ApiSettings, create_app
+
+app = create_app(settings=ApiSettings(
+    api_key=&#39;read-from-a-secret-store&#39;,
+    timeout_seconds=120,
+    max_concurrent_conversions=2,
+    rate_limit_requests=30,
+    rate_limit_window_seconds=60,
+))</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>
