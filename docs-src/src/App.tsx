@@ -48,7 +48,7 @@ function readRoute(): { locale?: Locale; pageId?: string } {
 
 function Logo() {
   return (
-    <span className="whitespace-nowrap font-normal tracking-normal text-ink dark:text-white">
+    <span className="whitespace-nowrap text-sm font-normal tracking-normal text-ink sm:text-base dark:text-white">
       gordonkit.com <span className="text-slate-400">Docs</span>
     </span>
   );
@@ -118,17 +118,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white text-slate-700 antialiased dark:bg-[#11161d] dark:text-slate-300">
-      <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-[#11161d]/95">
-        <div className="flex h-full items-center px-4 lg:px-6">
-          <button className="mr-3 p-1.5 text-slate-500 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t.menu}><Bars3Icon className="h-6 w-6" /></button>
+      <header className="fixed inset-x-0 top-0 z-40 h-28 border-b border-slate-200 bg-white/95 backdrop-blur lg:h-16 dark:border-slate-800 dark:bg-[#11161d]/95">
+        <div className="flex h-full flex-wrap items-center px-4 lg:flex-nowrap lg:px-6">
+          <button className="mr-2 p-1.5 text-slate-500 sm:mr-3 lg:hidden" onClick={() => setMobileOpen(true)} aria-label={t.menu}><Bars3Icon className="h-6 w-6" /></button>
           <a href={routeHref(locale, "overview")} onClick={(event) => { event.preventDefault(); navigate("overview"); }}><Logo /></a>
-          <button className="ml-auto flex h-9 w-44 items-center gap-2 border border-slate-300 bg-slate-50 px-3 text-sm text-slate-500 transition hover:border-slate-400 md:w-64 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400" onClick={() => setSearchOpen(true)}>
+          <button className="order-3 mb-2 flex h-9 w-full items-center gap-2 border border-slate-300 bg-slate-50 px-3 text-sm text-slate-500 transition hover:border-slate-400 lg:order-none lg:mb-0 lg:ml-auto lg:w-64 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400" onClick={() => setSearchOpen(true)}>
             <MagnifyingGlassIcon className="h-4 w-4" /><span className="truncate">{t.search}</span>
           </button>
-          <div className="ml-3 flex items-center border-l border-slate-200 pl-3 dark:border-slate-800">
+          <div className="ml-auto flex items-center border-l border-slate-200 pl-1 sm:pl-2 lg:ml-3 lg:pl-3 dark:border-slate-800">
             <button className="icon-button" onClick={() => navigate(page.id, locale === "en" ? "zh-TW" : "en")} aria-label="Change language"><LanguageIcon className="h-5 w-5" /><span className="hidden text-xs font-semibold sm:block">{locale === "en" ? "EN" : "繁中"}</span></button>
             <button className="icon-button" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}</button>
-            <a className="icon-button hidden sm:flex" href="https://github.com/gordonkit/gordon-doc-converter" aria-label="GitHub"><CodeBracketIcon className="h-5 w-5" /></a>
+            <a className="icon-button" href="https://github.com/gordonkit/gordon-doc-converter" aria-label="GitHub"><CodeBracketIcon className="h-5 w-5" /></a>
           </div>
         </div>
       </header>
@@ -150,7 +150,7 @@ function App() {
       </aside>
       {mobileOpen && <button className="fixed inset-0 z-40 bg-ink/50 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" />}
 
-      <main className="pt-16 lg:pl-64 xl:pr-60">
+      <main className="pt-28 lg:pl-64 lg:pt-16 xl:pr-60">
         <article className="mx-auto max-w-4xl px-6 py-12 sm:px-10 lg:py-16">
           <div className="mb-10 border-b border-slate-200 pb-9 dark:border-slate-800">
             <p className="mb-3 flex items-center gap-2 font-mono text-xs font-semibold uppercase text-leaf dark:text-emerald-400"><CommandLineIcon className="h-4 w-4" />{categories.find((category) => category.id === page.category)?.label[locale]}</p>
@@ -161,7 +161,7 @@ function App() {
             {page.sections.map((section) => (
               <section key={section.id} id={section.id} className="scroll-mt-24">
                 <h2 className="mb-4 text-2xl font-semibold text-ink dark:text-white">{section.title[locale]}</h2>
-                <p className="leading-7">{section.body[locale]}</p>
+                <SectionBody section={section} locale={locale} />
                 {section.interfaces && <InterfaceOptions interfaces={section.interfaces} locale={locale} />}
                 {section.table && <FormatTable table={section.table} locale={locale} />}
                 {section.code && <CodeBlock code={section.code} copyLabel={t.copy} copiedLabel={t.copied} />}
@@ -190,6 +190,24 @@ function App() {
 
       {searchOpen && <SearchDialog locale={locale} query={query} setQuery={setQuery} matches={matches} close={() => setSearchOpen(false)} navigate={navigate} />}
     </div>
+  );
+}
+
+function SectionBody({ section, locale }: { section: (typeof pages)[number]["sections"][number]; locale: Locale }) {
+  const body = section.body[locale];
+  const link = section.bodyLink;
+
+  if (!link) {
+    return <p className="leading-7">{body}</p>;
+  }
+
+  const [before, after] = body.split(link.label[locale]);
+  return (
+    <p className="leading-7">
+      {before}
+      <a href={link.href} target="_blank" rel="noreferrer" className="font-semibold text-leaf underline decoration-emerald-300 underline-offset-4 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">{link.label[locale]}</a>
+      {after}
+    </p>
   );
 }
 

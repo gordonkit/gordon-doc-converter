@@ -4,6 +4,10 @@ export type Section = {
   id: string;
   title: Record<Locale, string>;
   body: Record<Locale, string>;
+  bodyLink?: {
+    label: Record<Locale, string>;
+    href: string;
+  };
   code?: string;
   note?: Record<Locale, string>;
   links?: Array<{
@@ -61,6 +65,10 @@ export const pages: Page[] = [
         body: {
           en: "This open-source GordonKit project orchestrates Microsoft Word, LibreOffice, Gotenberg, or Pandoc for document rendering. It keeps engine selection, validation, fallback reporting, and conversion results explicit and diagnosable.",
           "zh-TW": "此 GordonKit 開源專案負責協調 Microsoft Word、LibreOffice、Gotenberg 或 Pandoc 進行文件排版，並讓引擎選擇、驗證、fallback 報告與轉換結果保持明確且可診斷。",
+        },
+        bodyLink: {
+          label: { en: "open-source GordonKit project", "zh-TW": "GordonKit 開源專案" },
+          href: "https://github.com/gordonkit/gordon-doc-converter",
         },
       },
       {
