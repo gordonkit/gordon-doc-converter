@@ -9,6 +9,7 @@ export type Section = {
     href: string;
   };
   code?: string;
+  bullets?: Record<Locale, string[]>;
   note?: Record<Locale, string>;
   links?: Array<{
     label: Record<Locale, string>;
@@ -142,9 +143,25 @@ export const pages: Page[] = [
             "zh-TW": ["Auto 依環境政策自動選擇引擎", "✓ 內建支援", "LO LibreOffice", "P Pandoc", "P+ Pandoc 與 PDF backend", "PDF 經由中間 PDF", "— 不支援", "灰底 × 相同格式，停用"],
           },
         },
-        note: {
-          en: "For DOCX to PDF, automatic mode selects capable engines by environment: interactive Windows prefers Word COM, servers prefer Gotenberg then LibreOffice, and other hosts prefer LibreOffice. DOCX to HTML uses semantic extraction by default; on Windows desktop with Word COM available, it renders through Word for higher visual fidelity. Use --engine word-com to force Word COM HTML, or --mode server to force semantic extraction. Explicit engine and strict modes never fall back. Rendering may differ between engines.",
-          "zh-TW": "DOCX 轉 PDF 的自動模式會依環境選擇可用引擎：互動式 Windows 優先使用 Word COM，伺服器依序使用 Gotenberg、LibreOffice，其他主機則優先使用 LibreOffice。DOCX 轉 HTML 預設使用語意萃取；在 Windows 桌面環境且 Word COM 可用時，會透過 Word 排版以獲得更高的視覺忠實度。可使用 --engine word-com 強制使用 Word COM 輸出 HTML，或以 --mode server 強制使用語意萃取。明確指定引擎與 strict 模式絕不 fallback；不同引擎的排版結果可能有差異。",
+        bullets: {
+          en: [
+            "DOCX to PDF on interactive Windows: automatic mode prefers Word COM.",
+            "DOCX to PDF on servers: automatic mode prefers Gotenberg, then LibreOffice.",
+            "DOCX to PDF on other hosts: automatic mode prefers LibreOffice.",
+            "DOCX to HTML: semantic extraction is the default. On a Windows desktop with Word COM available, Word rendering provides higher visual fidelity.",
+            "Use --engine word-com to force Word COM HTML, or --mode server to force semantic extraction.",
+            "Explicit engine and strict modes never fall back.",
+            "Rendering may differ between engines.",
+          ],
+          "zh-TW": [
+            "互動式 Windows 的 DOCX 轉 PDF：自動模式優先使用 Word COM。",
+            "伺服器的 DOCX 轉 PDF：自動模式依序優先使用 Gotenberg、LibreOffice。",
+            "其他主機的 DOCX 轉 PDF：自動模式優先使用 LibreOffice。",
+            "DOCX 轉 HTML：預設使用語意萃取。在 Windows 桌面環境且 Word COM 可用時，透過 Word 排版可獲得更高的視覺忠實度。",
+            "使用 --engine word-com 可強制使用 Word COM 輸出 HTML，使用 --mode server 則可強制使用語意萃取。",
+            "明確指定引擎與 strict 模式絕不 fallback。",
+            "不同引擎的排版結果可能有差異。",
+          ],
         },
       },
       {

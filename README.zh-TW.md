@@ -30,13 +30,21 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 逐頁圖片可輸出為 PNG 或 JPEG。DOCX 與 PDF 可產生 Markdown、HTML、YAML、JSON
 及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX，但兩者無法直接互轉。
 
-DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice；DOCX 轉 PDF
-則可使用指定的 Word、LibreOffice 或 Gotenberg 引擎。DOCX 轉 HTML 預設使用語意內容
-萃取；在 Windows 桌面環境且 Word COM 可用時，會透過 Word 排版以獲得更高的視覺忠實度。
-可使用 `--engine word-com` 強制使用 Word COM 輸出 HTML，或以 `--mode server` 強制使用
-語意萃取。ODT 支援以 ODF-CNS 15251／
-ISO/IEC 26300 Writer 文件為目標，會驗證封裝結構與內容是否可讀，但不保證來回轉換後
-版面完全相同。
+DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX 轉換採用以下
+引擎政策：
+
+- 互動式 Windows 的 DOCX 轉 PDF：自動模式優先使用 Word COM。
+- 伺服器的 DOCX 轉 PDF：自動模式依序優先使用 Gotenberg、LibreOffice。
+- 其他主機的 DOCX 轉 PDF：自動模式優先使用 LibreOffice。
+- DOCX 轉 HTML：預設使用語意萃取。在 Windows 桌面環境且 Word COM 可用時，透過 Word
+    排版可獲得更高的視覺忠實度。
+- 使用 `--engine word-com` 可強制使用 Word COM 輸出 HTML，使用 `--mode server` 則可強制
+    使用語意萃取。
+- 明確指定引擎與 strict 模式絕不 fallback。
+- 不同引擎的排版結果可能有差異。
+
+ODT 支援以 ODF-CNS 15251／ISO/IEC 26300 Writer 文件為目標，會驗證封裝結構與內容是否
+可讀，但不保證來回轉換後版面完全相同。
 
 HTML／Markdown 轉換需要 Pandoc；輸出 PDF 時還需要 `wkhtmltopdf` 等 Pandoc PDF
 後端。可先執行 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4 範本，

@@ -164,6 +164,11 @@ function App() {
                 <SectionBody section={section} locale={locale} />
                 {section.interfaces && <InterfaceOptions interfaces={section.interfaces} locale={locale} />}
                 {section.table && <FormatTable table={section.table} locale={locale} />}
+                {section.bullets && (
+                  <ul className="mt-5 list-disc space-y-2 pl-6 leading-7 marker:text-leaf">
+                    {section.bullets[locale].map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                )}
                 {section.code && <CodeBlock code={section.code} copyLabel={t.copy} copiedLabel={t.copied} />}
                 {section.links && <ResourceLinks links={section.links} locale={locale} />}
                 {section.note && <div className="mt-5 border-l-4 border-leaf bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100">{section.note[locale]}</div>}

@@ -32,13 +32,21 @@ output artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as in
 PDF/DOCX conversion. The project does not convert Markdown and HTML directly between each
 other.
 
-DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice; DOCX-to-PDF can use
-the selected Word, LibreOffice, or Gotenberg engine. DOCX-to-HTML uses semantic content
-extraction by default; on Windows desktop with Word COM available, it renders through Word
-for higher visual fidelity. Use `--engine word-com` to force Word COM HTML output, or
-`--mode server` to force semantic extraction. ODT support targets ODF-CNS 15251 /
-ISO/IEC 26300 Writer documents. It validates package structure and content readability, but
-does not promise pixel-identical round trips.
+DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice. DOCX conversion follows
+these engine policies:
+
+- DOCX to PDF on interactive Windows: automatic mode prefers Word COM.
+- DOCX to PDF on servers: automatic mode prefers Gotenberg, then LibreOffice.
+- DOCX to PDF on other hosts: automatic mode prefers LibreOffice.
+- DOCX to HTML: semantic extraction is the default. On a Windows desktop with Word COM
+    available, Word rendering provides higher visual fidelity.
+- Use `--engine word-com` to force Word COM HTML, or `--mode server` to force semantic
+    extraction.
+- Explicit engine and strict modes never fall back.
+- Rendering may differ between engines.
+
+ODT support targets ODF-CNS 15251 / ISO/IEC 26300 Writer documents. It validates package
+structure and content readability, but does not promise pixel-identical round trips.
 
 HTML/Markdown conversion requires Pandoc; PDF output additionally requires a Pandoc PDF
 backend such as `wkhtmltopdf`. Create an editable, print-ready A4 starting point with

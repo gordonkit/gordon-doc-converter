@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
     <title>Document conversion CLI reference | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-CwhHKM5U.js"></script>
+    <script type="module" crossorigin src="/assets/docs-91iPc4-7.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
-    <link rel="stylesheet" crossorigin href="/assets/docs-CzICZcQX.css">
+    <link rel="stylesheet" crossorigin href="/assets/docs-V6z2viNa.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/cli/" />
     <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
     <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
@@ -53,16 +53,18 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>Convert one document</h2>
-      <p>convert accepts DOCX, ODT, PDF, HTML, and Markdown input. With no --to it creates PDF for DOCX, ODT, HTML, or Markdown; PDF input always requires --to. Repeat --to to request several artifacts. --output is appropriate for one single-file artifact; without it, the service derives a safe sibling output name and refuses to replace an existing file unless --overwrite is present.</p>
+      <p>convert accepts DOCX, ODT, PDF, HTML, and Markdown input. With no --to it creates PDF for DOCX, ODT, HTML, or Markdown; PDF input always requires --to. Repeat --to to request several artifacts. --output is appropriate for one single-file artifact; without it, the service derives a safe sibling output name and refuses to replace an existing file unless --overwrite is present. For DOCX-to-HTML, --engine word-com renders through Word COM on Windows; omit it or use --mode server for semantic extraction.</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>Conversion policy and output options</h2>
-      <p>--engine word-com, libreoffice, or gotenberg requires that exact DOCX-to-PDF engine; explicit selection never falls back. --mode selects automatic policy: desktop, server, container, strict-word, or strict-libreoffice. Tracked changes use --revisions final, original, or markup; comments use --comments omit, appendix, or markup, subject to engine support. --timeout is in seconds. For HTML and Markdown, --orientation portrait or landscape chooses A4 layout. --gotenberg-url supplies the Gotenberg base URL for this invocation.</p>
+      <p>--engine word-com, libreoffice, or gotenberg requires that exact DOCX-to-PDF engine; explicit selection never falls back. For DOCX-to-HTML, --engine word-com renders through Word COM; omit it or use --mode server for semantic extraction. --mode selects automatic policy: desktop, server, container, strict-word, or strict-libreoffice. Tracked changes use --revisions final, original, or markup; comments use --comments omit, appendix, or markup, subject to engine support. --timeout is in seconds. For HTML and Markdown, --orientation portrait or landscape chooses A4 layout. --gotenberg-url supplies the Gotenberg base URL for this invocation.</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
     </section><section id="structured-artifacts">

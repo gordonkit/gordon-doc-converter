@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
     <title>文件轉換 CLI 指令參考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-CwhHKM5U.js"></script>
+    <script type="module" crossorigin src="/assets/docs-91iPc4-7.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
-    <link rel="stylesheet" crossorigin href="/assets/docs-CzICZcQX.css">
+    <link rel="stylesheet" crossorigin href="/assets/docs-V6z2viNa.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/cli/" />
     <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
     <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
@@ -53,16 +53,18 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>轉換單一文件</h2>
-      <p>convert 接受 DOCX、ODT、PDF、HTML 與 Markdown 輸入。未指定 --to 時，DOCX、ODT、HTML、Markdown 會輸出 PDF；PDF 輸入則必須指定 --to。可重複使用 --to 取得多個 artifact。--output 適用於單一檔案 artifact；省略時服務會在來源旁推導安全的輸出名稱，除非提供 --overwrite，否則不會覆寫既有檔案。</p>
+      <p>convert 接受 DOCX、ODT、PDF、HTML 與 Markdown 輸入。未指定 --to 時，DOCX、ODT、HTML、Markdown 會輸出 PDF；PDF 輸入則必須指定 --to。可重複使用 --to 取得多個 artifact。--output 適用於單一檔案 artifact；省略時服務會在來源旁推導安全的輸出名稱，除非提供 --overwrite，否則不會覆寫既有檔案。DOCX 轉 HTML 時，--engine word-com 在 Windows 上透過 Word COM 排版；省略或改用 --mode server 則使用語意萃取。</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>轉換政策與輸出選項</h2>
-      <p>--engine word-com、libreoffice 或 gotenberg 會要求使用指定的 DOCX 轉 PDF 引擎；明確指定時絕不 fallback。--mode 選擇自動政策：desktop、server、container、strict-word 或 strict-libreoffice。修訂模式可用 --revisions final、original 或 markup；註解模式可用 --comments omit、appendix 或 markup，但仍取決於引擎支援。--timeout 單位為秒。HTML 與 Markdown 可用 --orientation portrait 或 landscape 選擇 A4 版面。--gotenberg-url 為本次呼叫提供 Gotenberg base URL。</p>
+      <p>--engine word-com、libreoffice 或 gotenberg 會要求使用指定的 DOCX 轉 PDF 引擎；明確指定時絕不 fallback。DOCX 轉 HTML 時，--engine word-com 透過 Word COM 排版；省略或改用 --mode server 則使用語意萃取。--mode 選擇自動政策：desktop、server、container、strict-word 或 strict-libreoffice。修訂模式可用 --revisions final、original 或 markup；註解模式可用 --comments omit、appendix 或 markup，但仍取決於引擎支援。--timeout 單位為秒。HTML 與 Markdown 可用 --orientation portrait 或 landscape 選擇 A4 版面。--gotenberg-url 為本次呼叫提供 Gotenberg base URL。</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
     </section><section id="structured-artifacts">
