@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
 from pathlib import Path
@@ -21,6 +22,7 @@ from gordon_doc_converter.engines.base import (
     FileConverterEngine,
 )
 from gordon_doc_converter.engines.pandoc import PandocConverter
+from gordon_doc_converter.engines.word_com import WordComEngine
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
     ConversionError,
@@ -40,6 +42,7 @@ from gordon_doc_converter.models import (
     ConversionRequest,
     ConversionResult,
     ConversionWarning,
+    DeploymentMode,
     EngineName,
     EngineProbeResult,
     SourceFormat,
@@ -128,6 +131,14 @@ def _publish_pdf(source: Path, target: Path, *, overwrite: bool) -> None:
             "validated PDF could not replace the requested output",
             engine="orchestrator",
         ) from exc
+
+
+def _fix_word_com_html_line_heights(path: Path) -> None:
+    """Replace Word's overly tight line-height:80% with a readable 120%."""
+    text = path.read_text(encoding="utf-8")
+    fixed = text.replace("line-height:80%", "line-height:120%")
+    if fixed != text:
+        path.write_text(fixed, encoding="utf-8")
 
 
 def _output_stem(request: ConversionRequest) -> Path:
@@ -719,6 +730,31 @@ class ConversionPipeline:
             duration_seconds=perf_counter() - started,
         )
 
+    @staticmethod
+    def _should_use_word_com_html(request: ConversionRequest) -> bool:
+        """Check whether Word COM should be attempted for HTML output."""
+        if request.source_format is not SourceFormat.DOCX:
+            return False
+        if request.options.engine is EngineName.WORD_COM:
+            return True
+        if request.options.engine is not None:
+            return False
+        if request.options.deployment_mode is not DeploymentMode.DESKTOP:
+            return False
+        return sys.platform == "win32"
+
+    @staticmethod
+    def _get_word_com_engine() -> WordComEngine:
+        """Return a fresh Word COM engine adapter."""
+        return WordComEngine()
+
+    @staticmethod
+    def _html_output_path(request: ConversionRequest) -> Path:
+        """Determine the HTML output path for a Word COM HTML conversion."""
+        if len(request.artifacts) == 1 and request.options.output_path is not None:
+            return request.options.output_path
+        return _output_stem(request).with_suffix(".html")
+
     def _convert_artifacts(
         self,
         request: ConversionRequest,
@@ -751,6 +787,48 @@ class ConversionPipeline:
                 ArtifactType.JSON,
             }
         )
+
+        html_via_word_com = ArtifactType.HTML in content_types and self._should_use_word_com_html(
+            request
+        )
+        if html_via_word_com:
+            html_output = self._html_output_path(request)
+            try:
+                self._report(
+                    progress_callback,
+                    "rendering",
+                    "Rendering HTML with Word COM",
+                    engine=EngineName.WORD_COM,
+                    artifact=ArtifactType.HTML,
+                )
+                word_com = self._get_word_com_engine()
+                if request.options.overwrite and html_output.exists():
+                    html_output.unlink()
+                word_com.convert_file(
+                    request.source_path,
+                    html_output,
+                    source_format=request.source_format,
+                    artifact_type=ArtifactType.HTML,
+                    timeout_seconds=request.options.timeout_seconds,
+                )
+                _fix_word_com_html_line_heights(html_output)
+                size = html_output.stat().st_size
+                results[ArtifactType.HTML] = ArtifactResult(
+                    ArtifactType.HTML,
+                    ArtifactStatus.SUCCESS,
+                    html_output,
+                    size,
+                    items=(ArtifactItem(html_output, size, "text/html; charset=utf-8"),),
+                )
+                selected_engine = EngineName.WORD_COM
+                content_types = tuple(ct for ct in content_types if ct is not ArtifactType.HTML)
+            except ConversionError as html_error:
+                if request.options.engine is EngineName.WORD_COM:
+                    self._record_artifact_failures(results, (ArtifactType.HTML,), html_error)
+                    content_types = tuple(ct for ct in content_types if ct is not ArtifactType.HTML)
+                else:
+                    html_via_word_com = False
+
         if content_types:
             try:
                 self._report(progress_callback, "content-extraction", "Extracting semantic content")

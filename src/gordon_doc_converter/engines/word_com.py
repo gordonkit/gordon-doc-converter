@@ -22,10 +22,12 @@ from gordon_doc_converter.exceptions import (
     UnsupportedAnnotationModeError,
 )
 from gordon_doc_converter.models import (
+    ArtifactType,
     CommentMode,
     EngineName,
     EngineProbeResult,
     RevisionMode,
+    SourceFormat,
 )
 from gordon_doc_converter.models_types import JsonValue
 from gordon_doc_converter.process.runner import (
@@ -221,6 +223,90 @@ class WordComEngine:
                     engine=self.name.value,
                 )
             _publish_pdf(generated_path, output_path)
+
+        return EngineExecutionResult(
+            engine=self.name,
+            output_path=output_path,
+            duration_seconds=perf_counter() - started,
+        )
+
+    def convert_file(
+        self,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        timeout_seconds: float,
+    ) -> EngineExecutionResult:
+        """Convert a DOCX to HTML through Word COM SaveAs2."""
+        if sys.platform != "win32":
+            raise EngineUnavailableError(
+                "Microsoft Word COM is available only on Windows",
+                engine=self.name.value,
+            )
+        if timeout_seconds <= 0:
+            raise InvalidInputError("timeout_seconds must be greater than zero")
+        if source_format is not SourceFormat.DOCX:
+            raise InvalidInputError("Word COM file conversion requires a DOCX source")
+        if artifact_type is not ArtifactType.HTML:
+            raise InvalidInputError("Word COM file conversion supports only HTML output")
+        if not source_path.is_file():
+            raise InvalidInputError("source DOCX file does not exist")
+        if output_path.suffix.casefold() != ".html":
+            raise InvalidInputError("Word COM HTML output must use the .html extension")
+        if output_path.exists():
+            raise OutputExistsError("HTML output already exists")
+
+        started = perf_counter()
+        with TemporaryDirectory(prefix="gordon-doc-word-html-") as temporary:
+            workspace = Path(temporary)
+            generated_path = workspace / "output.html"
+            request_path = workspace / "request.json"
+            request_payload = {
+                "source": str(source_path.resolve()),
+                "output": str(generated_path),
+                "revision_mode": RevisionMode.FINAL.value,
+                "comment_mode": CommentMode.OMIT.value,
+            }
+            request_path.write_text(
+                json.dumps(request_payload, ensure_ascii=False, sort_keys=True),
+                encoding="utf-8",
+                newline="\n",
+            )
+            try:
+                result = run_process(
+                    self._command("--html", str(request_path)),
+                    timeout_seconds,
+                )
+            except ProcessStartError as exc:
+                raise EngineUnavailableError(
+                    "Word COM worker could not be started",
+                    engine=self.name.value,
+                ) from exc
+            except ProcessTimeoutError as exc:
+                raise ConversionTimeoutError(
+                    "Word HTML conversion exceeded its timeout",
+                    engine=self.name.value,
+                ) from exc
+            payload = _worker_payload(result)
+            if result.returncode == 2:
+                raise EngineUnavailableError(
+                    "Microsoft Word COM is unavailable",
+                    engine=self.name.value,
+                )
+            if result.returncode != 0 or payload is None or payload.get("status") != "ok":
+                raise EngineFailedError(
+                    "Microsoft Word failed to convert the document to HTML",
+                    engine=self.name.value,
+                )
+            if not generated_path.is_file() or generated_path.stat().st_size == 0:
+                raise EngineFailedError(
+                    "Microsoft Word did not create the HTML output",
+                    engine=self.name.value,
+                )
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(generated_path), str(output_path))
 
         return EngineExecutionResult(
             engine=self.name,

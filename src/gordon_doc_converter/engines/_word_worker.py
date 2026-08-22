@@ -117,7 +117,22 @@ def _read_request(request_path: Path) -> tuple[Path, Path, str, str]:
     return Path(source), Path(output), revision_mode, comment_mode
 
 
-def _convert_word(request_path: Path) -> tuple[int, dict[str, str]]:
+def _open_document(word_application: Any, source: Path) -> Any:
+    return word_application.Documents.Open(
+        FileName=str(source),
+        ConfirmConversions=False,
+        ReadOnly=True,
+        AddToRecentFiles=False,
+        Visible=False,
+        OpenAndRepair=False,
+        NoEncodingDialog=True,
+    )
+
+
+def _run_com_conversion(
+    request_path: Path,
+    convert_document: Any,
+) -> tuple[int, dict[str, str]]:
     pythoncom: Any | None = None
     application: Any | None = None
     document: Any | None = None
@@ -133,31 +148,10 @@ def _convert_word(request_path: Path) -> tuple[int, dict[str, str]]:
         word_application = win32_client.DispatchEx("Word.Application")
         application = word_application
         _configure_application(word_application)
-        word_document = word_application.Documents.Open(
-            FileName=str(source),
-            ConfirmConversions=False,
-            ReadOnly=True,
-            AddToRecentFiles=False,
-            Visible=False,
-            OpenAndRepair=False,
-            NoEncodingDialog=True,
-        )
+        word_document = _open_document(word_application, source)
         document = word_document
         _configure_document(word_document, revision_mode, comment_mode)
-        word_document.ExportAsFixedFormat(
-            OutputFileName=str(output),
-            ExportFormat=17,
-            OpenAfterExport=False,
-            OptimizeFor=0,
-            Range=0,
-            Item=0,
-            IncludeDocProps=True,
-            KeepIRM=False,
-            CreateBookmarks=1,
-            DocStructureTags=True,
-            BitmapMissingFonts=True,
-            UseISO19005_1=False,
-        )
+        convert_document(word_document, output)
     except (ImportError, ModuleNotFoundError):
         status = _EXIT_UNAVAILABLE
         payload = {"status": "unavailable"}
@@ -177,6 +171,34 @@ def _convert_word(request_path: Path) -> tuple[int, dict[str, str]]:
     return status, payload
 
 
+def _convert_word(request_path: Path) -> tuple[int, dict[str, str]]:
+    def export_pdf(document: Any, output: Path) -> None:
+        document.ExportAsFixedFormat(
+            OutputFileName=str(output),
+            ExportFormat=17,
+            OpenAfterExport=False,
+            OptimizeFor=0,
+            Range=0,
+            Item=0,
+            IncludeDocProps=True,
+            KeepIRM=False,
+            CreateBookmarks=1,
+            DocStructureTags=True,
+            BitmapMissingFonts=True,
+            UseISO19005_1=False,
+        )
+
+    return _run_com_conversion(request_path, export_pdf)
+
+
+def _convert_html(request_path: Path) -> tuple[int, dict[str, str]]:
+    def save_html(document: Any, output: Path) -> None:
+        document.WebOptions.Encoding = 65001
+        document.SaveAs2(FileName=str(output), FileFormat=8)
+
+    return _run_com_conversion(request_path, save_html)
+
+
 def main(arguments: list[str] | None = None) -> int:
     """Run a probe or conversion request and emit a path-safe JSON status."""
     arguments = sys.argv[1:] if arguments is None else arguments
@@ -184,6 +206,8 @@ def main(arguments: list[str] | None = None) -> int:
         status, payload = _probe_word()
     elif len(arguments) == 2 and arguments[0] == "--request":
         status, payload = _convert_word(Path(arguments[1]))
+    elif len(arguments) == 2 and arguments[0] == "--html":
+        status, payload = _convert_html(Path(arguments[1]))
     else:
         status, payload = _EXIT_FAILED, {"status": "invalid-request"}
     sys.stdout.write(json.dumps(payload, ensure_ascii=True, sort_keys=True))
