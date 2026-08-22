@@ -33,7 +33,10 @@ PDF/DOCX conversion. The project does not convert Markdown and HTML directly bet
 other.
 
 DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice; DOCX-to-PDF can use
-the selected Word, LibreOffice, or Gotenberg engine. ODT support targets ODF-CNS 15251 /
+the selected Word, LibreOffice, or Gotenberg engine. DOCX-to-HTML uses semantic content
+extraction by default; on Windows desktop with Word COM available, it renders through Word
+for higher visual fidelity. Use `--engine word-com` to force Word COM HTML output, or
+`--mode server` to force semantic extraction. ODT support targets ODF-CNS 15251 /
 ISO/IEC 26300 Writer documents. It validates package structure and content readability, but
 does not promise pixel-identical round trips.
 
@@ -161,6 +164,7 @@ gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.html --to docx
 gordon-doc convert example.pdf --to images --dpi 144
 gordon-doc convert example.docx --to markdown --to html --to yaml --to json
+gordon-doc convert example.docx --to html --engine word-com
 gordon-doc convert example.docx --to yaml --metadata layout --progress
 gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
 gordon-doc batch one.docx two.docx --output-dir converted --json
@@ -168,10 +172,12 @@ gordon-doc version
 ```
 
 Use `--engine word-com`, `--engine libreoffice`, or a configured `--engine gotenberg` for
-strict explicit selection. Conversion options also include `--mode`, `--revisions`,
-`--comments`, `--metadata`, `--timeout`, `--overwrite`, image format/quality/page selection,
-and an optional `--gotenberg-url`. Page images use `<stem>.pages/0001.png`; semantic artifacts
-use `.md`, `.html`, `.yaml`, `.json`, shared `.assets/`, and an annotation sidecar when present.
+strict explicit selection. For DOCX-to-HTML, `--engine word-com` renders through Word COM;
+omit it or use `--mode server` for semantic extraction. Conversion options also include
+`--mode`, `--revisions`, `--comments`, `--metadata`, `--timeout`, `--overwrite`, image
+format/quality/page selection, and an optional `--gotenberg-url`. Page images use
+`<stem>.pages/0001.png`; semantic artifacts use `.md`, `.html`, `.yaml`, `.json`, shared
+`.assets/`, and an annotation sidecar when present.
 YAML and JSON share a versioned heading/paragraph/list/table schema intended for downstream
 indexing. `--to json` writes that document artifact; the separate `--json` flag emits the CLI
 result contract for automation.

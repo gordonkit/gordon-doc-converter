@@ -31,7 +31,10 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX，但兩者無法直接互轉。
 
 DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice；DOCX 轉 PDF
-則可使用指定的 Word、LibreOffice 或 Gotenberg 引擎。ODT 支援以 ODF-CNS 15251／
+則可使用指定的 Word、LibreOffice 或 Gotenberg 引擎。DOCX 轉 HTML 預設使用語意內容
+萃取；在 Windows 桌面環境且 Word COM 可用時，會透過 Word 排版以獲得更高的視覺忠實度。
+可使用 `--engine word-com` 強制使用 Word COM 輸出 HTML，或以 `--mode server` 強制使用
+語意萃取。ODT 支援以 ODF-CNS 15251／
 ISO/IEC 26300 Writer 文件為目標，會驗證封裝結構與內容是否可讀，但不保證來回轉換後
 版面完全相同。
 
@@ -149,6 +152,7 @@ gordon-doc convert 報告.html --to pdf --orientation landscape
 gordon-doc convert 報告.html --to docx
 gordon-doc convert 範例.pdf --to images --dpi 144
 gordon-doc convert 範例.docx --to markdown --to html --to yaml --to json
+gordon-doc convert 範例.docx --to html --engine word-com
 gordon-doc convert 範例.docx --to yaml --metadata layout --progress
 gordon-doc compare 預期.pdf 實際.pdf --diff-dir 差異 --json
 gordon-doc batch 文件一.docx 文件二.docx --output-dir 已轉換 --json
@@ -156,8 +160,10 @@ gordon-doc version
 ```
 
 使用 `--engine word-com`、`--engine libreoffice` 或已設定的 `--engine gotenberg` 可嚴格
-指定引擎。轉換選項也包含 `--mode`、`--revisions`、`--comments`、`--metadata`、
-`--timeout`、`--overwrite`、圖片格式／品質／頁碼，以及選用的 `--gotenberg-url`。
+指定引擎。DOCX 轉 HTML 時，`--engine word-com` 會透過 Word COM 排版；省略或改用
+`--mode server` 則使用語意萃取。轉換選項也包含 `--mode`、`--revisions`、`--comments`、
+`--metadata`、`--timeout`、`--overwrite`、圖片格式／品質／頁碼，以及選用的
+`--gotenberg-url`。
 逐頁圖片使用 `<stem>.pages/0001.png`；語意產出檔案使用 `.md`、`.html`、`.yaml`、
 `.json`、共用 `.assets/`，有註解時另建附屬檔案。YAML 與 JSON 共用具版本的章節、
 段落、清單及表格結構，可供後續索引使用。`--to json` 產生文件內容；不同用途的
