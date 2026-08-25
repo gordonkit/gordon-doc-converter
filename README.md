@@ -190,6 +190,13 @@ YAML and JSON share a versioned heading/paragraph/list/table schema intended for
 indexing. `--to json` writes that document artifact; the separate `--json` flag emits the CLI
 result contract for automation.
 
+PDF sources have no semantic tags, so blocks are inferred from layout. The converter rebuilds
+text lines from glyph positions, drops repeated running headers and footers, and classifies
+headings from the PDF outline, relative font size, weight, spacing, and ordinal markers.
+Markers are parsed by system, style, and unit, covering Arabic, Roman, Latin, circled, and CJK
+numerals, so heading levels follow the document's own numbering rather than font size alone.
+Inference is heuristic and reading order remains reported as inferred.
+
 Metadata detail is `none`, `basic` (the default allowlisted document properties), or `layout`.
 PDF physical pages are one-based and identify `pypdf` as their provider. DOCX physical pages
 and display page labels are omitted with an explicit unavailable capability until a layout

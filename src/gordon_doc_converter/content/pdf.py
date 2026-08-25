@@ -19,6 +19,8 @@ from gordon_doc_converter.content.models import (
     PageContentKind,
     SourceAnchor,
 )
+from gordon_doc_converter.content.pdf_layout import TextLine, build_lines, collect_fragments
+from gordon_doc_converter.content.pdf_structure import infer_blocks
 from gordon_doc_converter.exceptions import InvalidInputError
 from gordon_doc_converter.models import ConversionWarning, MetadataDetail, SourceFormat
 from gordon_doc_converter.security import file_sha256, validate_source_document
@@ -75,6 +77,39 @@ def _page_images(
     return assets, spans, detected, failed
 
 
+def _fallback_line(text: str, page_number: int) -> TextLine:
+    """Represent a page whose operators exposed no usable text coordinates."""
+    return TextLine(
+        text=" ".join(text.split()),
+        page_number=page_number,
+        x=0.0,
+        y=0.0,
+        size=10.0,
+        bold=False,
+    )
+
+
+def _append_image_blocks(
+    blocks: list[ContentBlock], trailing_images: list[tuple[int, list[InlineSpan]]]
+) -> None:
+    """Attach each page's image spans after the last text block of that page."""
+    for page_number, spans in trailing_images:
+        block = ContentBlock(
+            BlockKind.PARAGRAPH,
+            tuple(spans),
+            page_number=page_number,
+            source_anchor=SourceAnchor("pdf-page", page_number=page_number),
+        )
+        position = len(blocks)
+        for index in range(len(blocks) - 1, -1, -1):
+            existing = blocks[index].page_number
+            if existing is None or existing > page_number:
+                position = index
+                continue
+            break
+        blocks.insert(position, block)
+
+
 def extract_pdf_content(
     source_path: Path,
     *,
@@ -88,11 +123,13 @@ def extract_pdf_content(
         assets: list[ContentAsset] = []
         warnings: list[ConversionWarning] = []
         page_kinds: list[PageContentKind] = []
+        lines: list[TextLine] = []
+        trailing_images: list[tuple[int, list[InlineSpan]]] = []
         for page_number, page in enumerate(reader.pages, start=1):
             try:
-                text = page.extract_text() or ""
+                fragments, text = collect_fragments(page)
             except (KeyError, TypeError, ValueError):
-                text = ""
+                fragments, text = [], ""
                 warnings.append(
                     ConversionWarning(
                         "PDF_TEXT_EXTRACTION_FAILED",
@@ -119,25 +156,20 @@ def extract_pdf_content(
             else:
                 kind = PageContentKind.EMPTY
             page_kinds.append(kind)
-            inlines: list[InlineSpan] = []
             if has_text:
-                inlines.append(InlineSpan(InlineKind.TEXT, text))
+                page_lines = build_lines(fragments, page_number)
+                if page_lines:
+                    lines.extend(page_lines)
+                else:
+                    lines.append(_fallback_line(text, page_number))
                 warnings.append(
                     ConversionWarning(
                         "PDF_READING_ORDER_INFERRED",
                         f"Reading order on page {page_number} is inferred from PDF operators.",
                     )
                 )
-            inlines.extend(image_spans)
-            if inlines:
-                blocks.append(
-                    ContentBlock(
-                        BlockKind.PARAGRAPH,
-                        tuple(inlines),
-                        page_number=page_number,
-                        source_anchor=SourceAnchor("pdf-page", page_number=page_number),
-                    )
-                )
+            if image_spans:
+                trailing_images.append((page_number, image_spans))
             if kind in {PageContentKind.IMAGE, PageContentKind.MIXED}:
                 warnings.append(
                     ConversionWarning(
@@ -153,6 +185,8 @@ def extract_pdf_content(
                         f"Page {page_number} has no extractable text or supported embedded images.",
                     )
                 )
+        blocks = infer_blocks(lines, len(reader.pages))
+        _append_image_blocks(blocks, trailing_images)
         layout = LayoutMetadata()
         if metadata_detail is MetadataDetail.LAYOUT:
             layout = LayoutMetadata(
