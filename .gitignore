@@ -1,5 +1,6 @@
 # Local planning and temporary working files
 .temp/
+/.plan/
 /manual-fixtures/
 /.env
 
