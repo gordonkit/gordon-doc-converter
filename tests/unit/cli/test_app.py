@@ -149,7 +149,7 @@ def test_version_json_contract() -> None:
     result = runner.invoke(app, ["version", "--json"])
 
     assert result.exit_code == 0
-    assert json.loads(result.stdout) == {"command": "version", "version": "0.6.0"}
+    assert json.loads(result.stdout) == {"command": "version", "version": "0.7.0"}
 
 
 def test_compare_emits_machine_readable_raster_report(tmp_path: Path) -> None:

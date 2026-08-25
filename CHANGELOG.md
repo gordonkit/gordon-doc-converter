@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-25
+
+### Added
+
+- Microsoft Word COM support for high-fidelity DOCX-to-HTML conversion.
+- PDF layout analysis that infers headings and ordered or unordered lists for semantic
+  artifacts.
+- Expanded bilingual documentation, search metadata, sitemap, and mobile navigation.
+
+### Fixed
+
+- Preserve DOCX numbered paragraphs as list items during semantic extraction.
+- Render source-numbered items as ordered lists in Markdown output.
+
 ## [0.6.0] - 2026-08-19
 
 ### Added
