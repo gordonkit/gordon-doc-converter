@@ -156,7 +156,58 @@ def test_markdown_normalizes_skipped_word_list_levels_and_tabs() -> None:
 
     rendered = render_markdown(content, asset_directory="assets")
 
-    assert rendered == "- (1) 第一層\n  - 2\\. 跳層   項目\n"
+    assert rendered == "- (1) 第一層\n  2. 跳層   項目\n"
+
+
+def test_markdown_keeps_source_numbering_as_an_ordered_list() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "1. 本基金之成立條件"),),
+                list_level=0,
+            ),
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "2. 本基金符合成立條件時"),),
+                list_level=0,
+            ),
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "(一) 投資方針"),),
+                list_level=1,
+            ),
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "a. 拉丁項目"),),
+                list_level=1,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="assets")
+
+    assert rendered == (
+        "1. 本基金之成立條件\n2. 本基金符合成立條件時\n   - (一) 投資方針\n   - a\\. 拉丁項目\n"
+    )
+
+
+def test_markdown_does_not_treat_a_decimal_fraction_as_a_counter() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "1.5 公尺以上之間距"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="assets")
+
+    assert rendered == "- 1.5 公尺以上之間距\n"
 
 
 def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:

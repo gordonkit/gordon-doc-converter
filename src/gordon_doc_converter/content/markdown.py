@@ -13,6 +13,9 @@ from gordon_doc_converter.content.models import (
     NormalizedContent,
 )
 
+# A decimal counter, but never a decimal fraction such as "1.5".
+_ORDERED_MARKER = re.compile(r"^([0-9]{1,3})[.)](?!\d)\s*")
+
 
 def _safe_target(target: str | None) -> str | None:
     if not target:
@@ -81,10 +84,18 @@ def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
     """Serialize normalized blocks into deterministic UTF-8-ready Markdown text."""
     lines: list[str] = []
     list_levels: list[int] = []
+    list_indents: list[str] = []
+    marker_widths: list[int] = []
+
+    def close_lists() -> None:
+        list_levels.clear()
+        list_indents.clear()
+        marker_widths.clear()
+
     for index, block in enumerate(content.blocks):
         list_continuation = block.kind is BlockKind.PARAGRAPH and block.list_level is not None
         if block.kind is not BlockKind.LIST_ITEM and not list_continuation:
-            list_levels.clear()
+            close_lists()
         if block.kind is BlockKind.TABLE:
             lines.extend(_render_table(block, asset_directory))
         else:
@@ -99,13 +110,26 @@ def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
                 level = block.list_level or 0
                 while list_levels and level < list_levels[-1]:
                     list_levels.pop()
+                    list_indents.pop()
+                    marker_widths.pop()
                 if not list_levels or level > list_levels[-1]:
+                    parent_indent = list_indents[-1] if list_indents else ""
+                    parent_width = marker_widths[-1] if marker_widths else 0
                     list_levels.append(level)
-                depth = len(list_levels) - 1
-                text = re.sub(r"^([0-9A-Za-z]+)\.", r"\1\\.", text)
-                lines.append(f"{'  ' * depth}- {text}")
+                    list_indents.append(parent_indent + " " * parent_width)
+                    marker_widths.append(0)
+                # An item already numbered by the source becomes an ordered item.
+                ordered = _ORDERED_MARKER.match(text)
+                if ordered is not None:
+                    marker = f"{ordered.group(1)}. "
+                    body = text[ordered.end() :]
+                else:
+                    marker = "- "
+                    body = re.sub(r"^([0-9A-Za-z]+)\.(?!\d)", r"\1\\.", text)
+                marker_widths[-1] = len(marker)
+                lines.append(f"{list_indents[-1]}{marker}{body}")
             else:
-                depth = 0
+                indent = ""
                 if block.list_level is not None and list_levels:
                     depth = max(
                         next(
@@ -118,7 +142,7 @@ def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
                         ),
                         0,
                     )
-                indent = "  " * (depth + 1) if block.list_level is not None else ""
+                    indent = list_indents[depth] + " " * marker_widths[depth]
                 lines.append("\n".join(f"{indent}{line.rstrip()}" for line in text.splitlines()))
         next_is_list = (
             index + 1 < len(content.blocks)
