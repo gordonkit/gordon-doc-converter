@@ -258,6 +258,37 @@ def test_textbox_compatibility_fallback_is_not_duplicated_or_merged(tmp_path: Pa
     assert [block.text for block in content.blocks] == ["目錄", "壹、基金概況\t1"]
 
 
+def _write_numbered_style_docx(path: Path) -> None:
+    document = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:pPr><w:pStyle w:val="section"/></w:pPr><w:r><w:t>成立條件</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="detail"/><w:numPr><w:ilvl w:val="2"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>本基金之成立條件，為依信託契約第三條第二項之規定。</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="detail"/><w:numPr><w:ilvl w:val="2"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>本基金符合成立條件時，經理公司應即函報金管會。</w:t></w:r></w:p>
+</w:body></w:document>"""
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", document)
+        archive.writestr("word/styles.xml", _STYLES)
+        archive.writestr("word/numbering.xml", _NUMBERING)
+
+
+def test_paragraph_numbering_outranks_a_heading_shaped_style_name(tmp_path: Path) -> None:
+    source = tmp_path / "numbered-style.docx"
+    _write_numbered_style_docx(source)
+
+    content = extract_docx_content(source)
+
+    assert [block.kind for block in content.blocks] == [
+        BlockKind.HEADING,
+        BlockKind.LIST_ITEM,
+        BlockKind.LIST_ITEM,
+    ]
+    assert content.blocks[0].level == 2
+    assert [block.list_level for block in content.blocks[1:]] == [2, 2]
+    assert content.blocks[1].text.startswith("1. ")
+    assert content.blocks[2].text.startswith("2. ")
+
+
 def test_parent_restarts_child_numbering_across_num_instances(tmp_path: Path) -> None:
     source = tmp_path / "restart.docx"
     _write_restart_docx(source)

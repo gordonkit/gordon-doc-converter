@@ -620,11 +620,13 @@ def _paragraph(
         else None
     )
     custom_heading_names = {"章名", "節名", "小節", "小小節"}
+    # A style merely named like a heading yields to numbering the paragraph declares itself.
     if (
         heading_level is not None
         and style_definition is not None
         and style_definition.name in custom_heading_names
-        and numbering_disabled
+        and style_definition.outline_level is None
+        and num_id_element is not None
     ):
         heading_level = None
     if heading_level is not None:
