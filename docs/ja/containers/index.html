@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。" />
+    <title>Docker でのドキュメント変換 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/containers/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/containers/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/containers/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/containers/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/containers/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="Docker でのドキュメント変換 | GordonKit Docs" />
+    <meta property="og:description" content="強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/containers/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Docker でのドキュメント変換 | GordonKit Docs" />
+    <meta name="twitter:description" content="強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker でのドキュメント変換","description":"強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/containers/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>運用</p>
+      <h1>Docker でのドキュメント変換</h1>
+      <p>強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。</p>
+      <section id="profiles">
+      <h2>Profile の選択</h2>
+      <p>すべての Compose service は明示的な選択制で、同じ GordonKit イメージを使います。ローカルのコマンドには cli、同梱 LibreOffice を使う API には standalone-lo、別の renderer を後段に置く API には gateway-gotenberg を使ってください。</p>
+      <aside>必ず --profile を指定してください。profile を指定せずに compose up を実行しても、サービスは起動しません。</aside>
+    </section><section id="cli-profile">
+      <h2>CLI Profile</h2>
+      <p>CLI モードは同梱の LibreOffice を使い、カレントディレクトリを /work にマウントします。API key は不要です。同じ 1 行のコマンドが Bash でも PowerShell でも動作します。</p>
+      <pre><code>docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite</code></pre>
+    </section><section id="standalone-profile">
+      <h2>単体構成の LibreOffice API</h2>
+      <p>renderer を個別にスケールさせることよりも、シンプルな配備とローカル組版を重視する場合は、認証付き API と LibreOffice を 1 つのコンテナーで実行します。</p>
+      <pre><code># .env
+GORDON_DOC_API_KEY=replace-me
+
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build</code></pre>
+    </section><section id="gateway-profile">
+      <h2>Gotenberg Gateway</h2>
+      <p>renderer の分離と独立したサービス健全性を重視する場合は、API を別の Gotenberg service と組み合わせて実行します。Compose は両サービスを gordon-doc network に接続し、Gotenberg が healthy になるまで待機します。Gotenberg URL を設定することはそのエンジンの明示選択を意味し、失敗しても暗黙に LibreOffice へフォールバックすることはありません。</p>
+      <pre><code>docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --build</code></pre>
+    </section><section id="container-bash">
+      <h2>Bash からの API リクエスト</h2>
+      <p>.env から配備者が管理する key を読み込み、エンジンを明示的に指定して PDF の応答を保存します。</p>
+      <pre><code>set -a; . ./.env; set +a
+curl --fail-with-body -H &quot;Authorization: Bearer $GORDON_DOC_API_KEY&quot; -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; -H &quot;X-Filename: report.docx&quot; --data-binary @report.docx &quot;http://127.0.0.1:8000/conversions?engine=gotenberg&quot; --output report-gb.pdf</code></pre>
+    </section><section id="container-powershell">
+      <h2>PowerShell からの API リクエスト</h2>
+      <p>PowerShell でも同じ .env を読み込み、Invoke-WebRequest でバイナリ応答を保存できます。standalone profile では engine=libreoffice を使ってください。</p>
+      <pre><code>$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match &#39;^GORDON_DOC_API_KEY=&#39; }) -replace &#39;^GORDON_DOC_API_KEY=&#39;, &#39;&#39;)
+$headers = @{ Authorization = &quot;Bearer $env:GORDON_DOC_API_KEY&quot;; &#39;X-Filename&#39; = &#39;report.docx&#39; }
+Invoke-WebRequest -Uri &#39;http://127.0.0.1:8000/conversions?engine=gotenberg&#39; -Method Post -Headers $headers -ContentType &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39; -InFile .\report.docx -OutFile .\report-gb.pdf</code></pre>
+    </section><section id="container-stop">
+      <h2>サービスの停止</h2>
+      <p>ローカルでの確認後は profile を停止します。生成された PDF はホストに残ります。</p>
+      <pre><code>docker compose -f docker/compose.yaml --profile standalone-lo down
+docker compose -f docker/compose.yaml --profile gateway-gotenberg down</code></pre>
+    </section><section id="published-image">
+      <h2>公開イメージ</h2>
+      <p>タグ付きリリースでは、gordonkit/gordon-doc-converter に linux/amd64 のイメージを 1 つ公開します。既定の entrypoint は CLI を実行し、api を渡すと HTTP service が起動します。再現性のある配備には明示的なバージョンタグを使ってください。</p>
+      <pre><code>docker run --rm gordonkit/gordon-doc-converter:0.6.0 version
+docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:0.6.0 api</code></pre>
+    </section><section id="health">
+      <h2>運用とセキュリティ</h2>
+      <p>すべての profile は非 root ユーザー、読み取り専用の root filesystem、上限付きの一時ファイルシステム、no-new-privileges で実行されます。API profile には強度の高い key が必要で、本番の ingress ではリクエストサイズ制限と分散型のレート制限も適用してください。</p>
+      <pre><code>python docker/smoke.py --token replace-me --docx sample.docx</code></pre><aside>.env や顧客のドキュメントはコミットしないでください。Smoke client は liveness、認証付きのエンジン探索、および任意でエンドツーエンドの PDF 変換を確認します。</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

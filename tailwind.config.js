@@ -10,7 +10,7 @@ module.exports = {
         leaf: "#19715b",
       },
       fontFamily: {
-        sans: ["Bahnschrift", "Noto Sans TC", "Segoe UI", "sans-serif"],
+        sans: ["Bahnschrift", "Noto Sans TC", "Noto Sans JP", "Segoe UI", "sans-serif"],
         mono: ["IBM Plex Mono", "Cascadia Code", "Consolas", "monospace"],
       },
     },

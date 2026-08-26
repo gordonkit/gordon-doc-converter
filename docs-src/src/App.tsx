@@ -1,5 +1,7 @@
 import {
   Bars3Icon,
+  CheckIcon,
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardDocumentIcon,
@@ -13,13 +15,20 @@ import {
   SunIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { categories, type Locale, pages } from "./content";
 
-const labels = {
-  en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation", license: "Apache-2.0 License", notices: "Third-party notices" },
-  "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件", license: "Apache-2.0 授權", notices: "第三方授權聲明" },
+const labels: Record<Locale, Record<string, string>> = {
+  en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation", license: "Apache-2.0 License", notices: "Third-party notices", language: "Change language", sameFormat: "Same input and output format" },
+  "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件", license: "Apache-2.0 授權", notices: "第三方授權聲明", language: "切換語言", sameFormat: "輸入與輸出格式相同" },
+  ja: { search: "ドキュメントを検索", close: "検索を閉じる", onPage: "このページの内容", menu: "ナビゲーションを開く", copy: "コードをコピー", copied: "コピーしました", previous: "前のページ", next: "次のページ", results: "検索結果", noResults: "一致するドキュメントがありません", license: "Apache-2.0 ライセンス", notices: "サードパーティーライセンス表示", language: "言語を切り替える", sameFormat: "入力と出力が同じフォーマットです" },
 };
+
+const localeOptions: Array<{ value: Locale; short: string; label: string }> = [
+  { value: "en", short: "EN", label: "English" },
+  { value: "zh-TW", short: "繁中", label: "繁體中文" },
+  { value: "ja", short: "日本語", label: "日本語" },
+];
 
 const siteUrl = "https://docs.gordonkit.com";
 
@@ -37,7 +46,7 @@ function updateAlternate(hreflang: string, href: string): void {
 
 function readRoute(): { locale?: Locale; pageId?: string } {
   const [localeSegment, pageSegment] = location.pathname.split("/").filter(Boolean);
-  const routeLocale = localeSegment === "en" || localeSegment === "zh-TW" ? localeSegment : undefined;
+  const routeLocale = localeOptions.find((option) => option.value === localeSegment)?.value;
   const routePage = pages.some((item) => item.id === pageSegment) ? pageSegment : undefined;
   const legacyPage = location.hash.slice(1).split("/")[0];
   return {
@@ -81,6 +90,7 @@ function App() {
     document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", canonicalUrl);
     updateAlternate("en", `${siteUrl}${routeHref("en", page.id)}`);
     updateAlternate("zh-Hant-TW", `${siteUrl}${routeHref("zh-TW", page.id)}`);
+    updateAlternate("ja", `${siteUrl}${routeHref("ja", page.id)}`);
     updateAlternate("x-default", `${siteUrl}${routeHref("en", page.id)}`);
     updateMeta('meta[name="description"]', description);
     updateMeta('meta[property="og:title"]', title);
@@ -126,7 +136,7 @@ function App() {
             <MagnifyingGlassIcon className="h-4 w-4" /><span className="truncate">{t.search}</span>
           </button>
           <div className="ml-auto flex items-center border-l border-slate-200 pl-1 sm:pl-2 lg:ml-3 lg:pl-3 dark:border-slate-800">
-            <button className="icon-button" onClick={() => navigate(page.id, locale === "en" ? "zh-TW" : "en")} aria-label="Change language"><LanguageIcon className="h-5 w-5" /><span className="hidden text-xs font-semibold sm:block">{locale === "en" ? "EN" : "繁中"}</span></button>
+            <LocaleMenu locale={locale} label={t.language} onSelect={(value) => navigate(page.id, value)} />
             <button className="icon-button" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}</button>
             <a className="icon-button" href="https://github.com/gordonkit/gordon-doc-converter" aria-label="GitHub"><CodeBracketIcon className="h-5 w-5" /></a>
           </div>
@@ -198,6 +208,62 @@ function App() {
   );
 }
 
+function LocaleMenu({ locale, label, onSelect }: { locale: Locale; label: string; onSelect: (value: Locale) => void }) {
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const current = localeOptions.find((option) => option.value === locale) ?? localeOptions[0];
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (!container.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    addEventListener("pointerdown", onPointerDown);
+    addEventListener("keydown", onKeyDown);
+    return () => {
+      removeEventListener("pointerdown", onPointerDown);
+      removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={container}>
+      <button type="button" className="icon-button" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <LanguageIcon className="h-5 w-5" />
+        <span className="hidden text-xs font-semibold sm:block">{current.short}</span>
+        <ChevronDownIcon className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div role="menu" aria-label={label} className="absolute right-0 top-full z-50 mt-1 w-44 border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-[#151b23]">
+          {localeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={option.value === locale}
+              lang={option.value}
+              onClick={() => { setOpen(false); if (option.value !== locale) { onSelect(option.value); } }}
+              className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-slate-100 dark:hover:bg-slate-800 ${option.value === locale ? "font-semibold text-ink dark:text-white" : "text-slate-600 dark:text-slate-400"}`}
+            >
+              {option.label}
+              {option.value === locale && <CheckIcon className="h-4 w-4 shrink-0 text-leaf dark:text-emerald-400" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionBody({ section, locale }: { section: (typeof pages)[number]["sections"][number]; locale: Locale }) {
   const body = section.body[locale];
   const link = section.bodyLink;
@@ -234,7 +300,7 @@ function InterfaceOptions({ interfaces, locale }: { interfaces: NonNullable<(typ
 function FormatTable({ table, locale }: { table: NonNullable<(typeof pages)[number]["sections"][number]["table"]>; locale: Locale }) {
   const headers = table.headers[locale];
   const rows = table.rows[locale];
-  const disabledLabel = locale === "en" ? "Same input and output format" : "輸入與輸出格式相同";
+  const disabledLabel = labels[locale].sameFormat;
   const alignment = table.alignLeft ? "text-left" : "text-center";
   const firstColumnWidth = table.firstColumnWidth === "wide" ? "w-64" : table.firstColumnWidth === "w48" ? "w-48" : table.firstColumnWidth === "w50" ? "w-[12.5rem]" : "w-28";
   const secondColumnWidth = table.secondColumnWidth === "w40" ? "w-40" : table.secondColumnWidth === "w48" ? "w-48" : table.secondColumnWidth === "w50" ? "w-[12.5rem]" : "";

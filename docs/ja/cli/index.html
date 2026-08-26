@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
+    <title>ドキュメント変換 CLI リファレンス | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/cli/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/cli/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/cli/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="ドキュメント変換 CLI リファレンス | GordonKit Docs" />
+    <meta property="og:description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/cli/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="ドキュメント変換 CLI リファレンス | GordonKit Docs" />
+    <meta name="twitter:description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ドキュメント変換 CLI リファレンス","description":"gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/cli/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>はじめに</p>
+      <h1>ドキュメント変換 CLI リファレンス</h1>
+      <p>gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。</p>
+      <section id="cli-overview">
+      <h2>コマンド一覧</h2>
+      <p>まずこの表からタスクに合ったコマンドを選びます。すべてのコマンドは機械可読な出力のための --json に対応しています。</p>
+
+      <table><caption>CLI コマンド一覧</caption>
+        <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+        <tbody><tr><td>doctor</td><td>実行環境の健全性と renderer の利用可否を確認する</td></tr><tr><td>engines</td><td>設定済みエンジンとその機能を確認する</td></tr><tr><td>convert</td><td>DOCX、ODT、PDF、HTML、Markdown を 1 ファイル変換する</td></tr><tr><td>template</td><td>編集可能な A4 HTML の雛形を作成する</td></tr><tr><td>compare</td><td>2 つの PDF を比較し、必要に応じて差分画像を出力する</td></tr><tr><td>batch</td><td>複数の DOCX を変換し、失敗を個別に隔離する</td></tr><tr><td>version</td><td>インストール済みパッケージのバージョンを表示する</td></tr></tbody>
+      </table>
+    </section><section id="cli-install">
+      <h2>インストールとコマンドの形式</h2>
+      <p>gordon-doc コマンドはパッケージと一緒にインストールされます。gordon-doc --help または gordon-doc &lt;command&gt; --help で、インストール済みバージョンが受け付けるオプション値を確認できます。既定では人間向けの簡潔な結果を表示します。出力を他のプログラムが処理する場合は --json を付けてください。</p>
+      <pre><code>python -m pip install gordon-doc-converter
+gordon-doc version
+gordon-doc convert --help</code></pre>
+    </section><section id="diagnostics">
+      <h2>診断とバージョン</h2>
+      <p>本番実行の前に doctor を使ってください。検出したプラットフォーム、対話的セッションかどうか、各 renderer の利用可否を報告します。engines は renderer の機能だけを一覧し、全体の健全性は判定しません。version はインストール済みパッケージのバージョンを返します。利用可能なエンジンがない場合、doctor は exit code 3 で終了します。</p>
+      <pre><code>gordon-doc doctor
+gordon-doc engines --json
+gordon-doc version --json</code></pre>
+    </section><section id="convert">
+      <h2>単一ドキュメントの変換</h2>
+      <p>convert は DOCX、ODT、PDF、HTML、Markdown の入力を受け付けます。--to を指定しない場合、DOCX、ODT、HTML、Markdown は PDF を生成します。PDF 入力では常に --to が必要です。--to を繰り返すと複数の artifact を要求できます。--output は単一ファイルの artifact に適しています。省略した場合、サービスはソースと同じ場所に安全な出力名を導出し、--overwrite がない限り既存ファイルを置き換えません。DOCX から HTML では、--engine word-com が Windows 上の Word COM で組版します。省略するか --mode server を使うとセマンティック抽出になります。</p>
+      <pre><code>gordon-doc convert report.docx --output report.pdf
+gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.docx --to html --engine word-com
+gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.pdf --to images --dpi 144</code></pre>
+    </section><section id="conversion-options">
+      <h2>変換ポリシーと出力オプション</h2>
+      <p>--engine word-com、libreoffice、gotenberg は、その DOCX から PDF エンジンの使用を要求します。明示指定した場合はフォールバックしません。DOCX から HTML では、--engine word-com が Word COM で組版し、省略または --mode server ではセマンティック抽出になります。--mode は自動ポリシーを選びます：desktop、server、container、strict-word、strict-libreoffice。変更履歴は --revisions final、original、markup、コメントは --comments omit、appendix、markup で指定しますが、いずれもエンジンの対応状況に依存します。--timeout の単位は秒です。HTML と Markdown では --orientation portrait または landscape で A4 レイアウトを選べます。--gotenberg-url はこの呼び出しで使う Gotenberg の base URL を指定します。</p>
+      <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.docx --to html --engine word-com
+gordon-doc convert report.html --to pdf --orientation landscape
+gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
+    </section><section id="structured-artifacts">
+      <h2>構造化 YAML および JSON Artifact</h2>
+      <p>--to yaml と --to json は、同じバージョン付きセマンティックドキュメントをシリアライズします。Schema 1.3 は Markdown に近い見出し、段落、リスト、表のテキストを保ちながら、意味のあるリンク、画像、変更履歴、注釈、ソース順序、metadata、逆引き locator を保持します。--to を繰り返せば、抽出は 1 回で両方の形式を書き出せます。--metadata は none、basic、layout を受け付けます。データのない任意の値は null ではなく省略されます。--to json はドキュメント artifact を書き出し、これとは別の --json フラグは CLI の結果契約を stdout に書き出します。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
+gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.docx --to json --json</code></pre>
+    </section><section id="source-anchors">
+      <h2>逆引き位置指定とソース検証</h2>
+      <p>構造化 artifact は source.sha256 で入力ファイルを厳密に特定し、正規化された各 block や表セルを source_anchor.content_sha256 で検証します。DOCX の anchor は OOXML の part と element path を使い、Word が提供する場合はネイティブの段落 ID も含みます。表セルでは path に行と列のインデックスが追加されます。PDF の anchor は 1 起点の物理ページを使います。PDF のページ内座標は現時点では提供されておらず、将来の layout provider で追加できます。ファイルオフセットは安定した locator ではありません。DOCX の再圧縮や PDF の最適化・増分保存は、表示される内容を変えずにオフセットを変えてしまいます。</p>
+
+      <table><caption>逆引き locator のフィールド</caption>
+        <thead><tr><th>フィールド</th><th>用途</th></tr></thead>
+        <tbody><tr><td>source.sha256</td><td>ソースファイルのバージョンを厳密に確認する</td></tr><tr><td>source_anchor.locator</td><td>ooxml-element、ooxml-table-cell、pdf-page から選ぶ</td></tr><tr><td>part + element_path</td><td>word/document.xml 内の DOCX element を特定する</td></tr><tr><td>native_id</td><td>ソースが提供する場合に Word の paraId を使う</td></tr><tr><td>page_number</td><td>1 起点の物理ページで PDF block を特定する</td></tr><tr><td>content_sha256</td><td>ソース特定後に正規化テキストを検証する</td></tr></tbody>
+      </table>
+    </section><section id="progress">
+      <h2>変換の進捗表示</h2>
+      <p>convert と batch は、対話的なターミナルで自動的に段階別の進捗を表示します。進捗は stderr にのみ出力されるため、リダイレクトした stdout や機械可読な結果は汚れません。--json は自動進捗を無効にします。--progress で強制表示、--no-progress で抑制できます。バッチの進捗は、根拠のない時間の百分率ではなく、完了ファイル数と総ファイル数を報告します。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --progress
+gordon-doc convert report.docx --to json --no-progress
+gordon-doc batch one.docx two.docx --output-dir converted --progress</code></pre>
+    </section><section id="images-template">
+      <h2>ページ画像と HTML テンプレート</h2>
+      <p>--to images は PDF ソース、または DOCX から生成した PDF をラスタライズします。--dpi は 1 から 600、--image-format は png または jpeg、--quality は JPEG に適用されます。--page を 1 起点のページ番号で繰り返すとページを選択でき、--background は画像の背景色を設定します。画像出力は &lt;stem&gt;.pages という名前のディレクトリで、連番のファイルを含みます。template は編集可能な A4 HTML の出発点を書き出し、--overwrite がない限り既存ファイルを保護します。</p>
+      <pre><code>gordon-doc convert report.pdf --to images --image-format jpeg --quality 85 --page 1 --page 3
+gordon-doc template report.html --orientation landscape</code></pre>
+    </section><section id="compare-batch">
+      <h2>PDF の比較とバッチ変換</h2>
+      <p>compare は PDF の構造、フォント、サイズ、レンダリング後のピクセルを調べます。--diff-dir を設定すると差異のあるページを PNG で保存でき、--dpi で比較時のラスター解像度を制御します。batch は 1 つ以上の DOCX を順番に変換し、各ファイルの失敗を隔離します。出力は常に PDF です。--output-dir は生成した各 PDF を指定ディレクトリに保存します。いずれかの項目が失敗すると batch の exit code は非ゼロになり、--json は CI レポート用にすべての項目の結果を保持します。</p>
+      <pre><code>gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
+gordon-doc batch one.docx two.docx --output-dir converted --mode server --json</code></pre>
+    </section><section id="automation">
+      <h2>JSON 結果と Exit Code</h2>
+      <p>すべてのコマンドが --json を受け付けます。変換成功時の payload には、選択されたエンジンと試行したエンジン、artifact のパスと metadata、所要時間、実際に適用された注釈モード、warning、フォールバック情報が含まれます。失敗時には安定した error code、安全なメッセージ、判明していればエンジン名、retryable フラグが含まれます。exit code 0 は成功、2 は入力が無効または出力が既に存在、3 はエンジンや機能が利用不可、4 は変換の失敗・タイムアウト・出力なし、5 は PDF 検証の失敗を表します。</p>
+      <pre><code>gordon-doc convert report.docx --json
+# PowerShell: stop a script if conversion fails
+gordon-doc convert report.docx --output report.pdf
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

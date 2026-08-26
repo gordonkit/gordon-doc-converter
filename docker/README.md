@@ -1,6 +1,6 @@
 # Container image and profiles
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) · [日本語](README.ja.md)
 
 One `gordonkit/gordon-doc-converter` image provides both the CLI and HTTP API. The Compose
 file provides three explicitly selected profiles:

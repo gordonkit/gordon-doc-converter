@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。" />
+    <title>GordonKit ドキュメントコンバーター | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/overview/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/overview/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/overview/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/overview/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/overview/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="GordonKit ドキュメントコンバーター | GordonKit Docs" />
+    <meta property="og:description" content="DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/overview/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="GordonKit ドキュメントコンバーター | GordonKit Docs" />
+    <meta name="twitter:description" content="DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"GordonKit ドキュメントコンバーター","description":"DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/overview/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>はじめに</p>
+      <h1>GordonKit ドキュメントコンバーター</h1>
+      <p>DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。</p>
+      <section id="about-project">
+      <h2>このプロジェクトについて</h2>
+      <p>この GordonKit オープンソースプロジェクトは、Microsoft Word、LibreOffice、Gotenberg、Pandoc を組み合わせてドキュメントを組版します。エンジンの選択、検証、フォールバックの報告、変換結果を明示的で診断しやすい状態に保ちます。</p>
+
+    </section><section id="interfaces">
+      <h2>利用方法</h2>
+      <p>ワークフローに合った利用方法を選べます。どの方法も同じ application service を経由し、構造化された結果、エンジンポリシー、診断情報を保持します。</p>
+
+      <section><h3>Python ライブラリ</h3><p>型付きの公開契約を使って、単一変換、独立したバッチ処理、エンジン調査、service injection を実行します。</p><code>from gordon_doc_converter import convert</code></section>
+      <section><h3>CLI</h3><p>変換、比較、エンジン確認を実行し、スクリプトや CI ワークフロー向けに安定した JSON 結果を出力します。</p><code>gordon-doc convert report.docx --to pdf</code></section>
+      <section><h3>HTTP API</h3><p>FastAPI extra をインストールし、認証 hook、レート制限、上限付き並行実行を備えたプライベート配備を構築します。</p><code>POST /conversions</code></section>
+    </section><section id="format-support">
+      <h2>対応フォーマット</h2>
+      <p>この表でプロジェクトの主な変換機能を確認できます。一部の変換経路では、表に記載のとおり任意のエンジンまたは出力パッケージが必要です。</p>
+
+      <table><caption>対応する入力および出力フォーマット</caption>
+        <thead><tr><th>入力</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>ページ画像</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>該当なし</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>—</td><td>該当なし</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>該当なし</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>HTML</td><td>P</td><td>P+</td><td>—</td><td>該当なし</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Markdown</td><td>P</td><td>P+</td><td>—</td><td>—</td><td>該当なし</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+      </table>
+    </section><section id="install">
+      <h2>インストール</h2>
+      <p>まずコアパッケージをインストールし、配備に必要な任意機能だけを追加します。</p>
+      <pre><code>uv add gordon-doc-converter
+uv add &#39;gordon-doc-converter[images,gotenberg]&#39;</code></pre>
+    </section><section id="first-conversion">
+      <h2>最初の変換</h2>
+      <p>ソースパスからリクエストを作成します。サービスはポリシーが許可するエンジンを選択し、一時出力を検証し、検証に成功した場合のみ結果を公開します。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+request = ConversionRequest.from_source(Path(&quot;report.docx&quot;))
+result = convert(request)
+print(result.artifacts[0].path)</code></pre><aside>エンジンを明示指定した場合は strict 動作となり、暗黙のフォールバックは行いません。</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>
