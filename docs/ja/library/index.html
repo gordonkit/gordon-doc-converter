@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="エンジン非依存のリクエスト、結果、バッチ、診断を使って、型付きの DOCX、PDF、HTML、Markdown、YAML、JSON、画像変換を Python アプリケーションに追加します。" />
+    <title>Python ドキュメント変換ライブラリ | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/library/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/library/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/library/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/library/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/library/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="Python ドキュメント変換ライブラリ | GordonKit Docs" />
+    <meta property="og:description" content="エンジン非依存のリクエスト、結果、バッチ、診断を使って、型付きの DOCX、PDF、HTML、Markdown、YAML、JSON、画像変換を Python アプリケーションに追加します。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/library/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Python ドキュメント変換ライブラリ | GordonKit Docs" />
+    <meta name="twitter:description" content="エンジン非依存のリクエスト、結果、バッチ、診断を使って、型付きの DOCX、PDF、HTML、Markdown、YAML、JSON、画像変換を Python アプリケーションに追加します。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Python ドキュメント変換ライブラリ","description":"エンジン非依存のリクエスト、結果、バッチ、診断を使って、型付きの DOCX、PDF、HTML、Markdown、YAML、JSON、画像変換を Python アプリケーションに追加します。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/library/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>はじめに</p>
+      <h1>Python ドキュメント変換ライブラリ</h1>
+      <p>エンジン非依存のリクエスト、結果、バッチ、診断を使って、型付きの DOCX、PDF、HTML、Markdown、YAML、JSON、画像変換を Python アプリケーションに追加します。</p>
+      <section id="library-overview">
+      <h2>ライブラリ概要</h2>
+      <p>公開 API はエンジン非依存の型付きモデルを使います。統合の要件を満たす最小の入口を選んでください。</p>
+
+      <table><caption>Python ライブラリの入口</caption>
+        <thead><tr><th>入口</th><th>用途</th></tr></thead>
+        <tbody><tr><td>ConversionRequest.from_source</td><td>パスからソース形式を推定して検証する</td></tr><tr><td>convert(request)</td><td>1 件の変換を実行し ConversionResult を受け取る</td></tr><tr><td>DocumentConversionService</td><td>エンジンを注入する、または service メソッドを直接使う</td></tr><tr><td>convert_batch(requests)</td><td>逐次かつ失敗を隔離した変換を実行する</td></tr><tr><td>probe_engines()</td><td>renderer の利用可否と注釈機能を調べる</td></tr><tr><td>result.to_dict()</td><td>安定した JSON 互換の結果データを生成する</td></tr></tbody>
+      </table>
+    </section><section id="library-single">
+      <h2>単一変換</h2>
+      <p>ConversionRequest.from_source は許可リストの拡張子を検証し、ソース形式を推定します。convert は通常の変換失敗では例外を送出せず ConversionResult を返すため、artifacts を読む前に success と error を確認してください。ConversionError は無効なリクエストと関連する契約エラーのために予約されています。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+result = convert(ConversionRequest.from_source(Path(&#39;report.docx&#39;)))
+if not result.success:
+    raise RuntimeError(result.error.message if result.error else &#39;conversion failed&#39;)
+print(result.artifacts[0].path)</code></pre>
+    </section><section id="library-options">
+      <h2>オプションと strict ポリシー</h2>
+      <p>ConversionOptions では、出力パス、上書き動作、タイムアウト、配備モード、明示的なエンジン、注釈の扱い、metadata detail、画像設定を指定できます。EngineName は厳密です。明示指定したエンジンが利用できない場合、暗黙に別のエンジンへ切り替えるのではなく、診断可能な失敗になります。ArtifactType は、変換経路が対応していれば PDF、DOCX、ODT、HTML、Markdown、YAML、JSON、ページ画像を要求できます。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import (
+    ArtifactType, ConversionOptions, ConversionRequest, convert,
+)
+
+request = ConversionRequest.from_source(
+    Path(&#39;report.docx&#39;),
+    artifacts=(ArtifactType.YAML, ArtifactType.JSON),
+    options=ConversionOptions(output_path=Path(&#39;report&#39;)),
+)
+result = convert(request)</code></pre>
+    </section><section id="library-service">
+      <h2>バッチ、プローブ、結果の扱い</h2>
+      <p>DocumentConversionService はエンジンの dependency injection と、環境に応じた orchestration に対応します。convert_batch はリクエストを順番に処理し、失敗を隔離します。probe_engines は、利用可否、バージョン、対応する変更履歴モード、コメントモードを含む EngineProbeResult を返します。結果は to_dict() でログや API 向けの安定した JSON 互換のプリミティブにシリアライズできます。ドキュメントの内容や機微なパスは記録しないでください。</p>
+      <pre><code>from gordon_doc_converter import DocumentConversionService
+
+service = DocumentConversionService()
+for probe in service.probe_engines():
+    print(probe.engine, probe.available, probe.version)
+
+results = service.convert_batch(requests)
+payload = [result.to_dict() for result in results]</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

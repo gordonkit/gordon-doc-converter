@@ -104,8 +104,8 @@ Library / CLI / future API
 
 ## Documentation and Change Discipline
 
-- Use English for public API names and docstrings. User documentation may have a
-  Traditional Chinese translation.
+- Use English for public API names and docstrings. User documentation may have
+  Traditional Chinese and Japanese translations.
 - Keep behavior, CLI options, error codes, and documented examples synchronized.
 - Prefer narrow changes that match the requested phase and preserve public contracts.
 - Do not add production dependencies without checking necessity, license, maintenance,

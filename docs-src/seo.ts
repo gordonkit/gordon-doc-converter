@@ -4,7 +4,14 @@ import type { Plugin } from "vite";
 import { categories, type Locale, type Page, pages } from "./src/content";
 
 const siteUrl = "https://docs.gordonkit.com";
-const locales: Locale[] = ["en", "zh-TW"];
+const locales: Locale[] = ["en", "zh-TW", "ja"];
+const hreflang: Record<Locale, string> = { en: "en", "zh-TW": "zh-Hant-TW", ja: "ja" };
+const openGraphLocale: Record<Locale, string> = { en: "en_US", "zh-TW": "zh_TW", ja: "ja_JP" };
+const notApplicableLabel: Record<Locale, string> = {
+  en: "Not applicable",
+  "zh-TW": "不適用",
+  ja: "該当なし",
+};
 
 function escapeHtml(value: string): string {
   return value
@@ -20,7 +27,7 @@ function pageUrl(locale: Locale, page: Page): string {
 }
 
 function renderSection(page: Page, locale: Locale): string {
-  const notApplicable = locale === "en" ? "Not applicable" : "不適用";
+  const notApplicable = notApplicableLabel[locale];
   return page.sections.map((section) => {
     const interfaces = section.interfaces?.map((item) => `
       <section><h3>${escapeHtml(item.title[locale])}</h3><p>${escapeHtml(item.body[locale])}</p><code>${escapeHtml(item.example)}</code></section>`).join("") ?? "";
@@ -55,7 +62,7 @@ function renderMetadata(page: Page, locale: Locale): string {
   const title = `${page.heading?.[locale] ?? page.title[locale]} | GordonKit Docs`;
   const description = page.summary[locale];
   const url = pageUrl(locale, page);
-  const alternateLocale = locale === "en" ? "zh-TW" : "en";
+  const alternateLocales = locales.filter((item) => item !== locale);
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -78,14 +85,13 @@ function renderMetadata(page: Page, locale: Locale): string {
   }).replaceAll("<", "\\u003c");
 
   return `<link rel="canonical" href="${url}" />
-    <link rel="alternate" hreflang="en" href="${pageUrl("en", page)}" />
-    <link rel="alternate" hreflang="zh-Hant-TW" href="${pageUrl("zh-TW", page)}" />
+    ${locales.map((item) => `<link rel="alternate" hreflang="${hreflang[item]}" href="${pageUrl(item, page)}" />`).join("\n    ")}
     <link rel="alternate" hreflang="x-default" href="${pageUrl("en", page)}" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="GordonKit Docs" />
-    <meta property="og:locale" content="${locale === "en" ? "en_US" : "zh_TW"}" />
-    <meta property="og:locale:alternate" content="${alternateLocale === "en" ? "en_US" : "zh_TW"}" />
+    <meta property="og:locale" content="${openGraphLocale[locale]}" />
+    ${alternateLocales.map((item) => `<meta property="og:locale:alternate" content="${openGraphLocale[item]}" />`).join("\n    ")}
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${url}" />
@@ -123,7 +129,7 @@ export function seoPagesPlugin(outputDirectory: string): Plugin {
       }
 
       await writeFile(templatePath, renderPage(template, pages[0], "en"), "utf8");
-      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((page) => locales.map((locale) => `  <url><loc>${pageUrl(locale, page)}</loc><xhtml:link rel="alternate" hreflang="en" href="${pageUrl("en", page)}"/><xhtml:link rel="alternate" hreflang="zh-Hant-TW" href="${pageUrl("zh-TW", page)}"/></url>`)).join("\n")}\n</urlset>\n`;
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((page) => locales.map((locale) => `  <url><loc>${pageUrl(locale, page)}</loc>${locales.map((item) => `<xhtml:link rel="alternate" hreflang="${hreflang[item]}" href="${pageUrl(item, page)}"/>`).join("")}</url>`)).join("\n")}\n</urlset>\n`;
       await writeFile(join(outputDirectory, "sitemap.xml"), sitemap, "utf8");
       await writeFile(join(outputDirectory, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`, "utf8");
     },

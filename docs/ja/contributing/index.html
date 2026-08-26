@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="uv で GordonKit ドキュメントコンバーターの開発環境を構築し、Pull Request を出す前に Python の書式整形、lint、型チェック、テストを実行します。" />
+    <title>GordonKit へのコントリビュート | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/contributing/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/contributing/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/contributing/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/contributing/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/contributing/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="GordonKit へのコントリビュート | GordonKit Docs" />
+    <meta property="og:description" content="uv で GordonKit ドキュメントコンバーターの開発環境を構築し、Pull Request を出す前に Python の書式整形、lint、型チェック、テストを実行します。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/contributing/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="GordonKit へのコントリビュート | GordonKit Docs" />
+    <meta name="twitter:description" content="uv で GordonKit ドキュメントコンバーターの開発環境を構築し、Pull Request を出す前に Python の書式整形、lint、型チェック、テストを実行します。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"GordonKit へのコントリビュート","description":"uv で GordonKit ドキュメントコンバーターの開発環境を構築し、Pull Request を出す前に Python の書式整形、lint、型チェック、テストを実行します。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/contributing/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>開発</p>
+      <h1>GordonKit へのコントリビュート</h1>
+      <p>uv で GordonKit ドキュメントコンバーターの開発環境を構築し、Pull Request を出す前に Python の書式整形、lint、型チェック、テストを実行します。</p>
+      <section id="setup">
+      <h2>ローカル環境の構築</h2>
+      <p>本プロジェクトは再現性のある Python 依存管理のために uv を使います。</p>
+      <pre><code>uv sync --dev --all-extras</code></pre>
+    </section><section id="quality">
+      <h2>品質チェック</h2>
+      <p>Pull Request を出す前に、書式整形、lint、型チェック、テストを実行してください。</p>
+      <pre><code>uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Japanese documentation site locale under `/ja/<topic>/`, with localized metadata, hreflang
+  and Open Graph alternates, and sitemap entries.
+- Japanese `README.ja.md` and `docker/README.ja.md` translations, linked from the existing
+  English and Traditional Chinese READMEs.
+
+### Changed
+
+- Replaced the documentation navigation bar's two-way language toggle with a language
+  dropdown covering English, Traditional Chinese, and Japanese.
+
 ## [0.7.0] - 2026-08-25
 
 ### Added

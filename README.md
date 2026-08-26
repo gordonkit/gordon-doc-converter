@@ -5,7 +5,8 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE)
 [![Development Status: Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
 
-[繁體中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md)
+[繁體中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md) ·
+[日本語](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.ja.md)
 
 [Documentation](https://docs.gordonkit.com/)
 
@@ -277,15 +278,17 @@ npm run build
 
 The generated site is self-contained under `docs/` and is published at
 [docs.gordonkit.com](https://docs.gordonkit.com/). It generates indexable pages under
-`/en/<topic>/` and `/zh-TW/<topic>/` with localized metadata, canonical and alternate links,
-structured data, a sitemap, and robots directives. The site also supports bilingual navigation,
-search, responsive layouts, and a light/dark theme.
+`/en/<topic>/`, `/zh-TW/<topic>/`, and `/ja/<topic>/` with localized metadata, canonical and
+alternate links, structured data, a sitemap, and robots directives. The site also supports a
+language dropdown for English, Traditional Chinese, and Japanese, search, responsive layouts,
+and a light/dark theme.
 The generated API contract is available at `docs/openapi.json`, and the read-only Swagger UI
 is available at `docs/swagger/index.html`. Run `npm run openapi:check` to detect a stale export.
 
-Browse the [English documentation](https://docs.gordonkit.com/en/overview/) or
-[Traditional Chinese documentation](https://docs.gordonkit.com/zh-TW/overview/) for the technical
-reference, user guide, compatibility notes, and development standards.
+Browse the [English documentation](https://docs.gordonkit.com/en/overview/),
+[Traditional Chinese documentation](https://docs.gordonkit.com/zh-TW/overview/), or
+[Japanese documentation](https://docs.gordonkit.com/ja/overview/) for the technical reference,
+user guide, compatibility notes, and development standards.
 
 ## License
 

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="LibreOffice または Gotenberg、ヘルスエンドポイント、各種制限、OpenAPI 3.1 契約を備えた認証付き FastAPI サービスを、プライベートな DOCX から PDF への変換のために配備します。" />
+    <title>DOCX から PDF への HTTP API | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BR_RQ4Sp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-C64Oix9x.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/ja/api/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/api/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/api/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/api/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/api/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:title" content="DOCX から PDF への HTTP API | GordonKit Docs" />
+    <meta property="og:description" content="LibreOffice または Gotenberg、ヘルスエンドポイント、各種制限、OpenAPI 3.1 契約を備えた認証付き FastAPI サービスを、プライベートな DOCX から PDF への変換のために配備します。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/ja/api/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DOCX から PDF への HTTP API | GordonKit Docs" />
+    <meta name="twitter:description" content="LibreOffice または Gotenberg、ヘルスエンドポイント、各種制限、OpenAPI 3.1 契約を備えた認証付き FastAPI サービスを、プライベートな DOCX から PDF への変換のために配備します。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"DOCX から PDF への HTTP API","description":"LibreOffice または Gotenberg、ヘルスエンドポイント、各種制限、OpenAPI 3.1 契約を備えた認証付き FastAPI サービスを、プライベートな DOCX から PDF への変換のために配備します。","inLanguage":"ja","url":"https://docs.gordonkit.com/ja/api/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/ja/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/ja/overview/">概要</a> <a href="/ja/cli/">CLI リファレンス</a> <a href="/ja/library/">Python ライブラリ</a> <a href="/ja/api/">HTTP API</a> <a href="/ja/architecture/">アーキテクチャ</a> <a href="/ja/contributing/">コントリビュート</a> <a href="/ja/deployment/">配備モード</a> <a href="/ja/containers/">コンテナー</a> <a href="/ja/roadmap/">ロードマップ</a> <a href="/ja/security/">セキュリティ</a></nav></header>
+    <main><article>
+      <p>はじめに</p>
+      <h1>DOCX から PDF への HTTP API</h1>
+      <p>LibreOffice または Gotenberg、ヘルスエンドポイント、各種制限、OpenAPI 3.1 契約を備えた認証付き FastAPI サービスを、プライベートな DOCX から PDF への変換のために配備します。</p>
+      <section id="api-overview">
+      <h2>API 概要</h2>
+      <p>プライベート HTTP adapter は、意図的に小さい DOCX から PDF へのインターフェースだけを公開します。変換、診断、配備のヘルスチェックには次のエンドポイントを使ってください。</p>
+
+      <table><caption>HTTP API エンドポイント</caption>
+        <thead><tr><th>エンドポイント</th><th>認証</th><th>用途</th></tr></thead>
+        <tbody><tr><td>POST /conversions</td><td>Bearer token</td><td>アップロードされた DOCX を PDF に変換する</td></tr><tr><td>GET /engines</td><td>Bearer token</td><td>設定済み renderer の機能を一覧する</td></tr><tr><td>GET /live</td><td>なし</td><td>プロセスが稼働していることを確認する</td></tr><tr><td>GET /ready</td><td>なし</td><td>既定の renderer が準備できているか確認する</td></tr><tr><td>GET /version</td><td>なし</td><td>パッケージのバージョンを返す</td></tr></tbody>
+      </table>
+    </section><section id="start-api">
+      <h2>API の起動</h2>
+      <p>任意の API 依存パッケージをインストールし、強度の高い API key を設定して、ポート 8000 で application factory を起動します。</p>
+      <pre><code>uv sync --extra api
+$env:GORDON_DOC_API_KEY = &quot;replace-me&quot;
+uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000</code></pre><aside>環境変数の例は PowerShell です。この API はプライベートな配備に保ち、API key はコミットしないでください。</aside>
+    </section><section id="api-convert">
+      <h2>ドキュメントの変換</h2>
+      <p>POST /conversions は DOCX の request body のみを受け付け、application/pdf を返します。X-Filename に元のファイル名、Content-Type に DOCX の OOXML MIME type を指定し、API key を設定している場合は Bearer token も送ってください。任意の engine query parameter は libreoffice または gotenberg を受け付けます。Word COM は API では意図的に提供されません。サーバーはアップロードを一時ディレクトリに置き、OOXML package と各種制限を検証し、設定されたマルウェアスキャン hook を呼び出し、応答を返す前に一時ファイルを削除します。</p>
+      <pre><code>curl --fail-with-body \
+  -H &quot;Authorization: Bearer replace-me&quot; \
+  -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; \
+  -H &quot;X-Filename: report.docx&quot; \
+  --data-binary @report.docx \
+  &quot;http://127.0.0.1:8000/conversions?engine=libreoffice&quot; \
+  --output report.pdf</code></pre><aside>HTTP adapter はライブラリや CLI より意図的に狭く、認証付きの DOCX から PDF への変換のみを公開します。本番ではプライベートネットワークの制御と TLS の内側に置いてください。</aside>
+    </section><section id="api-documentation">
+      <h2>インタラクティブな API ドキュメント</h2>
+      <p>ドキュメントサイトは、生成された OpenAPI 3.1 契約と、同梱の読み取り専用 Swagger UI を公開しています。ブラウザーで JSON を確認したり、コード生成や検証ツール用にダウンロードしたりできます。</p>
+      <a href="/openapi.json">OpenAPI JSON を表示</a> <a href="/openapi.json">OpenAPI JSON をダウンロード</a> <a href="/swagger/">Swagger UI を開く</a><aside>ホストされた Swagger UI は読み取り専用です。設定済みのプライベート配備に対して Try it out を使う場合は、API サーバー自身の /docs を開いてください。</aside>
+    </section><section id="api-endpoints">
+      <h2>利用可能なエンドポイント</h2>
+      <p>仕様にはドキュメント変換、エンジン探索、liveness、readiness、バージョンのエンドポイントが含まれます。保護されたリクエストは Bearer token を使います。</p>
+      <pre><code># Protected: requires Authorization: Bearer &lt;api-key&gt;
+POST /conversions?engine=libreoffice|gotenberg
+GET  /engines
+
+# Unprotected operational metadata
+GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
+GET  /ready    # 200 ready, 503 not-ready
+GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+    </section><section id="api-status-errors">
+      <h2>ステータスコードと運用上の制限</h2>
+      <p>変換に成功すると 200 と PDF の attachment を返します。無効なエンジン指定や入力は 400、認証情報の欠落や不正は 401、サイズ超過のソースは 413、renderer の失敗は 422、レートや並行数の上限到達は 429、内部の一時保存やサービス障害は 500、認証やマルウェアスキャンの利用不可は 503 を返します。/ready はプロセスが稼働していることを確認するだけでなく、設定された既定エンジンを検査します。組み込みの固定ウィンドウ方式のレート制限と並行数制限はプロセス単位でのみ有効なため、複数レプリカの本番配備では ingress や gateway でも分散型の制限を適用する必要があります。</p>
+
+    </section><section id="api-configuration">
+      <h2>設定と統合 Hooks</h2>
+      <p>create_app は ApiSettings または環境変数の既定値を受け付けます。GORDON_DOC_API_KEY は既定の定数時間 Bearer token 比較を有効にします。GORDON_DOC_GOTENBERG_URL は Gotenberg adapter を設定し、Gotenberg を既定エンジンにします。設定しない場合は LibreOffice を使います。ApiSettings は変換のタイムアウト、最大同時変換数、固定ウィンドウのリクエストレート、入力の制限も制御します。プライベートな認証、スキャン、可観測性システムと統合する場合は、auth_hook、malware_scan_hook、telemetry_hook を指定してください。Telemetry には内容を含まないフィールドのみが渡されます。ドキュメントの内容、認証情報、顧客のパスは決して出力しないでください。</p>
+      <pre><code>from gordon_doc_converter.api.app import ApiSettings, create_app
+
+app = create_app(settings=ApiSettings(
+    api_key=&#39;read-from-a-secret-store&#39;,
+    timeout_seconds=120,
+    max_concurrent_conversions=2,
+    rate_limit_requests=30,
+    rate_limit_window_seconds=60,
+))</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

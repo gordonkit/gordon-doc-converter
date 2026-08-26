@@ -97,7 +97,7 @@ Library / CLI / future API
 
 ## 文件與變更紀律
 
-- 公開 API 名稱及 docstring 使用英文；使用者文件可提供繁中翻譯。
+- 公開 API 名稱及 docstring 使用英文；使用者文件可提供繁中與日文翻譯。
 - 行為、CLI option、error code 與文件範例必須保持同步。
 - 優先進行符合目前階段的最小變更，並維持公開 contract 相容性。
 - 新增 production dependency 前，必須檢查必要性、授權、維護狀態及安全影響。
