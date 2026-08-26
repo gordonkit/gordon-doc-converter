@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' data:; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; font-src 'self' data:; form-action 'none'; frame-ancestors 'none'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; object-src 'none'; script-src 'self' https://www.googletagmanager.com 'sha256-skAyaIM+n3kc7Zi4lMogx2NaDdTp93d2JQRIvVwyA8M='; style-src 'self' 'unsafe-inline'
   Permissions-Policy: camera=(), geolocation=(), microphone=()
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
