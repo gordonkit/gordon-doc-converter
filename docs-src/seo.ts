@@ -4,12 +4,13 @@ import type { Plugin } from "vite";
 import { categories, type Locale, type Page, pages } from "./src/content";
 
 const siteUrl = "https://docs.gordonkit.com";
-const locales: Locale[] = ["en", "zh-TW", "ja"];
-const hreflang: Record<Locale, string> = { en: "en", "zh-TW": "zh-Hant-TW", ja: "ja" };
-const openGraphLocale: Record<Locale, string> = { en: "en_US", "zh-TW": "zh_TW", ja: "ja_JP" };
+const locales: Locale[] = ["en", "zh-TW", "zh-CN", "ja"];
+const hreflang: Record<Locale, string> = { en: "en", "zh-TW": "zh-Hant-TW", "zh-CN": "zh-Hans-CN", ja: "ja" };
+const openGraphLocale: Record<Locale, string> = { en: "en_US", "zh-TW": "zh_TW", "zh-CN": "zh_CN", ja: "ja_JP" };
 const notApplicableLabel: Record<Locale, string> = {
   en: "Not applicable",
   "zh-TW": "不適用",
+  "zh-CN": "不适用",
   ja: "該当なし",
 };
 

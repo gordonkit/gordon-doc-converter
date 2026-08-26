@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="通过 Docker Compose 与强化的 GordonKit 镜像执行文档转换，可使用内置 LibreOffice、具认证 API 或隔离的 Gotenberg renderer。" />
+    <title>Docker 文档转换 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/containers/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/containers/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/containers/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/containers/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/containers/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/containers/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="Docker 文档转换 | GordonKit Docs" />
+    <meta property="og:description" content="通过 Docker Compose 与强化的 GordonKit 镜像执行文档转换，可使用内置 LibreOffice、具认证 API 或隔离的 Gotenberg renderer。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/containers/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Docker 文档转换 | GordonKit Docs" />
+    <meta name="twitter:description" content="通过 Docker Compose 与强化的 GordonKit 镜像执行文档转换，可使用内置 LibreOffice、具认证 API 或隔离的 Gotenberg renderer。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker 文档转换","description":"通过 Docker Compose 与强化的 GordonKit 镜像执行文档转换，可使用内置 LibreOffice、具认证 API 或隔离的 Gotenberg renderer。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/containers/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>运维部署</p>
+      <h1>Docker 文档转换</h1>
+      <p>通过 Docker Compose 与强化的 GordonKit 镜像执行文档转换，可使用内置 LibreOffice、具认证 API 或隔离的 Gotenberg renderer。</p>
+      <section id="profiles">
+      <h2>选择 Profile</h2>
+      <p>所有 Compose service 都必须明确选用，且共用同一个 GordonKit 镜像。cli 适合本地命令；standalone-lo 使用内置 LibreOffice；gateway-gotenberg 则让 API 搭配独立排版服务。</p>
+      <aside>务必传入 --profile；未指定 profile 时，compose up 不会启动任何服务。</aside>
+    </section><section id="cli-profile">
+      <h2>CLI Profile</h2>
+      <p>CLI 模式使用内置 LibreOffice、将当前目录挂载至 /work，且不需要 API 密钥；相同的单行命令可用于 Bash 与 PowerShell。</p>
+      <pre><code>docker compose -f docker/compose.yaml --profile cli run --rm --build cli convert /work/report.docx --output /work/report.pdf --engine libreoffice --overwrite</code></pre>
+    </section><section id="standalone-profile">
+      <h2>单体 LibreOffice API</h2>
+      <p>需要简单部署与本地排版，且不需独立扩展 renderer 时，可在同一容器执行具认证的 API 与 LibreOffice。</p>
+      <pre><code># .env
+GORDON_DOC_API_KEY=replace-me
+
+docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up --build</code></pre>
+    </section><section id="gateway-profile">
+      <h2>Gotenberg Gateway</h2>
+      <p>偏好 renderer 隔离与独立服务健康状态时，可让 API 搭配个别 Gotenberg service；Compose 会将两者连至 gordon-doc network，并等待 Gotenberg 健康后再启动 API。设置 Gotenberg URL 代表明确选用该引擎；失败时不会静默改用 LibreOffice。</p>
+      <pre><code>docker compose -f docker/compose.yaml --env-file .env --profile gateway-gotenberg up --build</code></pre>
+    </section><section id="container-bash">
+      <h2>Bash API 请求</h2>
+      <p>从 .env 加载部署者管理的密钥，明确指定引擎并存储 PDF 响应。</p>
+      <pre><code>set -a; . ./.env; set +a
+curl --fail-with-body -H &quot;Authorization: Bearer $GORDON_DOC_API_KEY&quot; -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; -H &quot;X-Filename: report.docx&quot; --data-binary @report.docx &quot;http://127.0.0.1:8000/conversions?engine=gotenberg&quot; --output report-gb.pdf</code></pre>
+    </section><section id="container-powershell">
+      <h2>PowerShell API 请求</h2>
+      <p>PowerShell 可读取相同的 .env，并以 Invoke-WebRequest 存储二进制响应；使用 standalone profile 时请改为 engine=libreoffice。</p>
+      <pre><code>$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match &#39;^GORDON_DOC_API_KEY=&#39; }) -replace &#39;^GORDON_DOC_API_KEY=&#39;, &#39;&#39;)
+$headers = @{ Authorization = &quot;Bearer $env:GORDON_DOC_API_KEY&quot;; &#39;X-Filename&#39; = &#39;report.docx&#39; }
+Invoke-WebRequest -Uri &#39;http://127.0.0.1:8000/conversions?engine=gotenberg&#39; -Method Post -Headers $headers -ContentType &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39; -InFile .\report.docx -OutFile .\report-gb.pdf</code></pre>
+    </section><section id="container-stop">
+      <h2>停止服务</h2>
+      <p>本地测试后停止对应 profile；已产生的 PDF 会保留在主机。</p>
+      <pre><code>docker compose -f docker/compose.yaml --profile standalone-lo down
+docker compose -f docker/compose.yaml --profile gateway-gotenberg down</code></pre>
+    </section><section id="published-image">
+      <h2>正式发布镜像</h2>
+      <p>正式版本会发布单一 linux/amd64 镜像至 gordonkit/gordon-doc-converter。默认 entrypoint 执行 CLI；传入 api 则启动 HTTP service。需要可重现部署时，请使用明确版本 tag。</p>
+      <pre><code>docker run --rm gordonkit/gordon-doc-converter:0.6.0 version
+docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:0.6.0 api</code></pre>
+    </section><section id="health">
+      <h2>运维与安全</h2>
+      <p>所有 profile 都以非 root 用户、只读 root filesystem、有限 tmpfs 与 no-new-privileges 执行。API profile 必须使用高强度 key；生产环境 ingress 也应限制 request 大小并提供分布式 rate limit。</p>
+      <pre><code>python docker/smoke.py --token replace-me --docx sample.docx</code></pre><aside>请勿提交 .env 或客户文档。Smoke client 会检查存活状态、经认证的引擎探索，以及可选的端到端 PDF 转换。</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

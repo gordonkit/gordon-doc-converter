@@ -1,6 +1,6 @@
 # 容器映像與 Profiles
 
-[English](README.md) · [日本語](README.ja.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 單一 `gordonkit/gordon-doc-converter` 映像同時提供 CLI 與 HTTP API。Compose 檔案提供三個
 必須明確選用的 profile：

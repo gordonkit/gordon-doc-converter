@@ -6,7 +6,8 @@
 [![開発ステータス：Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
 
 [English](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.md) ·
-[繁體中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md)
+[繁體中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-TW.md) ·
+[简体中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-CN.md)
 
 [オンラインドキュメント](https://docs.gordonkit.com/)
 
@@ -275,9 +276,10 @@ npm run build
 
 生成されたサイトは `docs/` 以下で自己完結しており、
 [docs.gordonkit.com](https://docs.gordonkit.com/) で公開されています。ビルドは
-`/en/<topic>/`、`/zh-TW/<topic>/`、`/ja/<topic>/` にインデックス可能なページを生成し、
+`/en/<topic>/`、`/zh-TW/<topic>/`、`/zh-CN/<topic>/`、`/ja/<topic>/` にインデックス可能な
+ページを生成し、
 ローカライズされた metadata、canonical、言語 alternate、構造化データ、sitemap、robots の指示を
-含みます。サイトは英語・繁体中文・日本語の言語ドロップダウンに加えて、検索、レスポンシブ
+含みます。サイトは英語・繁体中文・简体中文・日本語の言語ドロップダウンに加えて、検索、レスポンシブ
 レイアウト、ライト / ダークテーマにも対応します。生成された API 契約は `docs/openapi.json`、
 読み取り専用の Swagger UI は `docs/swagger/index.html` にあります。エクスポートが古くなって
 いないかは `npm run openapi:check` で確認できます。
@@ -285,6 +287,7 @@ npm run build
 技術リファレンス、ユーザーガイド、互換性に関する注意、開発規約は
 [英語ドキュメント](https://docs.gordonkit.com/en/overview/)、
 [繁体中文ドキュメント](https://docs.gordonkit.com/zh-TW/overview/)、
+[简体中文ドキュメント](https://docs.gordonkit.com/zh-CN/overview/)、
 [日本語ドキュメント](https://docs.gordonkit.com/ja/overview/)から参照できます。
 
 ## ライセンス

@@ -1,6 +1,6 @@
 # コンテナーイメージと Profiles
 
-[English](README.md) · [繁體中文](README.zh-TW.md)
+[English](README.md) · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 単一の `gordonkit/gordon-doc-converter` イメージが CLI と HTTP API の両方を提供します。
 Compose ファイルには、明示的に選択する 3 つの profile があります。

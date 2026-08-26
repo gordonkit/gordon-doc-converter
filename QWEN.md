@@ -115,7 +115,7 @@ docs(README): add Chinese translation link
 
 ## Documentation
 
-- Public APIs use English docstrings; user documentation may have Traditional Chinese and Japanese translations
+- Public APIs use English docstrings; user documentation may have Traditional Chinese, Simplified Chinese, and Japanese translations
 - `AGENTS.md` is the authoritative instruction source for AI assistants
 - `AGENTS.zh-TW.md` is the human-readable translation
 - Docs site source: `docs-src/`; generated output: `docs/` (do not edit directly)

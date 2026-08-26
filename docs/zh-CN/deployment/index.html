@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="为交互式 Windows 桌面、服务器与容器选择 Word COM、LibreOffice 或 Gotenberg 文档转换策略，且不会静默切换引擎。" />
+    <title>文档转换部署模式 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/deployment/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/deployment/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/deployment/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/deployment/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/deployment/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/deployment/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="文档转换部署模式 | GordonKit Docs" />
+    <meta property="og:description" content="为交互式 Windows 桌面、服务器与容器选择 Word COM、LibreOffice 或 Gotenberg 文档转换策略，且不会静默切换引擎。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/deployment/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="文档转换部署模式 | GordonKit Docs" />
+    <meta name="twitter:description" content="为交互式 Windows 桌面、服务器与容器选择 Word COM、LibreOffice 或 Gotenberg 文档转换策略，且不会静默切换引擎。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"文档转换部署模式","description":"为交互式 Windows 桌面、服务器与容器选择 Word COM、LibreOffice 或 Gotenberg 文档转换策略，且不会静默切换引擎。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/deployment/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>运维部署</p>
+      <h1>文档转换部署模式</h1>
+      <p>为交互式 Windows 桌面、服务器与容器选择 Word COM、LibreOffice 或 Gotenberg 文档转换策略，且不会静默切换引擎。</p>
+      <section id="desktop">
+      <h2>桌面模式</h2>
+      <p>交互式 Windows 桌面在具备合法授权 Word 时，可自动选用 Word COM。此规则同时适用于 DOCX 转 PDF 与 DOCX 转 HTML；通过 Word COM 输出的 HTML 比语义提取具有更高的视觉忠实度。</p>
+
+    </section><section id="server-container">
+      <h2>服务器与容器</h2>
+      <p>服务器模式依序偏好 Gotenberg、LibreOffice。容器内含 LibreOffice，也可使用外部 Gotenberg service，且绝不自动选用 Word COM。</p>
+      <aside>Word 与 LibreOffice 的排版可能不同，生产上线前应以代表性文档测试。</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

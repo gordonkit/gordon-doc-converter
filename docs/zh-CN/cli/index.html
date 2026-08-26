@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
+    <title>文档转换 CLI 命令参考 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/cli/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/cli/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/cli/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/cli/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/cli/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/cli/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="文档转换 CLI 命令参考 | GordonKit Docs" />
+    <meta property="og:description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/cli/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="文档转换 CLI 命令参考 | GordonKit Docs" />
+    <meta name="twitter:description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"文档转换 CLI 命令参考","description":"使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/cli/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>快速开始</p>
+      <h1>文档转换 CLI 命令参考</h1>
+      <p>使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。</p>
+      <section id="cli-overview">
+      <h2>命令概览</h2>
+      <p>请先从此表选择适合工作的命令。所有命令都支持 --json，以输出机器可读的结果。</p>
+
+      <table><caption>CLI 命令概览</caption>
+        <thead><tr><th>命令</th><th>适用场景</th></tr></thead>
+        <tbody><tr><td>doctor</td><td>检查执行环境健康状态与 renderer 可用性</td></tr><tr><td>engines</td><td>查看已设置引擎及其能力</td></tr><tr><td>convert</td><td>转换单一 DOCX、ODT、PDF、HTML 或 Markdown 文件</td></tr><tr><td>template</td><td>创建可编辑的 A4 HTML 起始模板</td></tr><tr><td>compare</td><td>比较两个 PDF，并可输出视觉差异文件</td></tr><tr><td>batch</td><td>批量转换多个 DOCX，且各文件失败互相隔离</td></tr><tr><td>version</td><td>打印已安装包版本</td></tr></tbody>
+      </table>
+    </section><section id="cli-install">
+      <h2>安装与命令形式</h2>
+      <p>安装包时会一并安装 gordon-doc。可用 gordon-doc --help 或 gordon-doc &lt;command&gt; --help 查看当前安装版本接受的选项值。默认输出简洁的人类可读结果；若由其他程序处理输出，请加入 --json。</p>
+      <pre><code>python -m pip install gordon-doc-converter
+gordon-doc version
+gordon-doc convert --help</code></pre>
+    </section><section id="diagnostics">
+      <h2>环境诊断与版本</h2>
+      <p>正式转换前可先使用 doctor：它会报告检测到的平台、是否为交互式会话，以及各 renderer 的可用性。engines 只列出 renderer 能力，不判定整体健康状态。version 返回已安装包版本。若没有可用引擎，doctor 会以 exit code 3 结束。</p>
+      <pre><code>gordon-doc doctor
+gordon-doc engines --json
+gordon-doc version --json</code></pre>
+    </section><section id="convert">
+      <h2>转换单一文档</h2>
+      <p>convert 接受 DOCX、ODT、PDF、HTML 与 Markdown 输入。未指定 --to 时，DOCX、ODT、HTML、Markdown 会输出 PDF；PDF 输入则必须指定 --to。可重复使用 --to 获取多个 artifact。--output 适用于单一文件 artifact；省略时服务会在来源旁推导安全的输出名称，除非提供 --overwrite，否则不会覆写既有文件。DOCX 转 HTML 时，--engine word-com 在 Windows 上通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。</p>
+      <pre><code>gordon-doc convert report.docx --output report.pdf
+gordon-doc convert report.docx --to markdown --to html --to yaml --to json
+gordon-doc convert report.docx --to html --engine word-com
+gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.pdf --to images --dpi 144</code></pre>
+    </section><section id="conversion-options">
+      <h2>转换策略与输出选项</h2>
+      <p>--engine word-com、libreoffice 或 gotenberg 会要求使用指定的 DOCX 转 PDF 引擎；明确指定时绝不 fallback。DOCX 转 HTML 时，--engine word-com 通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。--mode 选择自动策略：desktop、server、container、strict-word 或 strict-libreoffice。修订模式可用 --revisions final、original 或 markup；注释模式可用 --comments omit、appendix 或 markup，但仍取决于引擎支持。--timeout 单位为秒。HTML 与 Markdown 可用 --orientation portrait 或 landscape 选择 A4 版式。--gotenberg-url 为本次调用提供 Gotenberg base URL。</p>
+      <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
+gordon-doc convert report.docx --to html --engine word-com
+gordon-doc convert report.html --to pdf --orientation landscape
+gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
+    </section><section id="structured-artifacts">
+      <h2>结构化 YAML 与 JSON Artifact</h2>
+      <p>--to yaml 与 --to json 会序列化同一份具版本的语义文档。Schema 1.3 保留接近 Markdown 的标题、段落、列表及表格文本，同时保存有意义的链接、图片、修订、注释、来源顺序、metadata 与反向 locator。重复使用 --to 可只提取一次并同时写出两种格式。--metadata 接受 none、basic 或 layout；没有数据的可选值会直接省略，不会输出 null。--to json 产生文档 artifact；不同用途的 --json 则将 CLI 执行结果写到 stdout。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
+gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.docx --to json --json</code></pre>
+    </section><section id="source-anchors">
+      <h2>反向定位与来源验证</h2>
+      <p>结构化 artifact 以 source.sha256 识别完全相同的输入文件，并以 source_anchor.content_sha256 验证每个规范化 block 或表格单元格。DOCX anchor 使用 OOXML part 与 element path；Word 有提供时另含原生段落 ID，表格单元格则在 path 加上 row/cell 索引。PDF anchor 使用从 1 起算的物理页。PDF 页内坐标当前尚未提供，未来可由 layout provider 扩充。file offset 并非稳定 locator：DOCX 重新压缩，以及 PDF 优化或增量存储，都可能在可见内容不变时改变 offset。</p>
+
+      <table><caption>反向定位字段</caption>
+        <thead><tr><th>字段</th><th>用途</th></tr></thead>
+        <tbody><tr><td>source.sha256</td><td>确认完全相同的来源文件版本</td></tr><tr><td>source_anchor.locator</td><td>选择 ooxml-element、ooxml-table-cell 或 pdf-page</td></tr><tr><td>part + element_path</td><td>定位 word/document.xml 内的 DOCX element</td></tr><tr><td>native_id</td><td>来源有提供时使用 Word paraId</td></tr><tr><td>page_number</td><td>以从 1 起算的物理页定位 PDF block</td></tr><tr><td>content_sha256</td><td>定位来源后验证规范化文本</td></tr></tbody>
+      </table>
+    </section><section id="progress">
+      <h2>转换进度</h2>
+      <p>convert 与 batch 在交互终端会自动显示阶段式进度。进度只写入 stderr，因此重定向的 stdout 与机器可读结果不会被污染。--json 会关闭自动进度；可用 --progress 强制显示，或用 --no-progress 关闭。batch 显示已完成文件数／总文件数，而非虚构的时间百分比。</p>
+      <pre><code>gordon-doc convert report.docx --to yaml --progress
+gordon-doc convert report.docx --to json --no-progress
+gordon-doc batch one.docx two.docx --output-dir converted --progress</code></pre>
+    </section><section id="images-template">
+      <h2>页面图像与 HTML 模板</h2>
+      <p>使用 --to images 将 PDF 来源，或由 DOCX 产生的 PDF，转为页面图像。--dpi 可设 1 至 600；--image-format 为 png 或 jpeg；--quality 应用于 JPEG；可重复使用 --page（从 1 起算）选择页面；--background 设置图像背景色。图像输出为名为 &lt;stem&gt;.pages 的目录，内含连号文件。template 会创建可编辑的 A4 HTML 起始模板；除非提供 --overwrite，否则会保护既有文件。</p>
+      <pre><code>gordon-doc convert report.pdf --to images --image-format jpeg --quality 85 --page 1 --page 3
+gordon-doc template report.html --orientation landscape</code></pre>
+    </section><section id="compare-batch">
+      <h2>比较 PDF 与批量转换</h2>
+      <p>compare 会检查 PDF 结构、字体、大小与渲染后的像素。可设置 --diff-dir 存储不同页面的 PNG，并以 --dpi 控制比较的位图分辨率。batch 会依序转换一或多个 DOCX，并隔离各文件失败；其输出固定为 PDF。--output-dir 将每个产生的 PDF 放进指定目录。只要任何项目失败，batch 的 exit code 就会是非零；--json 则保留完整的逐项结果供 CI 报告使用。</p>
+      <pre><code>gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
+gordon-doc batch one.docx two.docx --output-dir converted --mode server --json</code></pre>
+    </section><section id="automation">
+      <h2>JSON 结果与 Exit Code</h2>
+      <p>所有命令均接受 --json。成功转换的 payload 包含选用与尝试过的引擎、artifact 路径与元数据、耗时、实际采用的注释模式、warning 与 fallback 信息。失败结果包含稳定的错误码、安全消息、可得时的引擎名称与 retryable 标志。exit code 0 表示成功；2 表示输入无效或输出已存在；3 表示引擎／能力不可用；4 表示转换失败、超时或无输出；5 表示 PDF 验证失败。</p>
+      <pre><code>gordon-doc convert report.docx --json
+# PowerShell: stop a script if conversion fails
+gordon-doc convert report.docx --output report.pdf
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

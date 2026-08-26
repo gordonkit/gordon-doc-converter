@@ -21,12 +21,14 @@ import { categories, type Locale, pages } from "./content";
 const labels: Record<Locale, Record<string, string>> = {
   en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation", license: "Apache-2.0 License", notices: "Third-party notices", language: "Change language", sameFormat: "Same input and output format" },
   "zh-TW": { search: "搜尋文件", close: "關閉搜尋", onPage: "本頁內容", menu: "開啟導覽", copy: "複製程式碼", copied: "已複製", previous: "上一頁", next: "下一頁", results: "搜尋結果", noResults: "找不到符合的文件", license: "Apache-2.0 授權", notices: "第三方授權聲明", language: "切換語言", sameFormat: "輸入與輸出格式相同" },
+  "zh-CN": { search: "搜索文档", close: "关闭搜索", onPage: "本页内容", menu: "打开导航", copy: "复制代码", copied: "已复制", previous: "上一页", next: "下一页", results: "搜索结果", noResults: "找不到匹配的文档", license: "Apache-2.0 许可证", notices: "第三方许可声明", language: "切换语言", sameFormat: "输入与输出格式相同" },
   ja: { search: "ドキュメントを検索", close: "検索を閉じる", onPage: "このページの内容", menu: "ナビゲーションを開く", copy: "コードをコピー", copied: "コピーしました", previous: "前のページ", next: "次のページ", results: "検索結果", noResults: "一致するドキュメントがありません", license: "Apache-2.0 ライセンス", notices: "サードパーティーライセンス表示", language: "言語を切り替える", sameFormat: "入力と出力が同じフォーマットです" },
 };
 
 const localeOptions: Array<{ value: Locale; short: string; label: string }> = [
   { value: "en", short: "EN", label: "English" },
   { value: "zh-TW", short: "繁中", label: "繁體中文" },
+  { value: "zh-CN", short: "简中", label: "简体中文" },
   { value: "ja", short: "日本語", label: "日本語" },
 ];
 
@@ -90,6 +92,7 @@ function App() {
     document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", canonicalUrl);
     updateAlternate("en", `${siteUrl}${routeHref("en", page.id)}`);
     updateAlternate("zh-Hant-TW", `${siteUrl}${routeHref("zh-TW", page.id)}`);
+    updateAlternate("zh-Hans-CN", `${siteUrl}${routeHref("zh-CN", page.id)}`);
     updateAlternate("ja", `${siteUrl}${routeHref("ja", page.id)}`);
     updateAlternate("x-default", `${siteUrl}${routeHref("en", page.id)}`);
     updateMeta('meta[name="description"]', description);
