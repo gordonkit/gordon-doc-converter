@@ -7,6 +7,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Simplified Chinese documentation site locale under `/zh-CN/<topic>/`, using mainland
+  Chinese terminology, with localized metadata, hreflang and Open Graph alternates,
+  sitemap entries, and a language dropdown entry.
+- Simplified Chinese `README.zh-CN.md` and `docker/README.zh-CN.md` translations, linked
+  from the existing English, Traditional Chinese, and Japanese READMEs.
 - Japanese documentation site locale under `/ja/<topic>/`, with localized metadata, hreflang
   and Open Graph alternates, and sitemap entries.
 - Japanese `README.ja.md` and `docker/README.ja.md` translations, linked from the existing

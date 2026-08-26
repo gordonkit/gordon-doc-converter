@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="在 Python 应用程序加入具类型的 DOCX、PDF、HTML、Markdown、YAML、JSON 与图片转换，并使用引擎中立的请求、结果、批量及诊断。" />
+    <title>Python 文档转换库 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/library/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/library/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/library/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/library/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/library/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/library/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="Python 文档转换库 | GordonKit Docs" />
+    <meta property="og:description" content="在 Python 应用程序加入具类型的 DOCX、PDF、HTML、Markdown、YAML、JSON 与图片转换，并使用引擎中立的请求、结果、批量及诊断。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/library/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Python 文档转换库 | GordonKit Docs" />
+    <meta name="twitter:description" content="在 Python 应用程序加入具类型的 DOCX、PDF、HTML、Markdown、YAML、JSON 与图片转换，并使用引擎中立的请求、结果、批量及诊断。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Python 文档转换库","description":"在 Python 应用程序加入具类型的 DOCX、PDF、HTML、Markdown、YAML、JSON 与图片转换，并使用引擎中立的请求、结果、批量及诊断。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/library/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>快速开始</p>
+      <h1>Python 文档转换库</h1>
+      <p>在 Python 应用程序加入具类型的 DOCX、PDF、HTML、Markdown、YAML、JSON 与图片转换，并使用引擎中立的请求、结果、批量及诊断。</p>
+      <section id="library-overview">
+      <h2>库概览</h2>
+      <p>公开 API 使用引擎中立的具类型模型。请依集成需求选择最精简的入口。</p>
+
+      <table><caption>Python 库入口</caption>
+        <thead><tr><th>入口</th><th>适用场景</th></tr></thead>
+        <tbody><tr><td>ConversionRequest.from_source</td><td>由路径推断并验证来源格式</td></tr><tr><td>convert(request)</td><td>执行单一转换并获取 ConversionResult</td></tr><tr><td>DocumentConversionService</td><td>注入引擎，或直接使用 service 方法</td></tr><tr><td>convert_batch(requests)</td><td>执行依序且失败隔离的转换</td></tr><tr><td>probe_engines()</td><td>探索 renderer 可用性与注释能力</td></tr><tr><td>result.to_dict()</td><td>产生稳定、JSON 兼容的结果数据</td></tr></tbody>
+      </table>
+    </section><section id="library-single">
+      <h2>单文件转换</h2>
+      <p>ConversionRequest.from_source 会验证允许的扩展名并推断来源格式。convert 对一般转换失败会返回 ConversionResult，而非直接抛出异常，因此读取 artifacts 前请先检查 success 与 error。ConversionError 用于无效请求及相关契约错误。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+result = convert(ConversionRequest.from_source(Path(&#39;report.docx&#39;)))
+if not result.success:
+    raise RuntimeError(result.error.message if result.error else &#39;conversion failed&#39;)
+print(result.artifacts[0].path)</code></pre>
+    </section><section id="library-options">
+      <h2>选项与严格策略</h2>
+      <p>使用 ConversionOptions 设置输出路径、覆写行为、超时、部署模式、明确引擎、注释处理、metadata detail 与图像设置。EngineName 是严格选择：指定的引擎不可用时，会得到可诊断的失败，而不是静默改用其他引擎。若转换路径支持，ArtifactType 可要求 PDF、DOCX、ODT、HTML、Markdown、YAML、JSON 或页面图像。</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import (
+    ArtifactType, ConversionOptions, ConversionRequest, convert,
+)
+
+request = ConversionRequest.from_source(
+    Path(&#39;report.docx&#39;),
+    artifacts=(ArtifactType.YAML, ArtifactType.JSON),
+    options=ConversionOptions(output_path=Path(&#39;report&#39;)),
+)
+result = convert(request)</code></pre>
+    </section><section id="library-service">
+      <h2>批量、探测与结果处理</h2>
+      <p>DocumentConversionService 支持引擎的 dependency injection 与依环境执行的 orchestration。convert_batch 会依序处理请求并隔离失败。probe_engines 返回 EngineProbeResult，包含可用性、版本、支持的修订模式与注释模式。结果可通过 to_dict() 序列化为稳定、JSON 兼容的基本类型，适合日志或 API；请勿记录文档内容或敏感路径。</p>
+      <pre><code>from gordon_doc_converter import DocumentConversionService
+
+service = DocumentConversionService()
+for probe in service.probe_engines():
+    print(probe.engine, probe.available, probe.version)
+
+results = service.convert_batch(requests)
+payload = [result.to_dict() for result in results]</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

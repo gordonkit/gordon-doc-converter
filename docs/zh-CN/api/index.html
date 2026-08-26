@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="部署具认证的 FastAPI 私有 DOCX 转 PDF 服务，搭配 LibreOffice 或 Gotenberg、健康检查、流量限制与 OpenAPI 3.1 契约。" />
+    <title>DOCX 转 PDF HTTP API | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/api/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/api/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/api/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/api/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/api/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/api/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="DOCX 转 PDF HTTP API | GordonKit Docs" />
+    <meta property="og:description" content="部署具认证的 FastAPI 私有 DOCX 转 PDF 服务，搭配 LibreOffice 或 Gotenberg、健康检查、流量限制与 OpenAPI 3.1 契约。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/api/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DOCX 转 PDF HTTP API | GordonKit Docs" />
+    <meta name="twitter:description" content="部署具认证的 FastAPI 私有 DOCX 转 PDF 服务，搭配 LibreOffice 或 Gotenberg、健康检查、流量限制与 OpenAPI 3.1 契约。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"DOCX 转 PDF HTTP API","description":"部署具认证的 FastAPI 私有 DOCX 转 PDF 服务，搭配 LibreOffice 或 Gotenberg、健康检查、流量限制与 OpenAPI 3.1 契约。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/api/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>快速开始</p>
+      <h1>DOCX 转 PDF HTTP API</h1>
+      <p>部署具认证的 FastAPI 私有 DOCX 转 PDF 服务，搭配 LibreOffice 或 Gotenberg、健康检查、流量限制与 OpenAPI 3.1 契约。</p>
+      <section id="api-overview">
+      <h2>API 概览</h2>
+      <p>私有 HTTP adapter 刻意提供精简的 DOCX 转 PDF 接口。请使用下表端点执行转换、诊断与部署健康检查。</p>
+
+      <table><caption>HTTP API 端点</caption>
+        <thead><tr><th>端点</th><th>认证</th><th>用途</th></tr></thead>
+        <tbody><tr><td>POST /conversions</td><td>Bearer token</td><td>将上传的 DOCX 字节转换为 PDF</td></tr><tr><td>GET /engines</td><td>Bearer token</td><td>列出已设置 renderer 的能力</td></tr><tr><td>GET /live</td><td>无</td><td>确认进程仍在运行</td></tr><tr><td>GET /ready</td><td>无</td><td>确认默认 renderer 是否就绪</td></tr><tr><td>GET /version</td><td>无</td><td>返回包版本</td></tr></tbody>
+      </table>
+    </section><section id="start-api">
+      <h2>启动 API</h2>
+      <p>安装可选的 API 依赖包、设置高强度 API key，并在 8000 port 启动 application factory。</p>
+      <pre><code>uv sync --extra api
+$env:GORDON_DOC_API_KEY = &quot;replace-me&quot;
+uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000</code></pre><aside>环境变量示例使用 PowerShell。此 API 应维持私有部署，且请勿提交 API key。</aside>
+    </section><section id="api-convert">
+      <h2>转换文档</h2>
+      <p>POST /conversions 只接受 DOCX request body，并返回 application/pdf。请在 X-Filename 传送原始文件名、在 Content-Type 传送 DOCX 的 OOXML MIME type；设置 API key 时另须 Bearer token。可选的 engine query parameter 接受 libreoffice 或 gotenberg；API 刻意不提供 Word COM。服务器会将上传暂存于临时目录、验证 OOXML package 与限制、调用设置的恶意程序扫描 hook，并在响应前删除暂存文件。</p>
+      <pre><code>curl --fail-with-body \
+  -H &quot;Authorization: Bearer replace-me&quot; \
+  -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; \
+  -H &quot;X-Filename: report.docx&quot; \
+  --data-binary @report.docx \
+  &quot;http://127.0.0.1:8000/conversions?engine=libreoffice&quot; \
+  --output report.pdf</code></pre><aside>HTTP adapter 刻意比库与 CLI 窄：只提供经认证的 DOCX 转 PDF。生产环境请将它放在私有网络控制与 TLS 后方。</aside>
+    </section><section id="api-documentation">
+      <h2>交互式 API 文档</h2>
+      <p>文档站会发布产生的 OpenAPI 3.1 契约与内置的只读 Swagger UI。你可以在浏览器查看 JSON，或下载后交由代码产生与验证工具使用。</p>
+      <a href="/openapi.json">查看 OpenAPI JSON</a> <a href="/openapi.json">下载 OpenAPI JSON</a> <a href="/swagger/">开启 Swagger UI</a><aside>托管的 Swagger UI 采只读模式。如需对已设置的私有部署使用 Try it out，请开启 API server 本身的 /docs。</aside>
+    </section><section id="api-endpoints">
+      <h2>可用端点</h2>
+      <p>规格包含文档转换、引擎探索、存活检查、就绪检查与版本端点。受保护的 request 使用 Bearer token。</p>
+      <pre><code># Protected: requires Authorization: Bearer &lt;api-key&gt;
+POST /conversions?engine=libreoffice|gotenberg
+GET  /engines
+
+# Unprotected operational metadata
+GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
+GET  /ready    # 200 ready, 503 not-ready
+GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+    </section><section id="api-status-errors">
+      <h2>状态码与运行限制</h2>
+      <p>成功转换会以 200 返回 PDF attachment。无效引擎或输入返回 400；缺少或无效凭证返回 401；来源超过大小限制返回 413；renderer 失败返回 422；速率或并发容量耗尽返回 429；内部暂存或服务错误返回 500；认证或恶意程序扫描服务不可用返回 503。/ready 会检查设置的默认引擎，而非只确认进程仍存活。内置的固定窗口速率限制与并发限制只在单一 process 内有效，因此多副本的生产部署还须在 ingress 或 gateway 提供分布式限制。</p>
+
+    </section><section id="api-configuration">
+      <h2>设置与集成 Hooks</h2>
+      <p>create_app 可接受 ApiSettings 或使用环境默认值。GORDON_DOC_API_KEY 会启用默认的常数时间 Bearer-token 比对。GORDON_DOC_GOTENBERG_URL 会设置 Gotenberg adapter，并令其成为默认引擎；否则使用 LibreOffice。ApiSettings 也控制转换超时、最大并发转换数、固定窗口请求速率与输入限制。集成私有身份、扫描或可观测性系统时，请提供 auth_hook、malware_scan_hook 与 telemetry_hook。Telemetry 仅接收不含内容的字段；切勿输出文档内容、凭证或客户路径。</p>
+      <pre><code>from gordon_doc_converter.api.app import ApiSettings, create_app
+
+app = create_app(settings=ApiSettings(
+    api_key=&#39;read-from-a-secret-store&#39;,
+    timeout_seconds=120,
+    max_concurrent_conversions=2,
+    rate_limit_requests=30,
+    rate_limit_window_seconds=60,
+))</code></pre>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>

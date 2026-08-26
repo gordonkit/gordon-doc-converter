@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="了解 GordonKit 可移植文档转换架构，包括 application service、引擎协议、策略协调、adapter 与 PDF 验证。" />
+    <title>文档转换器系统架构 | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/architecture/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/architecture/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/architecture/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/architecture/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/architecture/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/architecture/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="文档转换器系统架构 | GordonKit Docs" />
+    <meta property="og:description" content="了解 GordonKit 可移植文档转换架构，包括 application service、引擎协议、策略协调、adapter 与 PDF 验证。" />
+    <meta property="og:url" content="https://docs.gordonkit.com/zh-CN/architecture/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="文档转换器系统架构 | GordonKit Docs" />
+    <meta name="twitter:description" content="了解 GordonKit 可移植文档转换架构，包括 application service、引擎协议、策略协调、adapter 与 PDF 验证。" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"文档转换器系统架构","description":"了解 GordonKit 可移植文档转换架构，包括 application service、引擎协议、策略协调、adapter 与 PDF 验证。","inLanguage":"zh-CN","url":"https://docs.gordonkit.com/zh-CN/architecture/","isPartOf":{"@type":"WebSite","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com"},"about":{"@type":"SoftwareApplication","name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter"}}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/zh-CN/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/zh-CN/overview/">概览</a> <a href="/zh-CN/cli/">CLI 命令参考</a> <a href="/zh-CN/library/">Python 库</a> <a href="/zh-CN/api/">HTTP API</a> <a href="/zh-CN/architecture/">系统架构</a> <a href="/zh-CN/contributing/">参与开发</a> <a href="/zh-CN/deployment/">部署模式</a> <a href="/zh-CN/containers/">容器化</a> <a href="/zh-CN/roadmap/">产品路线图</a> <a href="/zh-CN/security/">安全性</a></nav></header>
+    <main><article>
+      <p>开发指南</p>
+      <h1>文档转换器系统架构</h1>
+      <p>了解 GordonKit 可移植文档转换架构，包括 application service、引擎协议、策略协调、adapter 与 PDF 验证。</p>
+      <section id="dependency-flow">
+      <h2>依赖流向</h2>
+      <p>库与 CLI 调用皆进入 application service，由 orchestrator 应用策略后，再调用共用 engine protocol 并验证产出的 PDF。</p>
+      <pre><code>Library / CLI
+  -&gt; Application service
+  -&gt; Orchestrator and policy
+  -&gt; Engine protocol
+  -&gt; PDF validation</code></pre>
+    </section><section id="adapter-rules">
+      <h2>Adapter 规则</h2>
+      <p>平台 API 与 subprocess 限制在引擎 adapter 内。Windows 专用依赖包采延迟导入，确保核心包维持跨平台。</p>
+
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a></footer></div>
+  </body>
+</html>
