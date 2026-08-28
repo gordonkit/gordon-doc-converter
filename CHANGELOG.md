@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-28
+
 ### Added
 
 - Native ODT semantic extraction, so ODT sources convert to Markdown, HTML, YAML, JSON, and
