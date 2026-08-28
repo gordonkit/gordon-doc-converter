@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
 from zipfile import ZipFile
 
+from gordon_doc_converter.content.counters import OrdinalSystem, format_ordinal
 from gordon_doc_converter.content.models import (
     BlockKind,
     ContentAsset,
@@ -455,61 +456,17 @@ def _heading_level(style_id: str, style: _Style | None) -> int | None:
     return next((chinese_levels[name] for name in names if name in chinese_levels), None)
 
 
-def _traditional_number(value: int, *, financial: bool = False) -> str:
-    digits = "零壹貳參肆伍陸柒捌玖" if financial else "零一二三四五六七八九"
-    units = ("", "拾", "佰", "仟") if financial else ("", "十", "百", "千")
-    if value <= 0 or value >= 10000:
-        return str(value)
-    result = ""
-    pending_zero = False
-    for position in range(3, -1, -1):
-        divisor = 10**position
-        digit, value = divmod(value, divisor)
-        if digit:
-            if pending_zero and result:
-                result += digits[0]
-            if not (digit == 1 and position == 1 and not result and not financial):
-                result += digits[digit]
-            result += units[position]
-            pending_zero = False
-        elif result and value:
-            pending_zero = True
-    return result
-
-
 def _format_number(value: int, number_format: str) -> str:
-    if number_format in {"ideographTraditional", "taiwaneseCountingThousand"}:
-        return _traditional_number(value)
-    if number_format == "ideographLegalTraditional":
-        return _traditional_number(value, financial=True)
-    if number_format == "lowerLetter":
-        return chr(ord("a") + (value - 1) % 26)
-    if number_format == "upperLetter":
-        return chr(ord("A") + (value - 1) % 26)
-    if number_format in {"lowerRoman", "upperRoman"}:
-        parts: list[str] = []
-        remainder = value
-        for amount, token in (
-            (1000, "M"),
-            (900, "CM"),
-            (500, "D"),
-            (400, "CD"),
-            (100, "C"),
-            (90, "XC"),
-            (50, "L"),
-            (40, "XL"),
-            (10, "X"),
-            (9, "IX"),
-            (5, "V"),
-            (4, "IV"),
-            (1, "I"),
-        ):
-            while remainder >= amount:
-                parts.append(token)
-                remainder -= amount
-        rendered = "".join(parts)
-        return rendered.lower() if number_format == "lowerRoman" else rendered
-    return str(value)
+    system = {
+        "ideographTraditional": OrdinalSystem.CJK_DECIMAL,
+        "taiwaneseCountingThousand": OrdinalSystem.CJK_DECIMAL,
+        "ideographLegalTraditional": OrdinalSystem.CJK_FINANCIAL,
+        "lowerLetter": OrdinalSystem.LOWER_LETTER,
+        "upperLetter": OrdinalSystem.UPPER_LETTER,
+        "lowerRoman": OrdinalSystem.LOWER_ROMAN,
+        "upperRoman": OrdinalSystem.UPPER_ROMAN,
+    }.get(number_format, OrdinalSystem.DECIMAL)
+    return format_ordinal(value, system)
 
 
 def _number_prefix(num_id: str | None, level: int | None, state: _State) -> str:

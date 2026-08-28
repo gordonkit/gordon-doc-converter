@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
     <title>文档转换 CLI 命令参考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-CIaAlOnj.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DbcRWZf_.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/cli/" />
@@ -66,13 +66,14 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>转换单一文档</h2>
-      <p>convert 接受 DOCX、ODT、PDF、HTML 与 Markdown 输入。未指定 --to 时，DOCX、ODT、HTML、Markdown 会输出 PDF；PDF 输入则必须指定 --to。HTML 也可通过语义提取输出 Markdown、YAML 与 JSON，且不需要任何引擎。可重复使用 --to 获取多个 artifact。--output 适用于单一文件 artifact；省略时服务会在来源旁推导安全的输出名称，除非提供 --overwrite，否则不会覆写既有文件。DOCX 转 HTML 时，--engine word-com 在 Windows 上通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。</p>
+      <p>convert 接受 DOCX、ODT、PDF、HTML 与 Markdown 输入。未指定 --to 时，DOCX、ODT、HTML、Markdown 会输出 PDF；PDF 输入则必须指定 --to。ODT 与 HTML 也可通过语义提取输出 Markdown、HTML、YAML 与 JSON，且不需要任何引擎；ODT 的逐页图片则会先经 LibreOffice 排版。可重复使用 --to 获取多个 artifact。--output 适用于单一文件 artifact；省略时服务会在来源旁推导安全的输出名称，除非提供 --overwrite，否则不会覆写既有文件。DOCX 转 HTML 时，--engine word-com 在 Windows 上通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
 gordon-doc convert report.html --to markdown --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>转换策略与输出选项</h2>

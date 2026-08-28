@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
     <title>Document conversion CLI reference | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-CIaAlOnj.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DbcRWZf_.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/cli/" />
@@ -66,13 +66,14 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>Convert one document</h2>
-      <p>convert accepts DOCX, ODT, PDF, HTML, and Markdown input. With no --to it creates PDF for DOCX, ODT, HTML, or Markdown; PDF input always requires --to. HTML input also converts to Markdown, YAML, and JSON through semantic extraction, with no engine required. Repeat --to to request several artifacts. --output is appropriate for one single-file artifact; without it, the service derives a safe sibling output name and refuses to replace an existing file unless --overwrite is present. For DOCX-to-HTML, --engine word-com renders through Word COM on Windows; omit it or use --mode server for semantic extraction.</p>
+      <p>convert accepts DOCX, ODT, PDF, HTML, and Markdown input. With no --to it creates PDF for DOCX, ODT, HTML, or Markdown; PDF input always requires --to. ODT and HTML input also convert to Markdown, HTML, YAML, and JSON through semantic extraction, with no engine required; ODT page images render through LibreOffice first. Repeat --to to request several artifacts. --output is appropriate for one single-file artifact; without it, the service derives a safe sibling output name and refuses to replace an existing file unless --overwrite is present. For DOCX-to-HTML, --engine word-com renders through Word COM on Windows; omit it or use --mode server for semantic extraction.</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
 gordon-doc convert report.html --to markdown --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
+gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>Conversion policy and output options</h2>

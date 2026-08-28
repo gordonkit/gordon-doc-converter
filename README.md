@@ -21,7 +21,7 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ODT | LO | LO | × | — | — | — | — | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
@@ -30,10 +30,14 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 `×` same format; not a conversion
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
-output artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for
-PDF/DOCX conversion. HTML input additionally converts to Markdown, YAML, and JSON through the
-same semantic extraction used for DOCX and PDF; that route needs no external engine. Markdown
-input still converts only to PDF and DOCX.
+output artifacts for DOCX, ODT, and PDF sources; Markdown and HTML are also accepted as input
+for PDF/DOCX conversion. HTML input additionally converts to Markdown, YAML, and JSON through
+the same semantic extraction used for DOCX, ODT, and PDF; that route needs no external engine.
+Markdown input still converts only to PDF and DOCX.
+
+ODT semantic artifacts are read directly from the ODF package, so Markdown, HTML, YAML, and
+JSON need no external engine. ODT page images render the document to PDF first and therefore
+require LibreOffice.
 
 DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice. DOCX conversion follows
 these engine policies:
@@ -182,6 +186,8 @@ gordon-doc engines --json
 gordon-doc template report.html --orientation portrait
 gordon-doc convert example.docx --output example.pdf
 gordon-doc convert report.odt --to docx
+gordon-doc convert report.odt --to markdown --to yaml --to json
+gordon-doc convert report.odt --to images --dpi 144
 gordon-doc convert example.docx --to odt --engine libreoffice
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.html --to docx

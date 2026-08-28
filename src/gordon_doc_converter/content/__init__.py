@@ -17,6 +17,7 @@ from gordon_doc_converter.content.models import (
     PageContentKind,
     SourceAnchor,
 )
+from gordon_doc_converter.content.odt import extract_odt_content
 from gordon_doc_converter.content.pdf import extract_pdf_content
 from gordon_doc_converter.content.structured import (
     build_jsonl_records,
@@ -44,6 +45,7 @@ __all__ = [
     "build_structured_payload",
     "extract_docx_content",
     "extract_html_content",
+    "extract_odt_content",
     "extract_pdf_content",
     "render_html",
     "render_json",
