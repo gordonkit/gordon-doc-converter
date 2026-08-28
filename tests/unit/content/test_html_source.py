@@ -20,7 +20,7 @@ _PIXEL_DATA_URI = (
 
 def _html(path: Path, body: str) -> Path:
     source = path / "source.html"
-    source.write_text(body, encoding="utf-8")
+    source.write_text(body, encoding="utf-8", newline="\n")
     return source
 
 
@@ -146,6 +146,21 @@ def test_preformatted_text_keeps_line_breaks(tmp_path: Path) -> None:
 
     assert content.blocks[0].text == "第一行\n  第二行"
     assert content.blocks[1].text == "折行\n之後"
+
+
+def test_carriage_returns_normalize_so_extraction_is_platform_independent(
+    tmp_path: Path,
+) -> None:
+    windows = tmp_path / "windows.html"
+    windows.write_bytes("<pre>第一行\r\n  第二行</pre><p>折行\r\n之後</p>".encode())
+    classic_mac = tmp_path / "classic-mac.html"
+    classic_mac.write_bytes("<pre>第一行\r  第二行</pre><p>折行\r之後</p>".encode())
+
+    for source in (windows, classic_mac):
+        content = extract_html_content(source)
+
+        assert content.blocks[0].text == "第一行\n  第二行"
+        assert content.blocks[1].text == "折行 之後"
 
 
 def test_metadata_comes_from_title_and_allowlisted_meta_elements(tmp_path: Path) -> None:
