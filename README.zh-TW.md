@@ -21,7 +21,7 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ODT | LO | LO | × | — | — | — | — | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
@@ -29,10 +29,13 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 `P+` Pandoc 搭配 PDF 後端 · `PDF` 先轉為 PDF · `—` 不支援 ·
 `×` 相同格式，不執行轉換
 
-逐頁圖片可輸出為 PNG 或 JPEG。DOCX 與 PDF 可產生 Markdown、HTML、YAML、JSON
-及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX。HTML 另可透過與 DOCX、PDF 相同的
-語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 仍僅能轉換為
-PDF 與 DOCX。
+逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、
+JSON 及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX。HTML 另可透過與 DOCX、ODT、
+PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 仍僅能
+轉換為 PDF 與 DOCX。
+
+ODT 的語意 artifact 直接從 ODF 封裝讀取，因此 Markdown、HTML、YAML 與 JSON 不需要
+外部引擎；ODT 的逐頁圖片會先排版為 PDF，因此需要 LibreOffice。
 
 DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX 轉換採用以下
 引擎政策：
@@ -170,6 +173,8 @@ gordon-doc engines --json
 gordon-doc template 報告.html --orientation portrait
 gordon-doc convert 範例.docx --output 範例.pdf
 gordon-doc convert 報告.odt --to docx
+gordon-doc convert 報告.odt --to markdown --to yaml --to json
+gordon-doc convert 報告.odt --to images --dpi 144
 gordon-doc convert 範例.docx --to odt --engine libreoffice
 gordon-doc convert 報告.html --to pdf --orientation landscape
 gordon-doc convert 報告.html --to docx

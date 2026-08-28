@@ -15,6 +15,7 @@ from gordon_doc_converter.content import (
     NormalizedContent,
     extract_docx_content,
     extract_html_content,
+    extract_odt_content,
     extract_pdf_content,
     write_content_artifacts,
 )
@@ -143,6 +144,7 @@ def _fix_word_com_html_line_heights(path: Path) -> None:
         path.write_text(fixed, encoding="utf-8")
 
 
+_OFFICE_FILE_ARTIFACTS = frozenset({ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT})
 _RENDERED_MARKUP_ARTIFACTS = (ArtifactType.PDF, ArtifactType.DOCX)
 _SEMANTIC_MARKUP_ARTIFACTS = (
     ArtifactType.MARKDOWN,
@@ -292,9 +294,13 @@ class ConversionPipeline:
         self._report(progress_callback, "validation", "Validating conversion request")
         if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
             result = self._convert_markup(request, progress_callback)
-        elif request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts:
+        elif (
+            request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts
+        ) and set(request.artifacts) <= _OFFICE_FILE_ARTIFACTS:
             result = self._convert_office_files(request, progress_callback)
-        elif request.source_format is SourceFormat.PDF or request.artifacts != (ArtifactType.PDF,):
+        elif request.source_format in {SourceFormat.ODT, SourceFormat.PDF} or request.artifacts != (
+            ArtifactType.PDF,
+        ):
             result = self._convert_artifacts(request, progress_callback)
         else:
             result = self._convert_pdf(request, progress_callback)
@@ -477,10 +483,12 @@ class ConversionPipeline:
         self,
         request: ConversionRequest,
         progress_callback: ProgressCallback | None,
+        *,
+        output_stem: Path | None = None,
     ) -> ConversionResult:
         """Convert DOCX/ODT files through the LibreOffice file adapter."""
         started = perf_counter()
-        supported = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
+        supported = set(_OFFICE_FILE_ARTIFACTS)
         if request.source_format not in {SourceFormat.DOCX, SourceFormat.ODT}:
             error: ConversionError = InvalidInputError(
                 "office file conversion requires a DOCX or ODT source"
@@ -531,8 +539,10 @@ class ConversionPipeline:
                 suffix = ".pdf" if artifact_type is ArtifactType.PDF else f".{artifact_type.value}"
                 output = (
                     request.options.output_path
-                    if len(request.artifacts) == 1 and request.options.output_path is not None
-                    else _output_stem(request).with_suffix(suffix)
+                    if output_stem is None
+                    and len(request.artifacts) == 1
+                    and request.options.output_path is not None
+                    else (output_stem or _output_stem(request)).with_suffix(suffix)
                 )
                 if output.suffix.casefold() != suffix:
                     results.append(
@@ -807,6 +817,14 @@ class ConversionPipeline:
                 include_annotation_metadata=request.options.include_annotation_metadata,
                 metadata_detail=request.options.metadata_detail,
             )
+        if request.source_format is SourceFormat.ODT:
+            return extract_odt_content(
+                request.source_path,
+                revision_mode=request.options.revision_mode,
+                comment_mode=request.options.comment_mode,
+                include_annotation_metadata=request.options.include_annotation_metadata,
+                metadata_detail=request.options.metadata_detail,
+            )
         if request.source_format is SourceFormat.HTML:
             return extract_html_content(
                 request.source_path,
@@ -917,6 +935,23 @@ class ConversionPipeline:
             }
         )
 
+        office_types = tuple(
+            artifact
+            for artifact in request.artifacts
+            if artifact in {ArtifactType.DOCX, ArtifactType.ODT}
+        )
+        if office_types:
+            office_result = self._convert_office_files(
+                replace(request, artifacts=office_types),
+                progress_callback,
+                output_stem=_output_stem(request),
+            )
+            for artifact in office_result.artifacts:
+                results[artifact.artifact_type] = artifact
+            warnings.extend(office_result.warnings)
+            selected_engine = office_result.selected_engine or selected_engine
+            attempted_engines = office_result.attempted_engines or attempted_engines
+
         html_via_word_com = ArtifactType.HTML in content_types and self._should_use_word_com_html(
             request
         )
@@ -977,10 +1012,10 @@ class ConversionPipeline:
                 temporary_pdf = Path(temporary) / "source.pdf"
                 pdf_source = request.source_path
                 pdf_error: ConversionFailure | None = None
-                if request.source_format is SourceFormat.DOCX:
+                if request.source_format in {SourceFormat.DOCX, SourceFormat.ODT}:
                     pdf_request = ConversionRequest(
                         request.source_path,
-                        SourceFormat.DOCX,
+                        request.source_format,
                         (ArtifactType.PDF,),
                         replace(
                             request.options,

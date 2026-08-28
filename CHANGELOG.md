@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Native ODT semantic extraction, so ODT sources convert to Markdown, HTML, YAML, JSON, and
+  page images in addition to DOCX and PDF. Content is read directly from the ODF package
+  without modifying the source: headings with `text:outline-style` chapter numbering, nested
+  lists with `text:list-style` markers and `text:display-levels`, tables with repeated and
+  covered cells, links, embedded images, `office:annotation` comments, `text:tracked-changes`
+  revisions, drawing text boxes, sections, and `meta.xml` document properties. Markdown, HTML,
+  YAML, and JSON need no external engine; ODT page images render through LibreOffice first.
+- Requests mixing office-file artifacts with semantic or page-image artifacts, such as
+  `--to docx --to markdown` from an ODT source, now produce every artifact under one shared
+  output stem with independent per-artifact status.
 - HTML-to-Markdown, HTML-to-YAML, and HTML-to-JSON conversion through the same semantic
   extraction used for DOCX and PDF sources, with no external engine required. Headings,
   paragraphs, nested and ordered lists, tables, links, `<ins>`/`<del>` revisions, and

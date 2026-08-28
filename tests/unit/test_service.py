@@ -434,3 +434,102 @@ def test_probe_exception_is_returned_as_safe_unavailable_result() -> None:
     assert result[0].available is False
     assert result[0].reason == "engine probe failed"
     assert result[1].reason == "engine adapter is not configured"
+
+
+_ODT_BODY = """<text:h text:outline-level="1">總則</text:h>
+<text:p>正文內容</text:p>"""
+
+
+def test_odt_source_produces_semantic_artifacts_without_a_rendering_engine(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(tmp_path / "臺灣 文件.odt", _ODT_BODY)
+    request = ConversionRequest(
+        source,
+        SourceFormat.ODT,
+        (ArtifactType.MARKDOWN, ArtifactType.JSON, ArtifactType.YAML),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert [item.status for item in result.artifacts] == [ArtifactStatus.SUCCESS] * 3
+    assert (tmp_path / "臺灣 文件.md").read_text(encoding="utf-8") == "# 總則\n\n正文內容\n"
+    assert (tmp_path / "臺灣 文件.json").is_file()
+    assert (tmp_path / "臺灣 文件.yaml").is_file()
+
+
+def test_odt_page_images_render_through_the_libreoffice_file_route(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(tmp_path / "頁面.odt", _ODT_BODY)
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: _write_pdf(output_path),
+        file_render=lambda source_path, output_path, artifact_type: _write_pdf(output_path),
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.ODT,
+        (ArtifactType.PAGE_IMAGES,),
+        ConversionOptions(image_dpi=72),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    artifact = result.artifacts[0]
+    assert [item.path.name for item in artifact.items] == ["0001.png"]
+    assert (tmp_path / "頁面.pages" / "0001.png").is_file()
+
+
+def test_odt_mixed_office_and_semantic_artifacts_share_one_output_stem(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(tmp_path / "混合.odt", _ODT_BODY)
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: _write_pdf(output_path),
+        file_render=lambda source_path, output_path, artifact_type: output_path.write_bytes(
+            b"converted office document"
+        ),
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.ODT,
+        (ArtifactType.DOCX, ArtifactType.MARKDOWN),
+        ConversionOptions(output_path=tmp_path / "輸出"),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert [item.artifact_type for item in result.artifacts] == [
+        ArtifactType.DOCX,
+        ArtifactType.MARKDOWN,
+    ]
+    assert (tmp_path / "輸出.docx").read_bytes() == b"converted office document"
+    assert (tmp_path / "輸出.md").is_file()
+
+
+def test_odt_office_artifacts_still_fail_cleanly_without_libreoffice(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(tmp_path / "缺引擎.odt", _ODT_BODY)
+    request = ConversionRequest(
+        source,
+        SourceFormat.ODT,
+        (ArtifactType.DOCX, ArtifactType.MARKDOWN),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is False
+    statuses = {item.artifact_type: item.status for item in result.artifacts}
+    assert statuses[ArtifactType.DOCX] is ArtifactStatus.FAILED
+    assert statuses[ArtifactType.MARKDOWN] is ArtifactStatus.SUCCESS
+    assert (tmp_path / "缺引擎.md").is_file()

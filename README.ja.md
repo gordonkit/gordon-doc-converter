@@ -21,7 +21,7 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ODT | LO | LO | × | — | — | — | — | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
@@ -30,10 +30,14 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 `×` 同一フォーマットのため変換しない
 
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
-DOCX / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX への変換の入力
-としても受け付けます。HTML はさらに、DOCX や PDF と同じセマンティック抽出によって
+DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX への変換の
+入力としても受け付けます。HTML はさらに、DOCX、ODT、PDF と同じセマンティック抽出によって
 Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは不要です。Markdown の変換先は
 引き続き PDF と DOCX のみです。
+
+ODT のセマンティック artifact は ODF パッケージから直接読み取るため、Markdown、HTML、
+YAML、JSON に外部エンジンは不要です。ODT のページ画像は先に PDF へ組版するため
+LibreOffice が必要です。
 
 DOCX から ODT、ODT から DOCX、ODT から PDF への変換には LibreOffice を使用します。DOCX の
 変換は次のエンジンポリシーに従います。
@@ -183,6 +187,8 @@ gordon-doc engines --json
 gordon-doc template report.html --orientation portrait
 gordon-doc convert example.docx --output example.pdf
 gordon-doc convert report.odt --to docx
+gordon-doc convert report.odt --to markdown --to yaml --to json
+gordon-doc convert report.odt --to images --dpi 144
 gordon-doc convert example.docx --to odt --engine libreoffice
 gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.html --to docx
