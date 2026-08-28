@@ -155,6 +155,13 @@ _CONTENT_MEDIA_TYPES = {
     ArtifactType.YAML: "application/yaml; charset=utf-8",
     ArtifactType.JSON: "application/json; charset=utf-8",
 }
+_JSONL_MEDIA_TYPE = "application/jsonl; charset=utf-8"
+
+
+def _content_media_type(artifact_type: ArtifactType, *, json_lines: bool) -> str:
+    if artifact_type is ArtifactType.JSON and json_lines:
+        return _JSONL_MEDIA_TYPE
+    return _CONTENT_MEDIA_TYPES[artifact_type]
 
 
 def _output_stem(request: ConversionRequest) -> Path:
@@ -170,6 +177,7 @@ def _output_stem(request: ConversionRequest) -> Path:
         ".yaml",
         ".yml",
         ".json",
+        ".jsonl",
     }:
         return configured.with_suffix("")
     return configured
@@ -826,6 +834,7 @@ class ConversionPipeline:
                 _output_stem(request),
                 content_types,
                 overwrite=request.options.overwrite,
+                json_lines=request.options.json_lines,
             )
         except FileExistsError as exc:
             error: ConversionError = OutputExistsError("content output already exists")
@@ -863,7 +872,8 @@ class ConversionPipeline:
             shared_items.append(ArtifactItem(sidecar, sidecar.stat().st_size, "application/json"))
         for artifact_type, path in written.artifacts:
             size = path.stat().st_size
-            item = ArtifactItem(path, size, _CONTENT_MEDIA_TYPES[artifact_type])
+            media_type = _content_media_type(artifact_type, json_lines=request.options.json_lines)
+            item = ArtifactItem(path, size, media_type)
             results[artifact_type] = ArtifactResult(
                 artifact_type,
                 ArtifactStatus.SUCCESS,

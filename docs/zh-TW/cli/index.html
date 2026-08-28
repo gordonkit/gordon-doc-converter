@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
     <title>文件轉換 CLI 指令參考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-Dbh8yr6J.js"></script>
+    <script type="module" crossorigin src="/assets/docs-CIaAlOnj.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/cli/" />
@@ -83,10 +83,11 @@ gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
     </section><section id="structured-artifacts">
       <h2>結構化 YAML 與 JSON Artifact</h2>
-      <p>--to yaml 與 --to json 會序列化同一份具版本的語意文件。DOCX、PDF 與 HTML 來源都會產生同一份結構。Schema 1.3 保留接近 Markdown 的標題、段落、清單及表格文字，同時保存有意義的連結、圖片、修訂、註解、來源順序、metadata 與反向 locator。重複使用 --to 可只擷取一次並同時寫出兩種格式。--metadata 接受 none、basic 或 layout；沒有資料的選用值會直接省略，不會輸出 null。--to json 產生文件 artifact；不同用途的 --json 則將 CLI 執行結果寫到 stdout。</p>
+      <p>--to yaml 與 --to json 會序列化同一份具版本的語意文件。DOCX、PDF 與 HTML 來源都會產生同一份結構。Schema 1.3 保留接近 Markdown 的標題、段落、清單及表格文字，同時保存有意義的連結、圖片、修訂、註解、來源順序、metadata 與反向 locator。重複使用 --to 可只擷取一次並同時寫出兩種格式。--metadata 接受 none、basic 或 layout；沒有資料的選用值會直接省略，不會輸出 null。--json-lines 會把 JSON artifact 以換行分隔的記錄寫入 &lt;stem&gt;.jsonl 而非 &lt;stem&gt;.json：先是一筆 document 記錄，接著依來源順序輸出每個 block，最後是 asset、annotation 與 warning 記錄；每筆 block 都帶有 section_path，因此逐行資料仍可還原章節階層。此選項適用於 DOCX、PDF 與 HTML 來源，且不影響 Markdown、HTML 與 YAML 產出。--to json 產生文件 artifact；不同用途的 --json 則將 CLI 執行結果寫到 stdout。</p>
       <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
 gordon-doc convert report.pdf --to yaml --to json --metadata layout
 gordon-doc convert report.html --to yaml --to json --metadata basic
+gordon-doc convert report.docx --to json --json-lines
 gordon-doc convert report.docx --to json --json</code></pre>
     </section><section id="source-anchors">
       <h2>反向定位與來源驗證</h2>

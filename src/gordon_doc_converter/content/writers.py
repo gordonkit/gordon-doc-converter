@@ -9,7 +9,7 @@ from pathlib import Path
 from gordon_doc_converter.content.html import render_html
 from gordon_doc_converter.content.markdown import render_markdown
 from gordon_doc_converter.content.models import NormalizedContent
-from gordon_doc_converter.content.structured import render_json, render_yaml
+from gordon_doc_converter.content.structured import render_json, render_jsonl, render_yaml
 from gordon_doc_converter.models import ArtifactType
 
 
@@ -30,12 +30,24 @@ def _write_text(path: Path, text: str, *, overwrite: bool) -> None:
         stream.write(text)
 
 
+def _artifact_suffix(artifact_type: ArtifactType, *, json_lines: bool) -> str:
+    """Return the file extension one semantic artifact type is written with."""
+    if artifact_type is ArtifactType.JSON:
+        return ".jsonl" if json_lines else ".json"
+    return {
+        ArtifactType.MARKDOWN: ".md",
+        ArtifactType.HTML: ".html",
+        ArtifactType.YAML: ".yaml",
+    }[artifact_type]
+
+
 def write_content_artifacts(
     content: NormalizedContent,
     output_stem: Path,
     artifact_types: tuple[ArtifactType, ...],
     *,
     overwrite: bool = False,
+    json_lines: bool = False,
 ) -> ContentWriteResult:
     """Write semantic artifacts once with one deterministic asset manifest."""
     supported = {
@@ -51,14 +63,7 @@ def write_content_artifacts(
     relative_asset_directory = asset_directory.name
     if not overwrite:
         planned = [
-            output_stem.with_suffix(
-                {
-                    ArtifactType.MARKDOWN: ".md",
-                    ArtifactType.HTML: ".html",
-                    ArtifactType.YAML: ".yaml",
-                    ArtifactType.JSON: ".json",
-                }[item]
-            )
+            output_stem.with_suffix(_artifact_suffix(item, json_lines=json_lines))
             for item in artifact_types
         ]
         planned.extend(asset_directory / asset.filename for asset in content.assets)
@@ -70,26 +75,16 @@ def write_content_artifacts(
             raise FileExistsError("one or more content outputs already exist")
     artifacts: list[tuple[ArtifactType, Path]] = []
     for artifact_type in artifact_types:
+        path = output_stem.with_suffix(_artifact_suffix(artifact_type, json_lines=json_lines))
         if artifact_type is ArtifactType.MARKDOWN:
-            path = output_stem.with_suffix(".md")
-            _write_text(
-                path,
-                render_markdown(content, asset_directory=relative_asset_directory),
-                overwrite=overwrite,
-            )
+            rendered = render_markdown(content, asset_directory=relative_asset_directory)
         elif artifact_type is ArtifactType.HTML:
-            path = output_stem.with_suffix(".html")
-            _write_text(
-                path,
-                render_html(content, asset_directory=relative_asset_directory),
-                overwrite=overwrite,
-            )
+            rendered = render_html(content, asset_directory=relative_asset_directory)
         elif artifact_type is ArtifactType.YAML:
-            path = output_stem.with_suffix(".yaml")
-            _write_text(path, render_yaml(content), overwrite=overwrite)
+            rendered = render_yaml(content)
         else:
-            path = output_stem.with_suffix(".json")
-            _write_text(path, render_json(content), overwrite=overwrite)
+            rendered = render_jsonl(content) if json_lines else render_json(content)
+        _write_text(path, rendered, overwrite=overwrite)
         artifacts.append((artifact_type, path))
 
     manifest_path: Path | None = None

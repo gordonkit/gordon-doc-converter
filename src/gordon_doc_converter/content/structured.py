@@ -147,6 +147,85 @@ def _block_payload(block: ContentBlock, source_order: int) -> dict[str, object]:
     return payload
 
 
+def _section_payload(block: ContentBlock, source_order: int) -> dict[str, object]:
+    """Build the shared fields of one heading-introduced section."""
+    section: dict[str, object] = {
+        "id": f"section-{source_order + 1:06d}",
+        "source_order": source_order,
+        "level": block.level,
+        "title": block.text,
+    }
+    if block.page_number is not None:
+        section["physical_page_number"] = block.page_number
+    if block.display_page_label is not None:
+        section["display_page_label"] = block.display_page_label
+    if block.source_anchor is not None:
+        section["source_anchor"] = _source_anchor_payload(block.source_anchor, block.text)
+    return section
+
+
+def _pop_closed_sections(stack: list[dict[str, object]], level: int) -> None:
+    """Drop the sections a heading of this level closes."""
+    while stack:
+        parent_level = stack[-1]["level"]
+        assert isinstance(parent_level, int)
+        if parent_level < level:
+            break
+        stack.pop()
+
+
+def _source_payload(content: NormalizedContent) -> dict[str, object]:
+    source: dict[str, object] = {"format": content.source_format.value}
+    if content.source_sha256 is not None:
+        source["sha256"] = content.source_sha256
+    return source
+
+
+def _metadata_payload(content: NormalizedContent) -> dict[str, object]:
+    if content.metadata is None:
+        return {}
+    return {
+        key: value
+        for key, value in {
+            "title": content.metadata.title,
+            "subject": content.metadata.subject,
+            "creator": content.metadata.creator,
+            "keywords": content.metadata.keywords,
+            "created": content.metadata.created,
+            "modified": content.metadata.modified,
+        }.items()
+        if value is not None
+    }
+
+
+def _layout_payload(content: NormalizedContent) -> dict[str, object]:
+    if content.layout.availability is LayoutAvailability.NOT_REQUESTED:
+        return {}
+    layout: dict[str, object] = {"availability": content.layout.availability.value}
+    if content.layout.provider is not None:
+        layout["provider"] = content.layout.provider
+    if content.layout.confidence is not None:
+        layout["confidence"] = content.layout.confidence
+    if content.layout.availability is LayoutAvailability.AVAILABLE:
+        layout["physical_page_number_base"] = 1
+    return layout
+
+
+def _asset_payloads(content: NormalizedContent) -> list[dict[str, object]]:
+    payloads: list[dict[str, object]] = []
+    for asset in content.assets:
+        payload: dict[str, object] = {
+            "asset_id": asset.asset_id,
+            "filename": asset.filename,
+            "media_type": asset.media_type,
+            "size_bytes": len(asset.data),
+        }
+        if asset.page_number is not None:
+            payload["physical_page_number"] = asset.page_number
+        payloads.append(payload)
+    return payloads
+
+
 def build_structured_payload(content: NormalizedContent) -> dict[str, object]:
     """Build one source-neutral hierarchy shared by JSON and YAML writers."""
     root_blocks: list[dict[str, object]] = []
@@ -160,82 +239,76 @@ def build_structured_payload(content: NormalizedContent) -> dict[str, object]:
             target.append(_block_payload(block, source_order))
             continue
 
-        section: dict[str, object] = {
-            "id": f"section-{source_order + 1:06d}",
-            "source_order": source_order,
-            "level": block.level,
-            "title": block.text,
-            "blocks": [],
-            "children": [],
-        }
-        if block.page_number is not None:
-            section["physical_page_number"] = block.page_number
-        if block.display_page_label is not None:
-            section["display_page_label"] = block.display_page_label
-        if block.source_anchor is not None:
-            section["source_anchor"] = _source_anchor_payload(block.source_anchor, block.text)
-        while section_stack:
-            parent_level = section_stack[-1]["level"]
-            assert isinstance(parent_level, int)
-            if parent_level < block.level:
-                break
-            section_stack.pop()
+        section = _section_payload(block, source_order)
+        section["blocks"] = []
+        section["children"] = []
+        _pop_closed_sections(section_stack, block.level)
         target_sections = section_stack[-1]["children"] if section_stack else sections
         assert isinstance(target_sections, list)
         target_sections.append(section)
         section_stack.append(section)
 
-    metadata: dict[str, object] | None = None
-    if content.metadata is not None:
-        metadata = {
-            key: value
-            for key, value in {
-                "title": content.metadata.title,
-                "subject": content.metadata.subject,
-                "creator": content.metadata.creator,
-                "keywords": content.metadata.keywords,
-                "created": content.metadata.created,
-                "modified": content.metadata.modified,
-            }.items()
-            if value is not None
-        }
-
-    source: dict[str, object] = {"format": content.source_format.value}
-    if content.source_sha256 is not None:
-        source["sha256"] = content.source_sha256
     payload: dict[str, object] = {
         "schema_version": SCHEMA_VERSION,
-        "source": source,
+        "source": _source_payload(content),
         "root_blocks": root_blocks,
         "sections": sections,
-        "assets": [],
+        "assets": _asset_payloads(content),
         "annotations": [annotation.to_dict() for annotation in content.annotations],
         "warnings": [warning.to_dict() for warning in content.warnings],
     }
+    metadata = _metadata_payload(content)
     if metadata:
         payload["metadata"] = metadata
-    if content.layout.availability is not LayoutAvailability.NOT_REQUESTED:
-        layout: dict[str, object] = {"availability": content.layout.availability.value}
-        if content.layout.provider is not None:
-            layout["provider"] = content.layout.provider
-        if content.layout.confidence is not None:
-            layout["confidence"] = content.layout.confidence
-        if content.layout.availability is LayoutAvailability.AVAILABLE:
-            layout["physical_page_number_base"] = 1
+    layout = _layout_payload(content)
+    if layout:
         payload["layout"] = layout
-    assets = payload["assets"]
-    assert isinstance(assets, list)
-    for asset in content.assets:
-        asset_payload: dict[str, object] = {
-            "asset_id": asset.asset_id,
-            "filename": asset.filename,
-            "media_type": asset.media_type,
-            "size_bytes": len(asset.data),
-        }
-        if asset.page_number is not None:
-            asset_payload["physical_page_number"] = asset.page_number
-        assets.append(asset_payload)
     return payload
+
+
+def build_jsonl_records(content: NormalizedContent) -> list[dict[str, object]]:
+    """Flatten the same versioned document into one self-describing record per line.
+
+    The first record describes the document. Every block then follows in source
+    order, carrying the identifiers of the sections that enclose it so the
+    hierarchy of the nested payload stays reconstructable from a line stream.
+    Assets, annotations, and warnings are emitted as their own records.
+    """
+    document: dict[str, object] = {
+        "type": "document",
+        "schema_version": SCHEMA_VERSION,
+        "source": _source_payload(content),
+        "block_count": len(content.blocks),
+    }
+    metadata = _metadata_payload(content)
+    if metadata:
+        document["metadata"] = metadata
+    layout = _layout_payload(content)
+    if layout:
+        document["layout"] = layout
+    records: list[dict[str, object]] = [document]
+
+    section_stack: list[dict[str, object]] = []
+    for source_order, block in enumerate(content.blocks):
+        if block.level is not None:
+            _pop_closed_sections(section_stack, block.level)
+        section_path = [section["id"] for section in section_stack]
+        record: dict[str, object] = {"type": "block"}
+        record.update(_block_payload(block, source_order))
+        record["section_path"] = section_path
+        if block.level is not None:
+            section = _section_payload(block, source_order)
+            record["section_id"] = section["id"]
+            record["level"] = block.level
+            section_stack.append(section)
+        records.append(record)
+
+    records.extend({"type": "asset", **asset} for asset in _asset_payloads(content))
+    records.extend(
+        {"type": "annotation", **annotation.to_dict()} for annotation in content.annotations
+    )
+    records.extend({"type": "warning", **warning.to_dict()} for warning in content.warnings)
+    return records
 
 
 def render_json(content: NormalizedContent) -> str:
@@ -248,6 +321,14 @@ def render_json(content: NormalizedContent) -> str:
             sort_keys=True,
         )
         + "\n"
+    )
+
+
+def render_jsonl(content: NormalizedContent) -> str:
+    """Serialize the versioned document as newline-delimited JSON records."""
+    return "".join(
+        json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n"
+        for record in build_jsonl_records(content)
     )
 
 

@@ -189,6 +189,7 @@ gordon-doc convert example.pdf --to images --dpi 144
 gordon-doc convert example.docx --to markdown --to html --to yaml --to json
 gordon-doc convert example.docx --to html --engine word-com
 gordon-doc convert example.docx --to yaml --metadata layout --progress
+gordon-doc convert example.docx --to json --json-lines
 gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
 gordon-doc batch one.docx two.docx --output-dir converted --json
 gordon-doc version
@@ -204,6 +205,14 @@ format/quality/page selection, and an optional `--gotenberg-url`. Page images us
 YAML and JSON share a versioned heading/paragraph/list/table schema intended for downstream
 indexing. `--to json` writes that document artifact; the separate `--json` flag emits the CLI
 result contract for automation.
+
+Add `--json-lines` to write the JSON artifact as newline-delimited JSON to `<stem>.jsonl`
+instead of `<stem>.json`. It carries the same schema and content as the nested document, one
+self-describing record per line: a `document` record first, then every block in source order,
+then `asset`, `annotation`, and `warning` records. Each block record repeats the fields of its
+nested counterpart and adds `section_path`, the enclosing section identifiers, so the heading
+hierarchy stays reconstructable from a line stream. The flag applies to DOCX, PDF, and HTML
+sources, and affects only the JSON artifact; Markdown, HTML, and YAML outputs are unchanged.
 
 PDF sources have no semantic tags, so blocks are inferred from layout. The converter rebuilds
 text lines from glyph positions, drops repeated running headers and footers, and classifies

@@ -19,7 +19,7 @@ from gordon_doc_converter.content.models import (
     NormalizedContent,
     SourceAnchor,
 )
-from gordon_doc_converter.content.structured import render_json, render_yaml
+from gordon_doc_converter.content.structured import render_json, render_jsonl, render_yaml
 from gordon_doc_converter.content.writers import write_content_artifacts
 from gordon_doc_converter.models import (
     AnnotationKind,
@@ -438,3 +438,82 @@ def test_writer_does_not_overwrite_existing_artifact_without_permission(tmp_path
         write_content_artifacts(_content(), output_stem, (ArtifactType.MARKDOWN,))
 
     assert existing.read_text(encoding="utf-8") == "preserve"
+
+
+def test_jsonl_records_carry_the_same_document_as_the_nested_payload() -> None:
+    content = _content()
+
+    lines = render_jsonl(content).splitlines()
+    records = [json.loads(line) for line in lines]
+    nested = json.loads(render_json(content))
+
+    assert render_jsonl(content) == render_jsonl(content)
+    assert render_jsonl(content).endswith("\n")
+    document = records[0]
+    assert document["type"] == "document"
+    assert document["schema_version"] == nested["schema_version"]
+    assert document["source"] == nested["source"]
+    assert document["block_count"] == len(content.blocks)
+
+    blocks = [record for record in records if record["type"] == "block"]
+    assert len(blocks) == len(content.blocks)
+    assert [block["source_order"] for block in blocks] == list(range(len(content.blocks)))
+    heading = blocks[0]
+    assert heading["kind"] == "heading"
+    assert heading["section_id"] == nested["sections"][0]["id"]
+    assert heading["section_path"] == []
+    assert blocks[1]["section_path"] == [nested["sections"][0]["id"]]
+    assert "section_id" not in blocks[1]
+
+    nested_paragraph = nested["sections"][0]["blocks"][0]
+    for key, value in nested_paragraph.items():
+        assert blocks[1][key] == value
+
+    assert [record for record in records if record["type"] == "asset"] == [
+        {"type": "asset", **asset} for asset in nested["assets"]
+    ]
+    assert [record for record in records if record["type"] == "annotation"] == [
+        {"type": "annotation", **annotation} for annotation in nested["annotations"]
+    ]
+
+
+def test_json_lines_writes_a_jsonl_file_and_leaves_other_artifacts_alone(
+    tmp_path: Path,
+) -> None:
+    content = _content()
+
+    result = write_content_artifacts(
+        content,
+        tmp_path / "文件",
+        (ArtifactType.MARKDOWN, ArtifactType.YAML, ArtifactType.JSON),
+        json_lines=True,
+    )
+
+    assert [path.name for _, path in result.artifacts] == [
+        "文件.md",
+        "文件.yaml",
+        "文件.jsonl",
+    ]
+    assert not (tmp_path / "文件.json").exists()
+    written = (tmp_path / "文件.jsonl").read_text(encoding="utf-8")
+    assert written == render_jsonl(content)
+    assert (tmp_path / "文件.yaml").read_text(encoding="utf-8") == render_yaml(content)
+
+
+def test_json_lines_output_is_protected_from_overwrite(tmp_path: Path) -> None:
+    content = _content()
+    existing = tmp_path / "文件.jsonl"
+    existing.write_text("keep me", encoding="utf-8")
+
+    with pytest.raises(FileExistsError):
+        write_content_artifacts(content, tmp_path / "文件", (ArtifactType.JSON,), json_lines=True)
+
+    assert existing.read_text(encoding="utf-8") == "keep me"
+    write_content_artifacts(
+        content,
+        tmp_path / "文件",
+        (ArtifactType.JSON,),
+        overwrite=True,
+        json_lines=True,
+    )
+    assert existing.read_text(encoding="utf-8") == render_jsonl(content)

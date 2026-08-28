@@ -177,6 +177,7 @@ gordon-doc convert 範例.pdf --to images --dpi 144
 gordon-doc convert 範例.docx --to markdown --to html --to yaml --to json
 gordon-doc convert 範例.docx --to html --engine word-com
 gordon-doc convert 範例.docx --to yaml --metadata layout --progress
+gordon-doc convert 範例.docx --to json --json-lines
 gordon-doc compare 預期.pdf 實際.pdf --diff-dir 差異 --json
 gordon-doc batch 文件一.docx 文件二.docx --output-dir 已轉換 --json
 gordon-doc version
@@ -191,6 +192,13 @@ gordon-doc version
 `.json`、共用 `.assets/`，有註解時另建附屬檔案。YAML 與 JSON 共用具版本的章節、
 段落、清單及表格結構，可供後續索引使用。`--to json` 產生文件內容；不同用途的
 `--json` 則輸出命令列執行結果，便於自動化整合。
+
+加上 `--json-lines` 可將 JSON 產出寫成以換行分隔的 JSON，檔名為 `<stem>.jsonl` 而非
+`<stem>.json`。內容與巢狀文件相同，但每行是一筆可獨立解析的記錄：先是一筆 `document`
+記錄，接著依來源順序輸出每個區塊，最後是 `asset`、`annotation` 與 `warning` 記錄。每筆
+區塊記錄保留巢狀版本的所有欄位，並額外加上 `section_path`（所屬章節的識別碼），因此仍可
+從逐行資料還原章節階層。此選項適用於 DOCX、PDF 與 HTML 來源，且只影響 JSON 產出；
+Markdown、HTML 與 YAML 產出不受影響。
 
 PDF 沒有語意標記，因此區塊由版面推論而來。轉換器會依字形座標重建文字行、移除
 重複的頁首頁尾，並綜合 PDF outline、相對字級、粗體、留白與編號判定標題。編號以

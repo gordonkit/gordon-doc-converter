@@ -190,6 +190,7 @@ gordon-doc convert example.pdf --to images --dpi 144
 gordon-doc convert example.docx --to markdown --to html --to yaml --to json
 gordon-doc convert example.docx --to html --engine word-com
 gordon-doc convert example.docx --to yaml --metadata layout --progress
+gordon-doc convert example.docx --to json --json-lines
 gordon-doc compare expected.pdf actual.pdf --diff-dir differences --json
 gordon-doc batch one.docx two.docx --output-dir converted --json
 gordon-doc version
@@ -205,6 +206,15 @@ gordon-doc version
 YAML と JSON は、下流のインデックス作成を想定したバージョン付きの見出し / 段落 / リスト / 表
 スキーマを共有します。`--to json` はそのドキュメント artifact を書き出し、これとは別の
 `--json` フラグは自動化向けに CLI の結果契約を出力します。
+
+`--json-lines` を付けると、JSON artifact は `<stem>.json` ではなく `<stem>.jsonl` へ改行
+区切り JSON として書き出されます。内容とスキーマはネストしたドキュメントと同じで、1 行が
+1 件の自己記述的なレコードになります。最初に `document` レコード、続いてソース順のすべての
+block、最後に `asset`、`annotation`、`warning` の各レコードが並びます。block レコードは
+ネスト版と同じフィールドをそのまま持ち、さらに囲んでいるセクションの識別子である
+`section_path` を加えるため、行ストリームからでも見出し階層を復元できます。このフラグは
+DOCX、PDF、HTML のソースに適用され、影響するのは JSON artifact だけです。Markdown、HTML、
+YAML の出力は変わりません。
 
 PDF ソースにはセマンティックなタグがないため、block はレイアウトから推定されます。
 コンバーターはグリフ位置からテキスト行を再構成し、繰り返される柱やフッターを取り除き、

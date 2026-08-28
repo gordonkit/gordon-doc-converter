@@ -201,6 +201,7 @@ class ConversionOptions(JsonModel):
     comment_mode: CommentMode = CommentMode.OMIT
     include_annotation_metadata: bool = False
     metadata_detail: MetadataDetail = MetadataDetail.BASIC
+    json_lines: bool = False
     image_dpi: int = 144
     image_format: PageImageFormat = PageImageFormat.PNG
     image_quality: int = 90

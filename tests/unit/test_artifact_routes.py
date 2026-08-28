@@ -234,3 +234,101 @@ def test_html_semantic_outputs_are_not_overwritten_without_permission(tmp_path: 
     assert result.error is not None
     assert result.error.code is ErrorCode.OUTPUT_EXISTS
     assert existing.read_text(encoding="utf-8") == "keep me"
+
+
+def _jsonl_request(source: Path, output_stem: Path) -> ConversionRequest:
+    return ConversionRequest.from_source(
+        source,
+        artifacts=(ArtifactType.JSON,),
+        options=ConversionOptions(output_path=output_stem, json_lines=True),
+    )
+
+
+def test_json_lines_writes_one_record_per_line_for_every_semantic_source(
+    tmp_path: Path,
+) -> None:
+    pdf_source = tmp_path / "source.pdf"
+    _pdf(pdf_source, pages=1)
+    sources = {
+        "docx": DOCX_FIXTURE,
+        "pdf": pdf_source,
+        "html": _html(tmp_path / "source.html"),
+    }
+    service = DocumentConversionService((), EnvironmentInfo("linux", False))
+
+    for name, source in sources.items():
+        result = service.convert(_jsonl_request(source, tmp_path / name))
+
+        assert result.success is True, name
+        artifact = result.artifacts[0]
+        assert artifact.path == tmp_path / f"{name}.jsonl"
+        assert not (tmp_path / f"{name}.json").exists()
+        assert artifact.items[0].media_type == "application/jsonl; charset=utf-8"
+        lines = (tmp_path / f"{name}.jsonl").read_text(encoding="utf-8").splitlines()
+        records = [json.loads(line) for line in lines]
+        assert records[0]["type"] == "document"
+        assert records[0]["source"]["format"] == name
+        assert {record["type"] for record in records} <= {
+            "document",
+            "block",
+            "asset",
+            "annotation",
+            "warning",
+        }
+
+
+def test_json_lines_leaves_the_default_json_artifact_unchanged(tmp_path: Path) -> None:
+    source = _html(tmp_path / "source.html")
+    service = DocumentConversionService((), EnvironmentInfo("linux", False))
+
+    nested = service.convert(
+        ConversionRequest.from_source(
+            source,
+            artifacts=(ArtifactType.JSON,),
+            options=ConversionOptions(output_path=tmp_path / "nested"),
+        )
+    )
+
+    assert nested.success is True
+    assert nested.artifacts[0].path == tmp_path / "nested.json"
+    assert nested.artifacts[0].items[0].media_type == "application/json; charset=utf-8"
+    document = json.loads((tmp_path / "nested.json").read_text(encoding="utf-8"))
+    assert set(document) >= {"schema_version", "source", "sections", "root_blocks"}
+
+
+def test_json_lines_applies_only_to_the_json_artifact_in_a_shared_extraction(
+    tmp_path: Path,
+) -> None:
+    request = ConversionRequest.from_source(
+        _html(tmp_path / "source.html"),
+        artifacts=(ArtifactType.MARKDOWN, ArtifactType.YAML, ArtifactType.JSON),
+        options=ConversionOptions(output_path=tmp_path / "bundle", json_lines=True),
+    )
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is True
+    assert [item.path for item in result.artifacts] == [
+        tmp_path / "bundle.md",
+        tmp_path / "bundle.yaml",
+        tmp_path / "bundle.jsonl",
+    ]
+    assert (
+        yaml.safe_load((tmp_path / "bundle.yaml").read_text(encoding="utf-8"))["source"]["format"]
+        == "html"
+    )
+
+
+def test_json_lines_output_path_with_a_jsonl_suffix_is_used_as_the_stem(
+    tmp_path: Path,
+) -> None:
+    request = ConversionRequest.from_source(
+        _html(tmp_path / "source.html"),
+        artifacts=(ArtifactType.JSON,),
+        options=ConversionOptions(output_path=tmp_path / "報告.jsonl", json_lines=True),
+    )
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is True
+    assert result.artifacts[0].path == tmp_path / "報告.jsonl"
