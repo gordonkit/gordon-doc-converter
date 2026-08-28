@@ -45,6 +45,13 @@ All notable changes to this project will be documented in this file. The format 
 - Replaced the documentation navigation bar's two-way language toggle with a language
   dropdown covering English, Traditional Chinese, and Japanese.
 
+### Fixed
+
+- HTML sources written with CRLF or lone CR line endings now normalize to LF while decoding,
+  as HTML parser preprocessing requires. Preformatted text previously kept its carriage
+  returns, so the same document extracted differently depending on the platform that wrote it
+  and a stray CR reached the Markdown, HTML, YAML, and JSON artifacts.
+
 ## [0.7.0] - 2026-08-25
 
 ### Added

@@ -610,20 +610,30 @@ def _safe_link(target: str | None) -> str | None:
     return value if scheme in {"", "http", "https", "mailto"} else None
 
 
+def _normalize_newlines(text: str) -> str:
+    """Fold CRLF and lone CR into LF as HTML parser preprocessing requires.
+
+    Without this a source authored on Windows keeps its carriage returns inside
+    preformatted text, so the same document would extract differently depending
+    on the platform that wrote it.
+    """
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _decode(raw: bytes) -> tuple[str, ConversionWarning | None]:
     """Decode HTML bytes using the declared charset, falling back to UTF-8."""
     if raw.startswith(b"\xef\xbb\xbf"):
-        return raw[3:].decode("utf-8", errors="replace"), None
+        return _normalize_newlines(raw[3:].decode("utf-8", errors="replace")), None
     match = _CHARSET.search(raw[:4096])
     declared = match.group(1).decode("ascii", errors="ignore") if match is not None else None
     for encoding in (declared, "utf-8"):
         if encoding is None:
             continue
         try:
-            return raw.decode(encoding), None
+            return _normalize_newlines(raw.decode(encoding)), None
         except (LookupError, UnicodeDecodeError):
             continue
-    return raw.decode("utf-8", errors="replace"), ConversionWarning(
+    return _normalize_newlines(raw.decode("utf-8", errors="replace")), ConversionWarning(
         "HTML_ENCODING_REPLACED",
         "Undecodable bytes were replaced while reading the HTML source.",
     )
