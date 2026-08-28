@@ -22,7 +22,7 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | — | — | — | — | — |
-| HTML | P | P+ | — | × | — | — | — | — |
+| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
@@ -31,8 +31,9 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
 output artifacts for DOCX/PDF sources; Markdown and HTML are also accepted as input for
-PDF/DOCX conversion. The project does not convert Markdown and HTML directly between each
-other.
+PDF/DOCX conversion. HTML input additionally converts to Markdown, YAML, and JSON through the
+same semantic extraction used for DOCX and PDF; that route needs no external engine. Markdown
+input still converts only to PDF and DOCX.
 
 DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice. DOCX conversion follows
 these engine policies:
@@ -50,11 +51,23 @@ these engine policies:
 ODT support targets ODF-CNS 15251 / ISO/IEC 26300 Writer documents. It validates package
 structure and content readability, but does not promise pixel-identical round trips.
 
-HTML/Markdown conversion requires Pandoc; PDF output additionally requires a Pandoc PDF
-backend such as `wkhtmltopdf`. Create an editable, print-ready A4 starting point with
-`gordon-doc template report.html`, then convert it with
+HTML/Markdown conversion to PDF and DOCX requires Pandoc; PDF output additionally requires a
+Pandoc PDF backend such as `wkhtmltopdf`. Create an editable, print-ready A4 starting point
+with `gordon-doc template report.html`, then convert it with
 `gordon-doc convert report.html --to pdf` or `--to docx`. Use `--orientation landscape` for
 an A4 horizontal layout.
+
+HTML-to-Markdown/YAML/JSON conversion parses the document directly and requires no engine:
+
+```console
+gordon-doc convert report.html --to markdown --to yaml --to json
+```
+
+Headings, paragraphs, lists, tables, links, `<ins>`/`<del>` revisions, and `<title>`/`<meta>`
+metadata are normalized into the same schema DOCX and PDF sources produce. Inline `data:`
+images become files in a `<stem>.assets` directory; images referenced by URL stay linked.
+Script, style, and embedded-object elements are omitted, and every omission or lossy mapping
+is reported as a machine-readable warning.
 
 ## Interfaces
 

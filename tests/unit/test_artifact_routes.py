@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import yaml
 from pypdf import PdfWriter
 
 from gordon_doc_converter.environment import EnvironmentInfo
+from gordon_doc_converter.exceptions import ErrorCode
 from gordon_doc_converter.models import (
     ArtifactStatus,
     ArtifactType,
     ConversionOptions,
     ConversionRequest,
 )
+from gordon_doc_converter.progress import ProgressEvent
 from gordon_doc_converter.service import DocumentConversionService
 
 DOCX_FIXTURE = Path("tests/fixtures/docx/cjk/a4-portrait.docx")
@@ -116,3 +120,117 @@ def test_semantic_conversion_reports_observable_progress_phases(tmp_path: Path) 
         "conversion",
     ]
     assert events[-1].state.value == "completed"
+
+
+HTML_SOURCE = """<!doctype html>
+<html lang="zh-TW">
+<head><meta charset="utf-8"><title>季度報告</title></head>
+<body>
+<h1>季度報告</h1>
+<p>本季營收成長 12%。</p>
+<ul><li>市場拓展</li><li>成本控制</li></ul>
+<table><tr><th>區域</th><th>營收</th></tr><tr><td>亞太</td><td>1200</td></tr></table>
+</body>
+</html>
+"""
+
+
+def _html(path: Path) -> Path:
+    path.write_text(HTML_SOURCE, encoding="utf-8")
+    return path
+
+
+def test_html_source_writes_markdown_yaml_and_json_from_one_extraction(
+    tmp_path: Path,
+) -> None:
+    request = ConversionRequest.from_source(
+        _html(tmp_path / "報告.html"),
+        artifacts=(ArtifactType.MARKDOWN, ArtifactType.YAML, ArtifactType.JSON),
+        options=ConversionOptions(output_path=tmp_path / "語意輸出"),
+    )
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is True
+    assert [item.artifact_type for item in result.artifacts] == [
+        ArtifactType.MARKDOWN,
+        ArtifactType.YAML,
+        ArtifactType.JSON,
+    ]
+    assert all(item.status is ArtifactStatus.SUCCESS for item in result.artifacts)
+    markdown = (tmp_path / "語意輸出.md").read_text(encoding="utf-8")
+    assert "# 季度報告" in markdown
+    assert "- 市場拓展" in markdown
+    assert "| 區域 | 營收 |" in markdown
+    payload = json.loads((tmp_path / "語意輸出.json").read_text(encoding="utf-8"))
+    assert payload["source"]["format"] == "html"
+    assert payload["sections"][0]["title"] == "季度報告"
+    document = yaml.safe_load((tmp_path / "語意輸出.yaml").read_text(encoding="utf-8"))
+    assert document["source"]["format"] == "html"
+    assert document["sections"][0]["title"] == "季度報告"
+
+
+def test_html_semantic_conversion_reports_extraction_progress_phases(tmp_path: Path) -> None:
+    request = ConversionRequest.from_source(
+        _html(tmp_path / "source.html"),
+        artifacts=(ArtifactType.MARKDOWN,),
+        options=ConversionOptions(output_path=tmp_path / "out.md"),
+    )
+    events: list[ProgressEvent] = []
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(
+        request,
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert [event.phase for event in events] == [
+        "validation",
+        "content-extraction",
+        "serialization",
+        "conversion",
+    ]
+
+
+def test_html_source_rejects_artifacts_outside_the_supported_set(tmp_path: Path) -> None:
+    request = ConversionRequest.from_source(
+        _html(tmp_path / "source.html"),
+        artifacts=(ArtifactType.HTML,),
+    )
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code is ErrorCode.INVALID_INPUT
+    assert "Markdown, YAML, and JSON" in result.error.message
+
+
+def test_markdown_source_still_rejects_semantic_artifact_targets(tmp_path: Path) -> None:
+    source = tmp_path / "note.md"
+    source.write_text("# 標題\n", encoding="utf-8")
+    request = ConversionRequest.from_source(source, artifacts=(ArtifactType.JSON,))
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.message == "Markdown sources support only PDF and DOCX outputs"
+
+
+def test_html_semantic_outputs_are_not_overwritten_without_permission(tmp_path: Path) -> None:
+    source = _html(tmp_path / "source.html")
+    existing = tmp_path / "out.md"
+    existing.write_text("keep me", encoding="utf-8")
+    request = ConversionRequest.from_source(
+        source,
+        artifacts=(ArtifactType.MARKDOWN,),
+        options=ConversionOptions(output_path=existing),
+    )
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code is ErrorCode.OUTPUT_EXISTS
+    assert existing.read_text(encoding="utf-8") == "keep me"

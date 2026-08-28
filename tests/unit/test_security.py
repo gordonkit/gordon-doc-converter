@@ -1,4 +1,4 @@
-"""Security tests for resource-bounded DOCX and PDF source validation."""
+"""Security tests for resource-bounded DOCX, ODT, PDF, and HTML source validation."""
 
 from __future__ import annotations
 
@@ -147,3 +147,39 @@ def test_pdf_rejects_encryption_corruption_and_page_limit(tmp_path: Path) -> Non
             SourceFormat.PDF,
             limits=InputValidationLimits(max_pdf_pages=1),
         )
+
+
+def test_html_validates_extension_mime_and_size_without_container_checks(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "page.html"
+    source.write_text("<p>內容</p>", encoding="utf-8")
+
+    validate_source_document(source, SourceFormat.HTML, declared_mime_type="text/html")
+    validate_source_document(
+        source,
+        SourceFormat.HTML,
+        declared_mime_type="text/html; charset=utf-8",
+    )
+
+    with pytest.raises(InvalidInputError, match="MIME"):
+        validate_source_document(source, SourceFormat.HTML, declared_mime_type="text/plain")
+    with pytest.raises(InvalidInputError, match="file-size limit"):
+        validate_source_document(
+            source,
+            SourceFormat.HTML,
+            limits=InputValidationLimits(max_file_size=1),
+        )
+
+    mismatched = tmp_path / "page.txt"
+    mismatched.write_text("<p>內容</p>", encoding="utf-8")
+    with pytest.raises(InvalidInputError, match="extension"):
+        validate_source_document(mismatched, SourceFormat.HTML)
+
+
+def test_markdown_source_format_remains_outside_input_validation(tmp_path: Path) -> None:
+    source = tmp_path / "note.md"
+    source.write_text("# 標題\n", encoding="utf-8")
+
+    with pytest.raises(InvalidInputError, match="not supported by input validation"):
+        validate_source_document(source, SourceFormat.MARKDOWN)

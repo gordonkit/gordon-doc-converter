@@ -22,7 +22,7 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | — | — | — | — | — |
-| HTML | P | P+ | — | × | — | — | — | — |
+| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` ポリシーに基づくエンジン選択 · `✓` 標準対応 · `LO` LibreOffice · `P` Pandoc ·
@@ -31,7 +31,9 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
 DOCX / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX への変換の入力
-としても受け付けます。本プロジェクトは Markdown と HTML を直接相互変換しません。
+としても受け付けます。HTML はさらに、DOCX や PDF と同じセマンティック抽出によって
+Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは不要です。Markdown の変換先は
+引き続き PDF と DOCX のみです。
 
 DOCX から ODT、ODT から DOCX、ODT から PDF への変換には LibreOffice を使用します。DOCX の
 変換は次のエンジンポリシーに従います。
@@ -50,10 +52,24 @@ ODT のサポート対象は ODF-CNS 15251 / ISO/IEC 26300 の Writer ドキュ�
 構造と内容の読み取り可能性を検証しますが、ピクセル単位で同一のラウンドトリップは保証
 しません。
 
-HTML / Markdown の変換には Pandoc が必要です。PDF 出力にはさらに `wkhtmltopdf` などの
-Pandoc PDF backend が必要です。`gordon-doc template report.html` で編集可能な印刷向け A4 の
-出発点を作成し、`gordon-doc convert report.html --to pdf` または `--to docx` で変換します。
-A4 横向きのレイアウトには `--orientation landscape` を使ってください。
+HTML / Markdown から PDF と DOCX への変換には Pandoc が必要です。PDF 出力にはさらに
+`wkhtmltopdf` などの Pandoc PDF backend が必要です。`gordon-doc template report.html` で
+編集可能な印刷向け A4 の出発点を作成し、`gordon-doc convert report.html --to pdf` または
+`--to docx` で変換します。A4 横向きのレイアウトには `--orientation landscape` を使って
+ください。
+
+HTML から Markdown / YAML / JSON への変換はドキュメントを直接解析するため、エンジンは
+不要です。
+
+```console
+gordon-doc convert report.html --to markdown --to yaml --to json
+```
+
+見出し、段落、リスト、表、リンク、`<ins>` / `<del>` の変更履歴、`<title>` / `<meta>` の
+metadata は、DOCX や PDF と同じスキーマに正規化されます。インラインの `data:` 画像は
+`<stem>.assets` ディレクトリのファイルになり、URL で参照される画像はリンクのまま残ります。
+script、style、埋め込みオブジェクト要素は省略され、省略や非可逆な対応はすべて機械可読な
+警告として報告されます。
 
 ## インターフェース
 

@@ -2,6 +2,7 @@
 
 from gordon_doc_converter.content.docx import extract_docx_content
 from gordon_doc_converter.content.html import render_html
+from gordon_doc_converter.content.html_source import extract_html_content
 from gordon_doc_converter.content.markdown import render_markdown
 from gordon_doc_converter.content.models import (
     BlockKind,
@@ -39,6 +40,7 @@ __all__ = [
     "SourceAnchor",
     "build_structured_payload",
     "extract_docx_content",
+    "extract_html_content",
     "extract_pdf_content",
     "render_html",
     "render_json",

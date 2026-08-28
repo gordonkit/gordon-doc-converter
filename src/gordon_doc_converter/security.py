@@ -14,6 +14,7 @@ from gordon_doc_converter.validation import validate_pdf
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 _ODT_MIME = "application/vnd.oasis.opendocument.text"
 _PDF_MIME = "application/pdf"
+_HTML_MIME = "text/html"
 _REQUIRED_DOCX_PARTS = frozenset({"[Content_Types].xml", "_rels/.rels", "word/document.xml"})
 _REQUIRED_ODT_PARTS = frozenset({"mimetype", "META-INF/manifest.xml", "content.xml"})
 
@@ -143,6 +144,7 @@ def validate_source_document(
         SourceFormat.DOCX: _DOCX_MIME,
         SourceFormat.ODT: _ODT_MIME,
         SourceFormat.PDF: _PDF_MIME,
+        SourceFormat.HTML: _HTML_MIME,
     }.get(source_format)
     if expected_mime is None:
         raise InvalidInputError("source format is not supported by input validation")
@@ -154,5 +156,5 @@ def validate_source_document(
         _validate_docx(path, limits)
     elif source_format is SourceFormat.ODT:
         _validate_odt(path, limits)
-    else:
+    elif source_format is SourceFormat.PDF:
         _validate_pdf(path, limits)

@@ -22,7 +22,7 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | — | — | — | — | — |
-| HTML | P | P+ | — | × | — | — | — | — |
+| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` 依政策自動選擇引擎 · `✓` 內建支援 · `LO` LibreOffice · `P` Pandoc ·
@@ -30,7 +30,9 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 `×` 相同格式，不執行轉換
 
 逐頁圖片可輸出為 PNG 或 JPEG。DOCX 與 PDF 可產生 Markdown、HTML、YAML、JSON
-及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX，但兩者無法直接互轉。
+及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX。HTML 另可透過與 DOCX、PDF 相同的
+語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 仍僅能轉換為
+PDF 與 DOCX。
 
 DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX 轉換採用以下
 引擎政策：
@@ -48,10 +50,21 @@ DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX �
 ODT 支援以 ODF-CNS 15251／ISO/IEC 26300 Writer 文件為目標，會驗證封裝結構與內容是否
 可讀，但不保證來回轉換後版面完全相同。
 
-HTML／Markdown 轉換需要 Pandoc；輸出 PDF 時還需要 `wkhtmltopdf` 等 Pandoc PDF
-後端。可先執行 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4 範本，
-再執行 `gordon-doc convert 報告.html --to pdf` 或 `--to docx`。若要使用 A4 橫式版面，
-請加上 `--orientation landscape`。
+HTML／Markdown 轉換為 PDF 與 DOCX 需要 Pandoc；輸出 PDF 時還需要 `wkhtmltopdf` 等
+Pandoc PDF 後端。可先執行 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4
+範本，再執行 `gordon-doc convert 報告.html --to pdf` 或 `--to docx`。若要使用 A4 橫式
+版面，請加上 `--orientation landscape`。
+
+HTML 轉 Markdown／YAML／JSON 會直接解析文件，不需要任何引擎：
+
+```console
+gordon-doc convert 報告.html --to markdown --to yaml --to json
+```
+
+標題、段落、清單、表格、連結、`<ins>`／`<del>` 修訂，以及 `<title>`／`<meta>` metadata
+會正規化為與 DOCX、PDF 相同的 schema。內嵌的 `data:` 圖片會寫入 `<stem>.assets`
+目錄；以 URL 參照的圖片則維持連結。script、style 與內嵌物件元素會被省略，所有省略
+與失真的對應都會回報為機器可讀的警告。
 
 ## 使用介面
 
