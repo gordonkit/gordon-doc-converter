@@ -32,9 +32,15 @@ def _render_span(span: InlineSpan, asset_directory: str) -> str:
     if span.kind is InlineKind.LINK:
         target = _safe_target(span.target)
         return f'<a href="{escape(target, quote=True)}">{text}</a>' if target else text
-    if span.kind is InlineKind.IMAGE and span.asset_id is not None:
-        source = escape(f"{asset_directory}/{span.asset_id}", quote=True)
-        return f'<img src="{source}" alt="{escape(span.text, quote=True)}">'
+    if span.kind is InlineKind.IMAGE:
+        reference = (
+            f"{asset_directory}/{span.asset_id}"
+            if span.asset_id is not None
+            else _safe_target(span.target)
+        )
+        if reference is not None:
+            source = escape(reference, quote=True)
+            return f'<img src="{source}" alt="{escape(span.text, quote=True)}">'
     if span.kind is InlineKind.COMMENT_REFERENCE and span.annotation_id is not None:
         identifier = escape(span.annotation_id, quote=True)
         return f'<sup><a href="#annotation-{identifier}">[{identifier}]</a></sup>'

@@ -375,3 +375,39 @@ def test_batch_progress_reports_completed_count_on_stderr(tmp_path: Path) -> Non
     assert result.exit_code == 0
     assert json.loads(result.stdout)["success"] is True
     assert "2/2" in result.stderr
+
+
+def test_convert_json_lines_flag_reaches_conversion_options(tmp_path: Path) -> None:
+    output = tmp_path / "input.jsonl"
+    StubService.conversion_results = (
+        ConversionResult(
+            success=True,
+            source_format=SourceFormat.HTML,
+            artifacts=(
+                ArtifactResult(
+                    artifact_type=ArtifactType.JSON,
+                    status=ArtifactStatus.SUCCESS,
+                    path=output,
+                ),
+            ),
+        ),
+    )
+    StubService.requests = []
+
+    result = runner.invoke(
+        app,
+        ["convert", str(tmp_path / "input.html"), "--to", "json", "--json-lines"],
+    )
+
+    assert result.exit_code == 0
+    assert StubService.requests[-1].options.json_lines is True
+
+
+def test_convert_defaults_to_nested_json_without_the_flag(tmp_path: Path) -> None:
+    StubService.conversion_results = (_result(success=True, output_path=tmp_path / "input.json"),)
+    StubService.requests = []
+
+    result = runner.invoke(app, ["convert", str(tmp_path / "input.html"), "--to", "json"])
+
+    assert result.exit_code == 0
+    assert StubService.requests[-1].options.json_lines is False

@@ -45,8 +45,12 @@ def _render_span(span: InlineSpan, asset_directory: str) -> str:
         if not link_text:
             return ""
         return f"[{link_text}]({target})" if target is not None else link_text
-    if span.kind is InlineKind.IMAGE and span.asset_id is not None:
-        return f"![{text or 'image'}]({asset_directory}/{span.asset_id})"
+    if span.kind is InlineKind.IMAGE:
+        if span.asset_id is not None:
+            return f"![{text or 'image'}]({asset_directory}/{span.asset_id})"
+        target = _safe_target(span.target)
+        if target is not None:
+            return f"![{text or 'image'}]({target})"
     if span.kind is InlineKind.COMMENT_REFERENCE and span.annotation_id is not None:
         return f"[^{span.annotation_id}]"
     return text

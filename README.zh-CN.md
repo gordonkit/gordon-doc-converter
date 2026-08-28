@@ -22,7 +22,7 @@ LibreOffice、Pandoc 或 Gotenberg 进行排版转换。
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | — | — | — | — | — |
-| HTML | P | P+ | — | × | — | — | — | — |
+| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
 | Markdown | P | P+ | — | — | × | — | — | — |
 
 `Auto` 依策略自动选择引擎 · `✓` 内置支持 · `LO` LibreOffice · `P` Pandoc ·
@@ -30,7 +30,9 @@ LibreOffice、Pandoc 或 Gotenberg 进行排版转换。
 `×` 相同格式，不执行转换
 
 逐页图片可输出为 PNG 或 JPEG。DOCX 与 PDF 可产生 Markdown、HTML、YAML、JSON
-及图片；Markdown 与 HTML 也可转换为 PDF 或 DOCX，但两者无法直接互转。
+及图片；Markdown 与 HTML 也可转换为 PDF 或 DOCX。HTML 另可通过与 DOCX、PDF 相同的
+语义提取转换为 Markdown、YAML 与 JSON，且不需要外部引擎。Markdown 仍仅能转换为
+PDF 与 DOCX。
 
 DOCX 转 ODT、ODT 转 DOCX，以及 ODT 转 PDF 均使用 LibreOffice。DOCX 转换采用以下
 引擎策略：
@@ -48,10 +50,21 @@ DOCX 转 ODT、ODT 转 DOCX，以及 ODT 转 PDF 均使用 LibreOffice。DOCX �
 ODT 支持以 ODF-CNS 15251／ISO/IEC 26300 Writer 文档为目标，会验证封装结构与内容是否
 可读，但不保证来回转换后版式完全相同。
 
-HTML／Markdown 转换需要 Pandoc；输出 PDF 时还需要 `wkhtmltopdf` 等 Pandoc PDF
-后端。可先执行 `gordon-doc template 报告.html` 创建可编辑、适合打印的 A4 模板，
-再执行 `gordon-doc convert 报告.html --to pdf` 或 `--to docx`。若要使用 A4 横式版式，
-请加上 `--orientation landscape`。
+HTML／Markdown 转换为 PDF 与 DOCX 需要 Pandoc；输出 PDF 时还需要 `wkhtmltopdf` 等
+Pandoc PDF 后端。可先执行 `gordon-doc template 报告.html` 创建可编辑、适合打印的 A4
+模板，再执行 `gordon-doc convert 报告.html --to pdf` 或 `--to docx`。若要使用 A4 横式
+版式，请加上 `--orientation landscape`。
+
+HTML 转 Markdown／YAML／JSON 会直接解析文档，不需要任何引擎：
+
+```console
+gordon-doc convert 报告.html --to markdown --to yaml --to json
+```
+
+标题、段落、列表、表格、链接、`<ins>`／`<del>` 修订，以及 `<title>`／`<meta>` metadata
+会规范化为与 DOCX、PDF 相同的 schema。内嵌的 `data:` 图片会写入 `<stem>.assets`
+目录；以 URL 引用的图片则保持链接。script、style 与内嵌对象元素会被省略，所有省略
+与失真的映射都会报告为机器可读的警告。
 
 ## 使用接口
 
@@ -164,6 +177,7 @@ gordon-doc convert 示例.pdf --to images --dpi 144
 gordon-doc convert 示例.docx --to markdown --to html --to yaml --to json
 gordon-doc convert 示例.docx --to html --engine word-com
 gordon-doc convert 示例.docx --to yaml --metadata layout --progress
+gordon-doc convert 示例.docx --to json --json-lines
 gordon-doc compare 预期.pdf 实际.pdf --diff-dir 差异 --json
 gordon-doc batch 文档一.docx 文档二.docx --output-dir 已转换 --json
 gordon-doc version
@@ -178,6 +192,13 @@ gordon-doc version
 `.json`、共用 `.assets/`，有注释时另建附属文件。YAML 与 JSON 共用具版本的章节、
 段落、列表及表格结构，可供后续索引使用。`--to json` 产生文档内容；不同用途的
 `--json` 则输出命令行执行结果，便于自动化集成。
+
+加上 `--json-lines` 可将 JSON 产出写成以换行分隔的 JSON，文件名为 `<stem>.jsonl` 而非
+`<stem>.json`。内容与嵌套文档相同，但每行是一条可独立解析的记录：先是一条 `document`
+记录，接着依来源顺序输出每个区块，最后是 `asset`、`annotation` 与 `warning` 记录。每条
+区块记录保留嵌套版本的所有字段，并额外加上 `section_path`（所属章节的标识符），因此仍可
+从逐行数据还原章节层级。此选项适用于 DOCX、PDF 与 HTML 来源，且只影响 JSON 产出；
+Markdown、HTML 与 YAML 产出不受影响。
 
 PDF 没有语义标记，因此区块由版式推论而来。转换器会依字形坐标重建文本行、移除
 重复的页首页尾，并综合 PDF outline、相对字级、粗体、留白与编号判定标题。编号以

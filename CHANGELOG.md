@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- HTML-to-Markdown, HTML-to-YAML, and HTML-to-JSON conversion through the same semantic
+  extraction used for DOCX and PDF sources, with no external engine required. Headings,
+  paragraphs, nested and ordered lists, tables, links, `<ins>`/`<del>` revisions, and
+  `<title>`/`<meta>` metadata are normalized into the existing schema; inline `data:` images
+  become shared assets, and omitted or lossy content is reported as warnings.
+- HTML source validation covering extension, declared MIME type, file size, encoding
+  detection, and a bound on element nesting depth.
+- `--json-lines` (`ConversionOptions.json_lines`) writes the JSON artifact for DOCX, PDF, and
+  HTML sources as newline-delimited JSON to `<stem>.jsonl`. Records carry the same versioned
+  schema as the nested document: one `document` record, every block in source order with its
+  enclosing `section_path`, then `asset`, `annotation`, and `warning` records.
 - Simplified Chinese documentation site locale under `/zh-CN/<topic>/`, using mainland
   Chinese terminology, with localized metadata, hreflang and Open Graph alternates,
   sitemap entries, and a language dropdown entry.
@@ -19,6 +30,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
+- Markdown and HTML writers now keep image targets referenced by URL instead of dropping
+  them to alt text.
 - Replaced the documentation navigation bar's two-way language toggle with a language
   dropdown covering English, Traditional Chinese, and Japanese.
 

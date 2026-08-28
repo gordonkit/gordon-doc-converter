@@ -129,6 +129,7 @@ def _make_options(
     revision_mode: RevisionMode,
     comment_mode: CommentMode,
     metadata_detail: MetadataDetail = MetadataDetail.BASIC,
+    json_lines: bool = False,
     image_dpi: int = 144,
     image_format: PageImageFormat = PageImageFormat.PNG,
     image_quality: int = 90,
@@ -145,6 +146,7 @@ def _make_options(
         revision_mode=revision_mode,
         comment_mode=comment_mode,
         metadata_detail=metadata_detail,
+        json_lines=json_lines,
         image_dpi=image_dpi,
         image_format=image_format,
         image_quality=image_quality,
@@ -261,6 +263,13 @@ def convert(
         MetadataDetail,
         typer.Option("--metadata", help="Semantic artifact metadata detail."),
     ] = MetadataDetail.BASIC,
+    json_lines: Annotated[
+        bool,
+        typer.Option(
+            "--json-lines",
+            help="Write the JSON artifact as newline-delimited records to a .jsonl file.",
+        ),
+    ] = False,
     timeout_seconds: Annotated[
         float, typer.Option("--timeout", min=0.001, help="Conversion timeout in seconds.")
     ] = 120.0,
@@ -302,6 +311,7 @@ def convert(
             revision_mode=revision_mode,
             comment_mode=comment_mode,
             metadata_detail=metadata_detail,
+            json_lines=json_lines,
             image_dpi=image_dpi,
             image_format=image_format,
             image_quality=image_quality,

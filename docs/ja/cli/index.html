@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
     <title>ドキュメント変換 CLI リファレンス | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <script type="module" crossorigin src="/assets/docs-CIaAlOnj.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
       <link rel="canonical" href="https://docs.gordonkit.com/ja/cli/" />
@@ -66,11 +66,12 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>単一ドキュメントの変換</h2>
-      <p>convert は DOCX、ODT、PDF、HTML、Markdown の入力を受け付けます。--to を指定しない場合、DOCX、ODT、HTML、Markdown は PDF を生成します。PDF 入力では常に --to が必要です。--to を繰り返すと複数の artifact を要求できます。--output は単一ファイルの artifact に適しています。省略した場合、サービスはソースと同じ場所に安全な出力名を導出し、--overwrite がない限り既存ファイルを置き換えません。DOCX から HTML では、--engine word-com が Windows 上の Word COM で組版します。省略するか --mode server を使うとセマンティック抽出になります。</p>
+      <p>convert は DOCX、ODT、PDF、HTML、Markdown の入力を受け付けます。--to を指定しない場合、DOCX、ODT、HTML、Markdown は PDF を生成します。PDF 入力では常に --to が必要です。HTML はセマンティック抽出により Markdown、YAML、JSON へも変換でき、エンジンは不要です。--to を繰り返すと複数の artifact を要求できます。--output は単一ファイルの artifact に適しています。省略した場合、サービスはソースと同じ場所に安全な出力名を導出し、--overwrite がない限り既存ファイルを置き換えません。DOCX から HTML では、--engine word-com が Windows 上の Word COM で組版します。省略するか --mode server を使うとセマンティック抽出になります。</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.html --to markdown --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
@@ -82,9 +83,11 @@ gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
     </section><section id="structured-artifacts">
       <h2>構造化 YAML および JSON Artifact</h2>
-      <p>--to yaml と --to json は、同じバージョン付きセマンティックドキュメントをシリアライズします。Schema 1.3 は Markdown に近い見出し、段落、リスト、表のテキストを保ちながら、意味のあるリンク、画像、変更履歴、注釈、ソース順序、metadata、逆引き locator を保持します。--to を繰り返せば、抽出は 1 回で両方の形式を書き出せます。--metadata は none、basic、layout を受け付けます。データのない任意の値は null ではなく省略されます。--to json はドキュメント artifact を書き出し、これとは別の --json フラグは CLI の結果契約を stdout に書き出します。</p>
+      <p>--to yaml と --to json は、同じバージョン付きセマンティックドキュメントをシリアライズします。DOCX、PDF、HTML のいずれのソースからも生成できます。Schema 1.3 は Markdown に近い見出し、段落、リスト、表のテキストを保ちながら、意味のあるリンク、画像、変更履歴、注釈、ソース順序、metadata、逆引き locator を保持します。--to を繰り返せば、抽出は 1 回で両方の形式を書き出せます。--metadata は none、basic、layout を受け付けます。データのない任意の値は null ではなく省略されます。--json-lines は JSON artifact を &lt;stem&gt;.json ではなく &lt;stem&gt;.jsonl へ改行区切りのレコードとして書き出します。最初に document レコード、続いてソース順のすべての block、最後に asset、annotation、warning のレコードが並び、各 block は section_path を持つため行ストリームでも見出し階層を復元できます。DOCX、PDF、HTML のソースに適用され、Markdown、HTML、YAML の出力は変わりません。--to json はドキュメント artifact を書き出し、これとは別の --json フラグは CLI の結果契約を stdout に書き出します。</p>
       <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
 gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.html --to yaml --to json --metadata basic
+gordon-doc convert report.docx --to json --json-lines
 gordon-doc convert report.docx --to json --json</code></pre>
     </section><section id="source-anchors">
       <h2>逆引き位置指定とソース検証</h2>

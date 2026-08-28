@@ -2,6 +2,7 @@
 
 from gordon_doc_converter.content.docx import extract_docx_content
 from gordon_doc_converter.content.html import render_html
+from gordon_doc_converter.content.html_source import extract_html_content
 from gordon_doc_converter.content.markdown import render_markdown
 from gordon_doc_converter.content.models import (
     BlockKind,
@@ -18,8 +19,10 @@ from gordon_doc_converter.content.models import (
 )
 from gordon_doc_converter.content.pdf import extract_pdf_content
 from gordon_doc_converter.content.structured import (
+    build_jsonl_records,
     build_structured_payload,
     render_json,
+    render_jsonl,
     render_yaml,
 )
 from gordon_doc_converter.content.writers import ContentWriteResult, write_content_artifacts
@@ -37,11 +40,14 @@ __all__ = [
     "NormalizedContent",
     "PageContentKind",
     "SourceAnchor",
+    "build_jsonl_records",
     "build_structured_payload",
     "extract_docx_content",
+    "extract_html_content",
     "extract_pdf_content",
     "render_html",
     "render_json",
+    "render_jsonl",
     "render_markdown",
     "render_yaml",
     "write_content_artifacts",

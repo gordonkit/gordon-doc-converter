@@ -12,7 +12,9 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import perf_counter
 
 from gordon_doc_converter.content import (
+    NormalizedContent,
     extract_docx_content,
+    extract_html_content,
     extract_pdf_content,
     write_content_artifacts,
 )
@@ -141,6 +143,27 @@ def _fix_word_com_html_line_heights(path: Path) -> None:
         path.write_text(fixed, encoding="utf-8")
 
 
+_RENDERED_MARKUP_ARTIFACTS = (ArtifactType.PDF, ArtifactType.DOCX)
+_SEMANTIC_MARKUP_ARTIFACTS = (
+    ArtifactType.MARKDOWN,
+    ArtifactType.YAML,
+    ArtifactType.JSON,
+)
+_CONTENT_MEDIA_TYPES = {
+    ArtifactType.MARKDOWN: "text/markdown; charset=utf-8",
+    ArtifactType.HTML: "text/html; charset=utf-8",
+    ArtifactType.YAML: "application/yaml; charset=utf-8",
+    ArtifactType.JSON: "application/json; charset=utf-8",
+}
+_JSONL_MEDIA_TYPE = "application/jsonl; charset=utf-8"
+
+
+def _content_media_type(artifact_type: ArtifactType, *, json_lines: bool) -> str:
+    if artifact_type is ArtifactType.JSON and json_lines:
+        return _JSONL_MEDIA_TYPE
+    return _CONTENT_MEDIA_TYPES[artifact_type]
+
+
 def _output_stem(request: ConversionRequest) -> Path:
     configured = request.options.output_path
     if configured is None:
@@ -154,6 +177,7 @@ def _output_stem(request: ConversionRequest) -> Path:
         ".yaml",
         ".yml",
         ".json",
+        ".jsonl",
     }:
         return configured.with_suffix("")
     return configured
@@ -611,14 +635,19 @@ class ConversionPipeline:
         request: ConversionRequest,
         progress_callback: ProgressCallback | None,
     ) -> ConversionResult:
-        """Convert HTML or Markdown to validated A4 PDF or DOCX artifacts."""
+        """Convert HTML or Markdown to rendered A4 documents or semantic artifacts."""
         started = perf_counter()
-        supported = {ArtifactType.PDF, ArtifactType.DOCX}
-        invalid = set(request.artifacts) - supported
+        semantic = _SEMANTIC_MARKUP_ARTIFACTS if request.source_format is SourceFormat.HTML else ()
+        invalid = set(request.artifacts) - set(_RENDERED_MARKUP_ARTIFACTS) - set(semantic)
         if invalid:
+            message = (
+                "HTML sources support only PDF, DOCX, Markdown, YAML, and JSON outputs"
+                if request.source_format is SourceFormat.HTML
+                else "Markdown sources support only PDF and DOCX outputs"
+            )
             return self._failure_result(
                 request,
-                InvalidInputError("HTML and Markdown sources support only PDF and DOCX outputs"),
+                InvalidInputError(message),
                 output_path=None,
                 started=started,
             )
@@ -629,11 +658,49 @@ class ConversionPipeline:
                 output_path=None,
                 started=started,
             )
+
+        collected: dict[ArtifactType, ArtifactResult] = {}
+        warnings: list[ConversionWarning] = []
+        content_types = tuple(item for item in request.artifacts if item in semantic)
+        if content_types:
+            warnings.extend(
+                self._write_semantic_artifacts(
+                    request,
+                    content_types,
+                    collected,
+                    progress_callback,
+                )
+            )
+        rendered_types = tuple(item for item in request.artifacts if item not in semantic)
+        if rendered_types:
+            self._render_markup_artifacts(request, rendered_types, collected, progress_callback)
+
+        results = tuple(
+            collected[artifact] for artifact in request.artifacts if artifact in collected
+        )
+        success = all(item.status is ArtifactStatus.SUCCESS for item in results)
+        first_error = next((item.error for item in results if item.error is not None), None)
+        return ConversionResult(
+            success=success,
+            source_format=request.source_format,
+            artifacts=results,
+            warnings=tuple(warnings),
+            error=first_error,
+            duration_seconds=perf_counter() - started,
+        )
+
+    def _render_markup_artifacts(
+        self,
+        request: ConversionRequest,
+        artifact_types: tuple[ArtifactType, ...],
+        results: dict[ArtifactType, ArtifactResult],
+        progress_callback: ProgressCallback | None,
+    ) -> None:
+        """Render markup to validated A4 PDF or DOCX documents through Pandoc."""
         converter = PandocConverter()
-        results: list[ArtifactResult] = []
         with TemporaryDirectory(prefix="gordon-doc-markup-") as temporary:
             workspace = Path(temporary)
-            for artifact_type in request.artifacts:
+            for artifact_type in artifact_types:
                 suffix = ".pdf" if artifact_type is ArtifactType.PDF else ".docx"
                 output = (
                     request.options.output_path
@@ -641,27 +708,21 @@ class ConversionPipeline:
                     else _output_stem(request).with_suffix(suffix)
                 )
                 if output.suffix.casefold() != suffix:
-                    results.append(
-                        ArtifactResult(
-                            artifact_type,
-                            ArtifactStatus.FAILED,
-                            error=_failure_from_exception(
-                                InvalidInputError(
-                                    f"{artifact_type.value} output must use the {suffix} extension"
-                                )
-                            ),
-                        )
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.FAILED,
+                        error=_failure_from_exception(
+                            InvalidInputError(
+                                f"{artifact_type.value} output must use the {suffix} extension"
+                            )
+                        ),
                     )
                     continue
                 if output.exists() and not request.options.overwrite:
-                    results.append(
-                        ArtifactResult(
-                            artifact_type,
-                            ArtifactStatus.FAILED,
-                            error=_failure_from_exception(
-                                OutputExistsError("output already exists")
-                            ),
-                        )
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.FAILED,
+                        error=_failure_from_exception(OutputExistsError("output already exists")),
                     )
                     continue
                 staged = workspace / f"output{suffix}"
@@ -697,38 +758,19 @@ class ConversionPipeline:
                             "officedocument.wordprocessingml.document"
                         )
                     )
-                    results.append(
-                        ArtifactResult(
-                            artifact_type,
-                            ArtifactStatus.SUCCESS,
-                            output,
-                            size,
-                            items=(
-                                ArtifactItem(
-                                    output,
-                                    size,
-                                    media_type,
-                                ),
-                            ),
-                        )
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.SUCCESS,
+                        output,
+                        size,
+                        items=(ArtifactItem(output, size, media_type),),
                     )
                 except ConversionError as error:
-                    results.append(
-                        ArtifactResult(
-                            artifact_type,
-                            ArtifactStatus.FAILED,
-                            error=_failure_from_exception(error),
-                        )
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.FAILED,
+                        error=_failure_from_exception(error),
                     )
-        success = all(item.status is ArtifactStatus.SUCCESS for item in results)
-        first_error = next((item.error for item in results if item.error is not None), None)
-        return ConversionResult(
-            success=success,
-            source_format=request.source_format,
-            artifacts=tuple(results),
-            error=first_error,
-            duration_seconds=perf_counter() - started,
-        )
 
     @staticmethod
     def _should_use_word_com_html(request: ConversionRequest) -> bool:
@@ -754,6 +796,93 @@ class ConversionPipeline:
         if len(request.artifacts) == 1 and request.options.output_path is not None:
             return request.options.output_path
         return _output_stem(request).with_suffix(".html")
+
+    def _extract_content(self, request: ConversionRequest) -> NormalizedContent:
+        """Extract normalized semantic content for one supported source format."""
+        if request.source_format is SourceFormat.DOCX:
+            return extract_docx_content(
+                request.source_path,
+                revision_mode=request.options.revision_mode,
+                comment_mode=request.options.comment_mode,
+                include_annotation_metadata=request.options.include_annotation_metadata,
+                metadata_detail=request.options.metadata_detail,
+            )
+        if request.source_format is SourceFormat.HTML:
+            return extract_html_content(
+                request.source_path,
+                metadata_detail=request.options.metadata_detail,
+            )
+        return extract_pdf_content(
+            request.source_path,
+            metadata_detail=request.options.metadata_detail,
+        )
+
+    def _write_semantic_artifacts(
+        self,
+        request: ConversionRequest,
+        content_types: tuple[ArtifactType, ...],
+        results: dict[ArtifactType, ArtifactResult],
+        progress_callback: ProgressCallback | None,
+    ) -> tuple[ConversionWarning, ...]:
+        """Extract and serialize semantic artifacts sharing one asset directory."""
+        try:
+            self._report(progress_callback, "content-extraction", "Extracting semantic content")
+            content = self._extract_content(request)
+            self._report(progress_callback, "serialization", "Writing semantic artifacts")
+            written = write_content_artifacts(
+                content,
+                _output_stem(request),
+                content_types,
+                overwrite=request.options.overwrite,
+                json_lines=request.options.json_lines,
+            )
+        except FileExistsError as exc:
+            error: ConversionError = OutputExistsError("content output already exists")
+            error.__cause__ = exc
+            self._record_artifact_failures(results, content_types, error)
+            return ()
+        except ConversionError as error:
+            self._record_artifact_failures(results, content_types, error)
+            return ()
+        except (OSError, ValueError) as exc:
+            write_error = EngineFailedError(
+                "content artifact could not be written", engine="extractor"
+            )
+            write_error.__cause__ = exc
+            self._record_artifact_failures(results, content_types, write_error)
+            return ()
+
+        shared_items: list[ArtifactItem] = []
+        if written.asset_directory is not None:
+            for path in sorted(written.asset_directory.iterdir()):
+                if path.is_file():
+                    shared_items.append(
+                        ArtifactItem(
+                            path=path,
+                            size_bytes=path.stat().st_size,
+                            media_type=(
+                                "application/json"
+                                if path.suffix == ".json"
+                                else "application/octet-stream"
+                            ),
+                        )
+                    )
+        if written.annotation_sidecar is not None:
+            sidecar = written.annotation_sidecar
+            shared_items.append(ArtifactItem(sidecar, sidecar.stat().st_size, "application/json"))
+        for artifact_type, path in written.artifacts:
+            size = path.stat().st_size
+            media_type = _content_media_type(artifact_type, json_lines=request.options.json_lines)
+            item = ArtifactItem(path, size, media_type)
+            results[artifact_type] = ArtifactResult(
+                artifact_type,
+                ArtifactStatus.SUCCESS,
+                path,
+                size,
+                tuple(content.warnings),
+                items=(item, *shared_items),
+            )
+        return content.warnings
 
     def _convert_artifacts(
         self,
@@ -830,81 +959,14 @@ class ConversionPipeline:
                     html_via_word_com = False
 
         if content_types:
-            try:
-                self._report(progress_callback, "content-extraction", "Extracting semantic content")
-                content = (
-                    extract_docx_content(
-                        request.source_path,
-                        revision_mode=request.options.revision_mode,
-                        comment_mode=request.options.comment_mode,
-                        include_annotation_metadata=(request.options.include_annotation_metadata),
-                        metadata_detail=request.options.metadata_detail,
-                    )
-                    if request.source_format is SourceFormat.DOCX
-                    else extract_pdf_content(
-                        request.source_path,
-                        metadata_detail=request.options.metadata_detail,
-                    )
-                )
-                stem = _output_stem(request)
-                self._report(
-                    progress_callback,
-                    "serialization",
-                    "Writing semantic artifacts",
-                )
-                written = write_content_artifacts(
-                    content,
-                    stem,
+            warnings.extend(
+                self._write_semantic_artifacts(
+                    request,
                     content_types,
-                    overwrite=request.options.overwrite,
+                    results,
+                    progress_callback,
                 )
-                warnings.extend(content.warnings)
-                shared_items: list[ArtifactItem] = []
-                if written.asset_directory is not None:
-                    for path in sorted(written.asset_directory.iterdir()):
-                        if path.is_file():
-                            shared_items.append(
-                                ArtifactItem(
-                                    path=path,
-                                    size_bytes=path.stat().st_size,
-                                    media_type=(
-                                        "application/json"
-                                        if path.suffix == ".json"
-                                        else "application/octet-stream"
-                                    ),
-                                )
-                            )
-                if written.annotation_sidecar is not None:
-                    path = written.annotation_sidecar
-                    shared_items.append(ArtifactItem(path, path.stat().st_size, "application/json"))
-                for artifact_type, path in written.artifacts:
-                    media_type = {
-                        ArtifactType.MARKDOWN: "text/markdown; charset=utf-8",
-                        ArtifactType.HTML: "text/html; charset=utf-8",
-                        ArtifactType.YAML: "application/yaml; charset=utf-8",
-                        ArtifactType.JSON: "application/json; charset=utf-8",
-                    }[artifact_type]
-                    item = ArtifactItem(path, path.stat().st_size, media_type)
-                    results[artifact_type] = ArtifactResult(
-                        artifact_type,
-                        ArtifactStatus.SUCCESS,
-                        path,
-                        path.stat().st_size,
-                        tuple(content.warnings),
-                        items=(item, *shared_items),
-                    )
-            except FileExistsError as exc:
-                error: ConversionError = OutputExistsError("content output already exists")
-                error.__cause__ = exc
-                self._record_artifact_failures(results, content_types, error)
-            except ConversionError as error:
-                self._record_artifact_failures(results, content_types, error)
-            except (OSError, ValueError) as exc:
-                write_error = EngineFailedError(
-                    "content artifact could not be written", engine="extractor"
-                )
-                write_error.__cause__ = exc
-                self._record_artifact_failures(results, content_types, write_error)
+            )
 
         needs_pdf = any(
             artifact in {ArtifactType.PDF, ArtifactType.PAGE_IMAGES}

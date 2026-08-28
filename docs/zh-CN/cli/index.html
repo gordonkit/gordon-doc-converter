@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
     <title>文档转换 CLI 命令参考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BIpb5RnT.js"></script>
+    <script type="module" crossorigin src="/assets/docs-CIaAlOnj.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/_commonjsHelpers-B-UnjaXt.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-B6nSmFbS.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/cli/" />
@@ -66,11 +66,12 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>转换单一文档</h2>
-      <p>convert 接受 DOCX、ODT、PDF、HTML 与 Markdown 输入。未指定 --to 时，DOCX、ODT、HTML、Markdown 会输出 PDF；PDF 输入则必须指定 --to。可重复使用 --to 获取多个 artifact。--output 适用于单一文件 artifact；省略时服务会在来源旁推导安全的输出名称，除非提供 --overwrite，否则不会覆写既有文件。DOCX 转 HTML 时，--engine word-com 在 Windows 上通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。</p>
+      <p>convert 接受 DOCX、ODT、PDF、HTML 与 Markdown 输入。未指定 --to 时，DOCX、ODT、HTML、Markdown 会输出 PDF；PDF 输入则必须指定 --to。HTML 也可通过语义提取输出 Markdown、YAML 与 JSON，且不需要任何引擎。可重复使用 --to 获取多个 artifact。--output 适用于单一文件 artifact；省略时服务会在来源旁推导安全的输出名称，除非提供 --overwrite，否则不会覆写既有文件。DOCX 转 HTML 时，--engine word-com 在 Windows 上通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
+gordon-doc convert report.html --to markdown --to yaml --to json
 gordon-doc convert report.odt --to docx --engine libreoffice
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
@@ -82,9 +83,11 @@ gordon-doc convert report.html --to pdf --orientation landscape
 gordon-doc convert report.docx --mode server --gotenberg-url http://renderer:3000</code></pre>
     </section><section id="structured-artifacts">
       <h2>结构化 YAML 与 JSON Artifact</h2>
-      <p>--to yaml 与 --to json 会序列化同一份具版本的语义文档。Schema 1.3 保留接近 Markdown 的标题、段落、列表及表格文本，同时保存有意义的链接、图片、修订、注释、来源顺序、metadata 与反向 locator。重复使用 --to 可只提取一次并同时写出两种格式。--metadata 接受 none、basic 或 layout；没有数据的可选值会直接省略，不会输出 null。--to json 产生文档 artifact；不同用途的 --json 则将 CLI 执行结果写到 stdout。</p>
+      <p>--to yaml 与 --to json 会序列化同一份具版本的语义文档。DOCX、PDF 与 HTML 来源都会产生同一份结构。Schema 1.3 保留接近 Markdown 的标题、段落、列表及表格文本，同时保存有意义的链接、图片、修订、注释、来源顺序、metadata 与反向 locator。重复使用 --to 可只提取一次并同时写出两种格式。--metadata 接受 none、basic 或 layout；没有数据的可选值会直接省略，不会输出 null。--json-lines 会把 JSON artifact 以换行分隔的记录写入 &lt;stem&gt;.jsonl 而非 &lt;stem&gt;.json：先是一条 document 记录，接着依来源顺序输出每个 block，最后是 asset、annotation 与 warning 记录；每条 block 都带有 section_path，因此逐行数据仍可还原章节层级。此选项适用于 DOCX、PDF 与 HTML 来源，且不影响 Markdown、HTML 与 YAML 产出。--to json 产生文档 artifact；不同用途的 --json 则将 CLI 执行结果写到 stdout。</p>
       <pre><code>gordon-doc convert report.docx --to yaml --to json --metadata basic
 gordon-doc convert report.pdf --to yaml --to json --metadata layout
+gordon-doc convert report.html --to yaml --to json --metadata basic
+gordon-doc convert report.docx --to json --json-lines
 gordon-doc convert report.docx --to json --json</code></pre>
     </section><section id="source-anchors">
       <h2>反向定位与来源验证</h2>
