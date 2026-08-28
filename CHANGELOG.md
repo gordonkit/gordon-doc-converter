@@ -28,6 +28,8 @@ All notable changes to this project will be documented in this file. The format 
   HTML sources as newline-delimited JSON to `<stem>.jsonl`. Records carry the same versioned
   schema as the nested document: one `document` record, every block in source order with its
   enclosing `section_path`, then `asset`, `annotation`, and `warning` records.
+- Google Analytics (gtag.js) on the documentation site, injected into both Vite entry
+  points so it covers every generated locale page and the Swagger API reference.
 - Simplified Chinese documentation site locale under `/zh-CN/<topic>/`, using mainland
   Chinese terminology, with localized metadata, hreflang and Open Graph alternates,
   sitemap entries, and a language dropdown entry.
@@ -44,6 +46,9 @@ All notable changes to this project will be documented in this file. The format 
   them to alt text.
 - Replaced the documentation navigation bar's two-way language toggle with a language
   dropdown covering English, Traditional Chinese, and Japanese.
+- Pinned generated `docs/**/*.html` to LF in `.gitattributes`, so a Windows checkout
+  cannot rewrite the inline analytics block to CRLF and invalidate its byte-exact
+  Content-Security-Policy hash.
 
 ### Fixed
 
@@ -51,6 +56,12 @@ All notable changes to this project will be documented in this file. The format 
   as HTML parser preprocessing requires. Preformatted text previously kept its carriage
   returns, so the same document extracted differently depending on the platform that wrote it
   and a stray CR reached the Markdown, HTML, YAML, and JSON artifacts.
+
+### Security
+
+- Widened the documentation site's Content-Security-Policy to admit Google Analytics:
+  `googletagmanager.com` in `script-src` with a `sha256` hash for the inline config block
+  instead of `unsafe-inline`, plus the analytics endpoints in `connect-src` and `img-src`.
 
 ## [0.7.0] - 2026-08-25
 
