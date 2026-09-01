@@ -41,6 +41,15 @@ def _write_invalid_pdf(source_path: Path, output_path: Path) -> None:
     output_path.write_bytes(b"invalid")
 
 
+def _write_office_document(
+    source_path: Path,
+    output_path: Path,
+    artifact_type: ArtifactType,
+) -> None:
+    del source_path, artifact_type
+    output_path.write_bytes(b"converted office document")
+
+
 def _probe(
     name: EngineName,
     *,
@@ -493,9 +502,7 @@ def test_odt_mixed_office_and_semantic_artifacts_share_one_output_stem(
         EngineName.LIBREOFFICE,
         _probe(EngineName.LIBREOFFICE),
         lambda source_path, output_path: _write_pdf(output_path),
-        file_render=lambda source_path, output_path, artifact_type: output_path.write_bytes(
-            b"converted office document"
-        ),
+        file_render=_write_office_document,
     )
     request = ConversionRequest(
         source,
