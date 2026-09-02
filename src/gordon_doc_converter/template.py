@@ -60,7 +60,11 @@ table {{
 }}
 
 th, td {{
-  border: 0.5pt solid #9ca3af;
+  /* LibreOffice's HTML importer drops the `border` shorthand on cells, so the grid is
+     declared as longhand properties that both it and wkhtmltopdf honour. */
+  border-width: 0.75pt;
+  border-style: solid;
+  border-color: #9ca3af;
   padding: 2mm 3mm;
   text-align: left;
   vertical-align: top;
@@ -90,8 +94,10 @@ blockquote {{
 }}
 
 hr {{
+  /* wkhtmltopdf's WebKit drops a sub-pixel top border, so the rule is filled instead. */
   border: 0;
-  border-top: 0.5pt solid #9ca3af;
+  height: 0.75pt;
+  background: #9ca3af;
 }}
 
 .page-break {{

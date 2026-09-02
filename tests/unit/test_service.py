@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import errno
+import os
 import shutil
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -721,6 +723,149 @@ def test_markdown_odt_is_rendered_from_the_intermediate_through_libreoffice(
     assert intermediate != source
     assert "size: A4 portrait" in handed[0]
     assert "<strong>重點</strong>" in handed[0]
+
+
+def test_markdown_pdf_falls_back_to_libreoffice_when_wkhtmltopdf_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del source_path, artifact_type
+        _write_pdf(output_path)
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("markup PDF must not take the DOCX rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert (tmp_path / "臺灣 文件.pdf").is_file()
+    intermediate, source_format, artifact_type = engine.file_calls[0]
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.PDF
+    assert intermediate != source
+    fallbacks = [item for item in result.warnings if item.code == "ENGINE_FALLBACK"]
+    assert len(fallbacks) == 1
+    assert "wkhtmltopdf" in fallbacks[0].message
+    assert fallbacks[0].engine is EngineName.LIBREOFFICE
+
+
+def test_markdown_docx_falls_back_to_libreoffice_when_pandoc_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del source_path, artifact_type
+        output_path.write_bytes(b"generated word document")
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("markup DOCX must not take the DOCX-to-PDF rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.DOCX,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert (tmp_path / "臺灣 文件.docx").is_file()
+    _, source_format, artifact_type = engine.file_calls[0]
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.DOCX
+    fallbacks = [item for item in result.warnings if item.code == "ENGINE_FALLBACK"]
+    assert len(fallbacks) == 1
+    assert "pandoc" in fallbacks[0].message
+
+
+def test_markdown_pdf_keeps_wkhtmltopdf_when_it_is_available(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    calls = _pdf_engine_stub(monkeypatch)
+
+    def unused_file_render(
+        source_path: Path, output_path: Path, artifact_type: ArtifactType
+    ) -> None:
+        raise AssertionError("an available wkhtmltopdf must not fall back to LibreOffice")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: None,
+        file_render=unused_file_render,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert calls
+    assert engine.file_calls == []
+    assert [item for item in result.warnings if item.code == "ENGINE_FALLBACK"] == []
+
+
+def test_markdown_artifacts_publish_across_a_filesystem_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A container stages artifacts on a different device from the mounted output."""
+    source = _markdown_source(tmp_path)
+    _pdf_engine_stub(monkeypatch)
+    real_rename = os.rename
+
+    def cross_device_rename(src: object, dst: object) -> None:
+        del src, dst
+        raise OSError(errno.EXDEV, "Invalid cross-device link")
+
+    monkeypatch.setattr(os, "rename", cross_device_rename)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    try:
+        result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+    finally:
+        monkeypatch.setattr(os, "rename", real_rename)
+
+    assert result.success is True
+    assert (tmp_path / "臺灣 文件.pdf").is_file()
 
 
 def test_markdown_odt_reports_a_missing_libreoffice_adapter(tmp_path: Path) -> None:

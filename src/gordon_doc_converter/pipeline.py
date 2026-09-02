@@ -33,6 +33,7 @@ from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
     ConversionError,
     EngineFailedError,
+    EngineUnavailableError,
     ErrorCode,
     InvalidInputError,
     OutputExistsError,
@@ -83,12 +84,34 @@ def _fallback_warning(rejection: EngineRejection) -> ConversionWarning:
     )
 
 
+def _markup_fallback_warning(unavailable: str, error: EngineUnavailableError) -> ConversionWarning:
+    """Report that LibreOffice rendered markup because the preferred engine is missing."""
+    return ConversionWarning(
+        code="ENGINE_FALLBACK",
+        message=f"{unavailable}: {error.message}; rendered with LibreOffice instead",
+        engine=EngineName.LIBREOFFICE,
+    )
+
+
 def _exception_warning(error: ConversionError, engine: EngineName) -> ConversionWarning:
     return ConversionWarning(
         code="ENGINE_FALLBACK",
         message=f"{engine.value}: {error.message}",
         engine=engine,
     )
+
+
+def _publish_staged_artifact(staged: Path, output: Path, *, overwrite: bool) -> None:
+    """Move a staged artifact onto its output path, across filesystems if need be.
+
+    The staging directory is a temporary one, which in a container is routinely a
+    different device from the mounted output directory. ``Path.rename`` raises
+    ``OSError`` (EXDEV) across devices, so the bytes are copied and the source removed.
+    """
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if not overwrite and output.exists():
+        raise OutputExistsError("output already exists")
+    shutil.move(str(staged), str(output))
 
 
 def _publish_pdf(source: Path, target: Path, *, overwrite: bool) -> None:
@@ -610,11 +633,7 @@ class ConversionPipeline:
                             "LibreOffice returned a mismatched file conversion result",
                             engine=EngineName.LIBREOFFICE.value,
                         )
-                    output.parent.mkdir(parents=True, exist_ok=True)
-                    if request.options.overwrite:
-                        staged.replace(output)
-                    else:
-                        staged.rename(output)
+                    _publish_staged_artifact(staged, output, overwrite=request.options.overwrite)
                     size = output.stat().st_size
                     media_type = (
                         "application/pdf"
@@ -816,7 +835,7 @@ class ConversionPipeline:
                         f"Creating {artifact_type.value} artifact",
                         artifact=artifact_type,
                     )
-                    self._render_markup_file(
+                    warnings += self._render_markup_file(
                         print_source if artifact_type is not ArtifactType.DOCX else docx_source,
                         staged,
                         source_format=render_format,
@@ -827,11 +846,7 @@ class ConversionPipeline:
                         validation = validate_pdf(staged)
                         if not validation.valid:
                             raise PdfValidationError("generated PDF failed validation")
-                    output.parent.mkdir(parents=True, exist_ok=True)
-                    if request.options.overwrite:
-                        staged.replace(output)
-                    else:
-                        staged.rename(output)
+                    _publish_staged_artifact(staged, output, overwrite=request.options.overwrite)
                     if artifact_type is ArtifactType.PDF:
                         rendered_pdf = output
                     size = output.stat().st_size
@@ -867,21 +882,66 @@ class ConversionPipeline:
         source_format: SourceFormat,
         artifact_type: ArtifactType,
         options: ConversionOptions,
-    ) -> None:
-        """Render one markup file through the engine that owns its artifact type."""
+    ) -> tuple[ConversionWarning, ...]:
+        """Render one markup file through the engine that owns its artifact type.
+
+        wkhtmltopdf and Pandoc render markup with the highest fidelity, but neither ships
+        in the container image, so an installation without them falls back to LibreOffice
+        and reports the substitution. LibreOffice reads the same print HTML and keeps the
+        A4 page setup; its table borders and heading fonts differ from wkhtmltopdf.
+        """
         if artifact_type is ArtifactType.PDF:
             # The PDF engine reads the document itself, keeping its stylesheet intact.
-            WkhtmltopdfConverter().convert(source_path, output_path, options=options)
-            return
+            try:
+                WkhtmltopdfConverter().convert(source_path, output_path, options=options)
+            except EngineUnavailableError as error:
+                self._render_markup_with_libreoffice(
+                    source_path,
+                    output_path,
+                    source_format=source_format,
+                    artifact_type=artifact_type,
+                    options=options,
+                )
+                return (_markup_fallback_warning("wkhtmltopdf", error),)
+            return ()
         if artifact_type is ArtifactType.DOCX:
-            PandocConverter().convert(
-                source_path,
-                output_path,
-                source_format=source_format,
-                options=options,
-            )
-            return
+            try:
+                PandocConverter().convert(
+                    source_path,
+                    output_path,
+                    source_format=source_format,
+                    options=options,
+                )
+            except EngineUnavailableError as error:
+                self._render_markup_with_libreoffice(
+                    source_path,
+                    output_path,
+                    source_format=source_format,
+                    artifact_type=artifact_type,
+                    options=options,
+                )
+                return (_markup_fallback_warning("pandoc", error),)
+            return ()
         # LibreOffice reads our print CSS, so ODT keeps the A4 page setup Pandoc cannot carry.
+        self._render_markup_with_libreoffice(
+            source_path,
+            output_path,
+            source_format=source_format,
+            artifact_type=artifact_type,
+            options=options,
+        )
+        return ()
+
+    def _render_markup_with_libreoffice(
+        self,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        options: ConversionOptions,
+    ) -> None:
+        """Render print HTML through LibreOffice, the engine every deployment carries."""
         engine = self._markup_file_engine()
         execution = engine.convert_file(
             source_path,
