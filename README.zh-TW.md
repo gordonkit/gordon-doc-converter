@@ -23,7 +23,7 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | — | × | — | — | — |
+| Markdown | P | P+ | — | ✓ | × | ✓ | ✓ | — |
 
 `Auto` 依政策自動選擇引擎 · `✓` 內建支援 · `LO` LibreOffice · `P` Pandoc ·
 `P+` Pandoc 搭配 PDF 後端 · `PDF` 先轉為 PDF · `—` 不支援 ·
@@ -31,8 +31,8 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 
 逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、
 JSON 及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX。HTML 另可透過與 DOCX、ODT、
-PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 仍僅能
-轉換為 PDF 與 DOCX。
+PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 也可透過同一語意萃取轉換為 HTML、YAML 與 JSON，
+並可經 Pandoc 轉換為 PDF 與 DOCX。
 
 ODT 的語意 artifact 直接從 ODF 封裝讀取，因此 Markdown、HTML、YAML 與 JSON 不需要
 外部引擎；ODT 的逐頁圖片會先排版為 PDF，因此需要 LibreOffice。
@@ -68,6 +68,18 @@ gordon-doc convert 報告.html --to markdown --to yaml --to json
 會正規化為與 DOCX、PDF 相同的 schema。內嵌的 `data:` 圖片會寫入 `<stem>.assets`
 目錄；以 URL 參照的圖片則維持連結。script、style 與內嵌物件元素會被省略，所有省略
 與失真的對應都會回報為機器可讀的警告。
+
+Markdown 輸入走同一條路徑，解析 CommonMark 並支援 GFM 表格與刪除線：
+
+```console
+gordon-doc convert 筆記.md --to html --to yaml --to json
+```
+
+標題、段落、巢狀清單、表格、連結、強調、行內程式碼與程式碼區塊、引用區塊
+及分隔線都會正規化為同一份 schema，開頭的 YAML front matter 則成為文件
+metadata。內嵌的 `data:` 圖片會寫入 `<stem>.assets`；以路徑或 URL 參照的圖片
+維持連結。原始 HTML 區塊會被省略，但保留輸出端本身會產生的 `<ins>`、`<del>`
+與 `<br>`。
 
 ## 使用介面
 

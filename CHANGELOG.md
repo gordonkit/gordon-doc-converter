@@ -19,12 +19,24 @@ All notable changes to this project will be documented in this file. The format 
   spans whose fence clears any backticks they contain, fenced code blocks with their info
   string, `> ` quote prefixes, and `---` rules; HTML emits `<strong>`, `<em>`, `<code>`,
   `<pre><code class="language-...">`, nested `<blockquote>`, and `<hr>`.
+- Markdown-to-HTML, Markdown-to-YAML, and Markdown-to-JSON conversion through the same
+  semantic extraction used for DOCX, ODT, PDF, and HTML sources, with no external engine
+  required. CommonMark is parsed with the GFM table and strikethrough extensions: headings,
+  paragraphs, nested and ordered lists, tables, links, emphasis, code spans, fenced and
+  indented code blocks, block quotes, and thematic breaks are normalized into the existing
+  schema. A leading YAML front-matter block becomes document metadata, inline `data:` images
+  become shared assets, images referenced by path or URL stay linked, and raw HTML blocks are
+  omitted apart from the `<ins>`, `<del>`, and `<br>` tags the writers emit. Blocks carry a
+  `markdown-line` source anchor.
+- Markdown source validation covering extension, declared MIME type, and file size.
 
 ### Changed
 
 - The structured JSON and YAML schema is now version `1.4`. Inline payloads gain an optional
   `styles` array, and block payloads gain optional `quote_level` and `language` fields. Every
   1.3 field keeps its meaning, so existing readers continue to work.
+- `markdown-it-py` is now a direct dependency, used only by the Markdown content reader. It
+  was already installed transitively, so no new package enters the environment.
 
 ## [0.8.0] - 2026-08-28
 

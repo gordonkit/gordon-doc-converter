@@ -23,7 +23,7 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | — | × | — | — | — |
+| Markdown | P | P+ | — | ✓ | × | ✓ | ✓ | — |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
 `P+` Pandoc with a PDF backend · `PDF` via an intermediate PDF · `—` not supported ·
@@ -33,7 +33,8 @@ Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and i
 output artifacts for DOCX, ODT, and PDF sources; Markdown and HTML are also accepted as input
 for PDF/DOCX conversion. HTML input additionally converts to Markdown, YAML, and JSON through
 the same semantic extraction used for DOCX, ODT, and PDF; that route needs no external engine.
-Markdown input still converts only to PDF and DOCX.
+Markdown input converts to HTML, YAML, and JSON through that same extraction, and to
+PDF and DOCX through Pandoc.
 
 ODT semantic artifacts are read directly from the ODF package, so Markdown, HTML, YAML, and
 JSON need no external engine. ODT page images render the document to PDF first and therefore
@@ -72,6 +73,19 @@ metadata are normalized into the same schema DOCX and PDF sources produce. Inlin
 images become files in a `<stem>.assets` directory; images referenced by URL stay linked.
 Script, style, and embedded-object elements are omitted, and every omission or lossy mapping
 is reported as a machine-readable warning.
+
+Markdown input takes the same route, parsing CommonMark with GFM tables and
+strikethrough:
+
+```console
+gordon-doc convert notes.md --to html --to yaml --to json
+```
+
+Headings, paragraphs, nested lists, tables, links, emphasis, code spans and blocks,
+block quotes, and thematic breaks are normalized into that same schema. A leading YAML
+front-matter block becomes document metadata. Inline `data:` images become files in
+`<stem>.assets`; images referenced by path or URL stay linked. Raw HTML blocks are
+omitted, apart from the `<ins>`, `<del>`, and `<br>` tags the writers themselves emit.
 
 ## Interfaces
 

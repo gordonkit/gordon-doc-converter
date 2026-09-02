@@ -540,3 +540,46 @@ def test_odt_office_artifacts_still_fail_cleanly_without_libreoffice(
     assert statuses[ArtifactType.DOCX] is ArtifactStatus.FAILED
     assert statuses[ArtifactType.MARKDOWN] is ArtifactStatus.SUCCESS
     assert (tmp_path / "缺引擎.md").is_file()
+
+
+_MARKDOWN_BODY = "# 總則\n\n正文 **重點**\n"
+
+
+def test_markdown_source_produces_semantic_artifacts_without_a_rendering_engine(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.HTML, ArtifactType.JSON, ArtifactType.YAML),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert [item.status for item in result.artifacts] == [ArtifactStatus.SUCCESS] * 3
+    html = (tmp_path / "臺灣 文件.html").read_text(encoding="utf-8")
+    assert "<h1" in html
+    assert "<strong>重點</strong>" in html
+    assert (tmp_path / "臺灣 文件.json").is_file()
+    assert (tmp_path / "臺灣 文件.yaml").is_file()
+
+
+def test_markdown_source_rejects_its_own_format_as_an_artifact(tmp_path: Path) -> None:
+    source = tmp_path / "note.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.MARKDOWN,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON" in result.error.message

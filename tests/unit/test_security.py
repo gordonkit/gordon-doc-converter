@@ -177,9 +177,29 @@ def test_html_validates_extension_mime_and_size_without_container_checks(
         validate_source_document(mismatched, SourceFormat.HTML)
 
 
-def test_markdown_source_format_remains_outside_input_validation(tmp_path: Path) -> None:
+def test_markdown_validates_extension_mime_and_size_without_container_checks(
+    tmp_path: Path,
+) -> None:
     source = tmp_path / "note.md"
     source.write_text("# 標題\n", encoding="utf-8")
 
-    with pytest.raises(InvalidInputError, match="not supported by input validation"):
-        validate_source_document(source, SourceFormat.MARKDOWN)
+    validate_source_document(source, SourceFormat.MARKDOWN, declared_mime_type="text/markdown")
+    validate_source_document(
+        source,
+        SourceFormat.MARKDOWN,
+        declared_mime_type="text/markdown; charset=utf-8",
+    )
+
+    with pytest.raises(InvalidInputError, match="MIME"):
+        validate_source_document(source, SourceFormat.MARKDOWN, declared_mime_type="text/plain")
+    with pytest.raises(InvalidInputError, match="file-size limit"):
+        validate_source_document(
+            source,
+            SourceFormat.MARKDOWN,
+            limits=InputValidationLimits(max_file_size=1),
+        )
+
+    mismatched = tmp_path / "note.markdown"
+    mismatched.write_text("# 標題\n", encoding="utf-8")
+    with pytest.raises(InvalidInputError, match="extension"):
+        validate_source_document(mismatched, SourceFormat.MARKDOWN)

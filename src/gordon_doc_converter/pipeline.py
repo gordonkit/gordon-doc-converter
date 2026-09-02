@@ -15,6 +15,7 @@ from gordon_doc_converter.content import (
     NormalizedContent,
     extract_docx_content,
     extract_html_content,
+    extract_markdown_content,
     extract_odt_content,
     extract_pdf_content,
     write_content_artifacts,
@@ -146,11 +147,12 @@ def _fix_word_com_html_line_heights(path: Path) -> None:
 
 _OFFICE_FILE_ARTIFACTS = frozenset({ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT})
 _RENDERED_MARKUP_ARTIFACTS = (ArtifactType.PDF, ArtifactType.DOCX)
-_SEMANTIC_MARKUP_ARTIFACTS = (
-    ArtifactType.MARKDOWN,
-    ArtifactType.YAML,
-    ArtifactType.JSON,
-)
+# Semantic outputs each markup source extracts without a rendering engine. A
+# source never lists its own format, which would not be a conversion.
+_SEMANTIC_MARKUP_ARTIFACTS: dict[SourceFormat, tuple[ArtifactType, ...]] = {
+    SourceFormat.HTML: (ArtifactType.MARKDOWN, ArtifactType.YAML, ArtifactType.JSON),
+    SourceFormat.MARKDOWN: (ArtifactType.HTML, ArtifactType.YAML, ArtifactType.JSON),
+}
 _CONTENT_MEDIA_TYPES = {
     ArtifactType.MARKDOWN: "text/markdown; charset=utf-8",
     ArtifactType.HTML: "text/html; charset=utf-8",
@@ -647,13 +649,13 @@ class ConversionPipeline:
     ) -> ConversionResult:
         """Convert HTML or Markdown to rendered A4 documents or semantic artifacts."""
         started = perf_counter()
-        semantic = _SEMANTIC_MARKUP_ARTIFACTS if request.source_format is SourceFormat.HTML else ()
+        semantic = _SEMANTIC_MARKUP_ARTIFACTS.get(request.source_format, ())
         invalid = set(request.artifacts) - set(_RENDERED_MARKUP_ARTIFACTS) - set(semantic)
         if invalid:
             message = (
                 "HTML sources support only PDF, DOCX, Markdown, YAML, and JSON outputs"
                 if request.source_format is SourceFormat.HTML
-                else "Markdown sources support only PDF and DOCX outputs"
+                else "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON outputs"
             )
             return self._failure_result(
                 request,
@@ -827,6 +829,11 @@ class ConversionPipeline:
             )
         if request.source_format is SourceFormat.HTML:
             return extract_html_content(
+                request.source_path,
+                metadata_detail=request.options.metadata_detail,
+            )
+        if request.source_format is SourceFormat.MARKDOWN:
+            return extract_markdown_content(
                 request.source_path,
                 metadata_detail=request.options.metadata_detail,
             )

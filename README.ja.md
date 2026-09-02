@@ -23,7 +23,7 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | — | × | — | — | — |
+| Markdown | P | P+ | — | ✓ | × | ✓ | ✓ | — |
 
 `Auto` ポリシーに基づくエンジン選択 · `✓` 標準対応 · `LO` LibreOffice · `P` Pandoc ·
 `P+` Pandoc と PDF backend · `PDF` 中間 PDF 経由 · `—` 非対応 ·
@@ -32,8 +32,8 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
 DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX への変換の
 入力としても受け付けます。HTML はさらに、DOCX、ODT、PDF と同じセマンティック抽出によって
-Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは不要です。Markdown の変換先は
-引き続き PDF と DOCX のみです。
+Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは不要です。Markdown も同じ抽出によって HTML、YAML、JSON へ変換でき、
+PDF と DOCX へは Pandoc を介して変換します。
 
 ODT のセマンティック artifact は ODF パッケージから直接読み取るため、Markdown、HTML、
 YAML、JSON に外部エンジンは不要です。ODT のページ画像は先に PDF へ組版するため
@@ -74,6 +74,20 @@ metadata は、DOCX や PDF と同じスキーマに正規化されます。イ�
 `<stem>.assets` ディレクトリのファイルになり、URL で参照される画像はリンクのまま残ります。
 script、style、埋め込みオブジェクト要素は省略され、省略や非可逆な対応はすべて機械可読な
 警告として報告されます。
+
+Markdown 入力も同じ経路を通り、CommonMark を解析して GFM の表と打ち消し線に
+対応します。
+
+```console
+gordon-doc convert notes.md --to html --to yaml --to json
+```
+
+見出し、段落、入れ子のリスト、表、リンク、強調、インラインコードとコードブロック、
+引用、区切り線は同じスキーマに正規化され、先頭の YAML front matter は
+ドキュメント metadata になります。インラインの `data:` 画像は `<stem>.assets` の
+ファイルになり、パスや URL で参照される画像はリンクのまま残ります。生の HTML
+ブロックは省略されますが、ライター自身が出力する `<ins>`、`<del>`、`<br>` は
+残ります。
 
 ## インターフェース
 

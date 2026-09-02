@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import re
-from base64 import b64decode
-from binascii import Error as BinasciiError
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import unquote_to_bytes, urlsplit
+from urllib.parse import urlsplit
 
+from gordon_doc_converter.content.data_uri import DataUriReason, decode_data_uri_image
 from gordon_doc_converter.content.models import (
     BlockKind,
     ContentAsset,
@@ -121,15 +120,6 @@ _IMPLICIT_END_TAGS = {
     "th": _TABLE_CELL_TAGS,
     "tr": frozenset({"tr"}),
 }
-_IMAGE_EXTENSIONS = {
-    "image/gif": ".gif",
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/svg+xml": ".svg",
-    "image/tiff": ".tiff",
-    "image/webp": ".webp",
-}
-_MAX_EMBEDDED_ASSET_BYTES = 32 * 1024 * 1024
 _MAX_ELEMENT_DEPTH = 256
 _WHITESPACE = re.compile(r"[ \t\n\r\f\v]+")
 _CHARSET = re.compile(rb"""charset\s*=\s*["']?\s*([A-Za-z0-9_.:+-]+)""", re.IGNORECASE)
@@ -615,39 +605,23 @@ class _HtmlContentParser(HTMLParser):
             )
 
     def _image_asset(self, source: str) -> ContentAsset | None:
-        if not source.casefold().startswith("data:"):
-            return None
-        header, _, payload = source[len("data:") :].partition(",")
-        parameters = header.split(";")
-        media_type = parameters[0].strip().casefold() or "text/plain"
-        if not media_type.startswith("image/"):
+        asset, reason = decode_data_uri_image(
+            source, index=len(self.assets) + 1, consumed_bytes=self._asset_bytes
+        )
+        if asset is not None:
+            self._asset_bytes += len(asset.data)
+            return asset
+        if reason is DataUriReason.DECODE_FAILED:
             self._warn(
                 "HTML_ASSET_DECODE_FAILED",
                 "An inline data URI could not be decoded as an embedded image.",
             )
-            return None
-        try:
-            data = (
-                b64decode(payload, validate=True)
-                if "base64" in {item.strip().casefold() for item in parameters[1:]}
-                else unquote_to_bytes(payload)
-            )
-        except (BinasciiError, ValueError):
-            self._warn(
-                "HTML_ASSET_DECODE_FAILED",
-                "An inline data URI could not be decoded as an embedded image.",
-            )
-            return None
-        if not data or self._asset_bytes + len(data) > _MAX_EMBEDDED_ASSET_BYTES:
+        elif reason is DataUriReason.LIMIT_EXCEEDED:
             self._warn(
                 "HTML_ASSET_LIMIT_EXCEEDED",
                 "Inline image data exceeded the embedded-asset limit and was not extracted.",
             )
-            return None
-        self._asset_bytes += len(data)
-        suffix = _IMAGE_EXTENSIONS.get(media_type, ".bin")
-        filename = f"image-{len(self.assets) + 1:04d}{suffix}"
-        return ContentAsset(filename, filename, media_type, data)
+        return None
 
 
 def _table_spans(block: ContentBlock) -> list[InlineSpan]:
