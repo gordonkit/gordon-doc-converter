@@ -108,7 +108,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: metadata
         name: Generate image metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ vars.DOCKERHUB_NAMESPACE }}/gordon-doc-converter
           tags: |
