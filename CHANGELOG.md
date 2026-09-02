@@ -5,6 +5,78 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Character formatting in the normalized content model. Inline spans now carry an orthogonal
+  `styles` set (`strong`, `emphasis`, `code`), so bold, italic, and monospace runs survive
+  extraction instead of being flattened to plain text. Styles combine with the existing span
+  kinds, letting a link or a tracked revision stay itself while also carrying emphasis.
+- Code blocks, block quotes, and thematic breaks in the normalized content model, as the
+  `code-block` and `thematic-break` block kinds plus `quote_level` and `language` block
+  fields. DOCX reads them from the `Quote` and `HTML Preformatted` paragraph styles, ODT from
+  `Quotations` and `Preformatted Text`, and HTML from `<blockquote>`, `<pre>`, and `<hr>`.
+- Markdown and HTML writers render the new facts: `**strong**`, `*emphasis*`, backtick code
+  spans whose fence clears any backticks they contain, fenced code blocks with their info
+  string, `> ` quote prefixes, and `---` rules; HTML emits `<strong>`, `<em>`, `<code>`,
+  `<pre><code class="language-...">`, nested `<blockquote>`, and `<hr>`.
+- Markdown-to-HTML, Markdown-to-YAML, and Markdown-to-JSON conversion through the same
+  semantic extraction used for DOCX, ODT, PDF, and HTML sources, with no external engine
+  required. CommonMark is parsed with the GFM table and strikethrough extensions: headings,
+  paragraphs, nested and ordered lists, tables, links, emphasis, code spans, fenced and
+  indented code blocks, block quotes, and thematic breaks are normalized into the existing
+  schema. A leading YAML front-matter block becomes document metadata, inline `data:` images
+  become shared assets, images referenced by path or URL stay linked, and raw HTML blocks are
+  omitted apart from the `<ins>`, `<del>`, and `<br>` tags the writers emit. Blocks carry a
+  `markdown-line` source anchor.
+- Markdown source validation covering extension, declared MIME type, and file size.
+- Markdown-to-ODT and Markdown-to-page-image conversion, plus the same two artifacts from
+  HTML sources. ODT is produced by LibreOffice from the print-ready HTML intermediate, which
+  carries the A4 page setup and CJK fonts into the ODF page layout; page images rasterize the
+  rendered PDF through the existing raster route and reuse a PDF artifact when one was
+  requested in the same run, instead of rendering it twice.
+- `gordon-doc template notes.md` writes a Markdown starter whose YAML front matter carries
+  document metadata. The command now picks the starter from the output extension, so
+  `.html`/`.htm` still writes the A4 print-ready document; `--orientation` applies to HTML
+  templates only, since Markdown holds no page setup of its own, and the JSON payload reports
+  the `format` written.
+- GFM task-list checkboxes in Markdown sources. `- [ ]` and `- [x]` items now carry the
+  □ and ☑ symbols instead of literal brackets, so every output renders what the author
+  wrote.
+
+### Changed
+
+- Rendered Markdown output now goes through the normalized content model. Markdown is
+  extracted, serialized to a print-ready A4 HTML intermediate carrying the same CSS as
+  `gordon-doc template`, and only then handed to Pandoc. PDF and DOCX from Markdown therefore
+  get the CJK font stack, `@page` A4 margins, and one consistent look shared with HTML
+  sources, and raw HTML in the source never reaches the PDF engine.
+- `write_blank_html_template` became `write_blank_template`, which returns the `SourceFormat`
+  it wrote. The compatibility tables in all four README locales and on the documentation site
+  now show ODT and page images for HTML and Markdown sources.
+- The LibreOffice file adapter accepts HTML sources, loading them with the
+  `HTML (StarWriter)` import filter and saving through an explicit output filter, so an HTML
+  source becomes a Writer text document rather than a Writer/Web document without page setup.
+- Pandoc reads Markdown as `gfm` rather than Pandoc's own dialect, and receives a
+  `--resource-path` pointing at the source directory, so images referenced by relative path
+  resolve against the document instead of the working directory.
+- Markup PDF output is rendered by wkhtmltopdf directly instead of through Pandoc. Pandoc's
+  HTML reader keeps only the body and the document metadata, so it replaced the print
+  stylesheet with its own defaults and added a second title block: rendered pages came out
+  36em wide on a tinted background with the title printed twice. The engine now reads the
+  document as written, with A4, the requested orientation, and the stylesheet's 20mm margins
+  passed as arguments, since wkhtmltopdf ignores `@page`. The earlier `--variable geometry:`
+  settings only ever applied to LaTeX templates and were silently ignored.
+- The DOCX intermediate leaves the visible title block out, because Pandoc's DOCX writer
+  renders its own from the head metadata. Title and author appeared twice before.
+- DOCX output from markup sources is rendered against a generated `--reference-doc` whose
+  default and named styles use CJK-capable fonts at the same 10.5pt body size as the HTML
+  print stylesheet, instead of leaving Pandoc's default fonts in place.
+- The structured JSON and YAML schema is now version `1.4`. Inline payloads gain an optional
+  `styles` array, and block payloads gain optional `quote_level` and `language` fields. Every
+  1.3 field keeps its meaning, so existing readers continue to work.
+- `markdown-it-py` is now a direct dependency, used only by the Markdown content reader. It
+  was already installed transitively, so no new package enters the environment.
+
 ## [0.8.0] - 2026-08-28
 
 ### Added

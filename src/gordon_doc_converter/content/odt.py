@@ -16,6 +16,7 @@ from gordon_doc_converter.content.models import (
     DocumentMetadata,
     InlineKind,
     InlineSpan,
+    InlineStyle,
     LayoutAvailability,
     LayoutMetadata,
     NormalizedContent,
@@ -41,6 +42,7 @@ _DRAW = "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
 _STYLE = "urn:oasis:names:tc:opendocument:xmlns:style:1.0"
 _META = "urn:oasis:names:tc:opendocument:xmlns:meta:1.0"
 _SVG = "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
+_FO = "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
 _XLINK = "http://www.w3.org/1999/xlink"
 _DC = "http://purl.org/dc/elements/1.1/"
 
@@ -57,6 +59,27 @@ _ELEMENT_PREFIXES = {
 }
 
 # LibreOffice writes ODF numbering systems as sample sequences rather than tokens.
+# ODF encodes spaces in style names as "_20_".
+_QUOTE_STYLE_NAMES = frozenset({"quotations", "quote", "blockquote"})
+_CODE_BLOCK_STYLE_NAMES = frozenset({"preformattedtext", "sourcecode", "code"})
+_MONOSPACE_FONTS = frozenset(
+    {
+        "consolas",
+        "courier",
+        "couriernew",
+        "dejavusansmono",
+        "liberationmono",
+        "lucidaconsole",
+        "menlo",
+        "monaco",
+    }
+)
+
+
+def _normalized_style_name(value: str | None) -> str:
+    return (value or "").replace("_20_", " ").casefold().replace(" ", "").replace("_", "")
+
+
 _NUMBER_FORMATS: dict[str, OrdinalSystem] = {
     "1": OrdinalSystem.DECIMAL,
     "a": OrdinalSystem.LOWER_LETTER,
@@ -113,6 +136,15 @@ class _ParagraphStyle:
     display_name: str
     parent: str | None
     outline_level: int | None
+    formatting: frozenset[InlineStyle] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class _TextStyle:
+    """One ODF character style resolved to normalized inline formatting."""
+
+    parent: str | None
+    formatting: frozenset[InlineStyle]
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +169,8 @@ class _State:
     list_styles: dict[str, dict[int, _ListLevel]]
     outline_levels: dict[int, _ListLevel]
     changed_regions: dict[str, _ChangedRegion]
+    text_styles: dict[str, _TextStyle] = field(default_factory=dict)
+    active_styles: list[InlineStyle] = field(default_factory=list)
     assets: list[ContentAsset] = field(default_factory=list)
     annotations: list[NormalizedAnnotation] = field(default_factory=list)
     warnings: list[ConversionWarning] = field(default_factory=list)
@@ -248,13 +282,39 @@ def _level_definitions(container: ElementTree.Element, attribute: str) -> dict[i
     return levels
 
 
+def _text_style_formatting(style: ElementTree.Element) -> frozenset[InlineStyle]:
+    """Map one ODF text style's properties to normalized character formatting."""
+    properties = style.find(_q(_STYLE, "text-properties"))
+    if properties is None:
+        return frozenset()
+    styles: set[InlineStyle] = set()
+    weight = properties.get(_q(_FO, "font-weight"), "")
+    if weight and weight != "normal":
+        styles.add(InlineStyle.STRONG)
+    if properties.get(_q(_FO, "font-style"), "") in {"italic", "oblique"}:
+        styles.add(InlineStyle.EMPHASIS)
+    fonts = {
+        _normalized_style_name(properties.get(_q(_STYLE, attribute)))
+        for attribute in ("font-name", "font-name-complex", "font-name-asian")
+    }
+    if fonts & _MONOSPACE_FONTS or properties.get(_q(_STYLE, "font-pitch")) == "fixed":
+        styles.add(InlineStyle.CODE)
+    return frozenset(styles)
+
+
 def _collect_styles(
     roots: tuple[ElementTree.Element, ...],
-) -> tuple[dict[str, _ParagraphStyle], dict[str, dict[int, _ListLevel]], dict[int, _ListLevel]]:
-    """Merge paragraph, list, and outline styles from the content and styles parts."""
+) -> tuple[
+    dict[str, _ParagraphStyle],
+    dict[str, dict[int, _ListLevel]],
+    dict[int, _ListLevel],
+    dict[str, _TextStyle],
+]:
+    """Merge paragraph, text, list, and outline styles from the content and styles parts."""
     paragraph_styles: dict[str, _ParagraphStyle] = {}
     list_styles: dict[str, dict[int, _ListLevel]] = {}
     outline_levels: dict[int, _ListLevel] = {}
+    text_styles: dict[str, _TextStyle] = {}
     for root in roots:
         for container_name in ("styles", "automatic-styles"):
             container = root.find(_q(_OFFICE, container_name))
@@ -262,7 +322,15 @@ def _collect_styles(
                 continue
             for style in container.findall(_q(_STYLE, "style")):
                 name = style.get(_q(_STYLE, "name"))
-                if not name or style.get(_q(_STYLE, "family")) != "paragraph":
+                if not name:
+                    continue
+                if style.get(_q(_STYLE, "family")) == "text":
+                    text_styles[name] = _TextStyle(
+                        parent=style.get(_q(_STYLE, "parent-style-name")),
+                        formatting=_text_style_formatting(style),
+                    )
+                    continue
+                if style.get(_q(_STYLE, "family")) != "paragraph":
                     continue
                 outline = style.get(_q(_STYLE, "default-outline-level"))
                 paragraph_styles[name] = _ParagraphStyle(
@@ -271,6 +339,7 @@ def _collect_styles(
                     outline_level=int(outline)
                     if outline is not None and outline.isdigit()
                     else None,
+                    formatting=_text_style_formatting(style),
                 )
             for style in container.findall(_q(_TEXT, "list-style")):
                 name = style.get(_q(_STYLE, "name"))
@@ -279,7 +348,7 @@ def _collect_styles(
         outline_style = root.find(f"{_q(_OFFICE, 'styles')}/{_q(_TEXT, 'outline-style')}")
         if outline_style is not None:
             outline_levels.update(_level_definitions(outline_style, "level"))
-    return paragraph_styles, list_styles, outline_levels
+    return paragraph_styles, list_styles, outline_levels, text_styles
 
 
 def _changed_regions(body: ElementTree.Element) -> dict[str, _ChangedRegion]:
@@ -365,13 +434,14 @@ def _text_span(state: _State, text: str) -> InlineSpan | None:
     """Classify one literal run against the active tracked-insertion context."""
     if not text:
         return None
+    styles = frozenset(state.active_styles)
     if not state.active_insertions:
-        return InlineSpan(InlineKind.TEXT, text)
+        return InlineSpan(InlineKind.TEXT, text, styles=styles)
     if state.revision_mode is RevisionMode.ORIGINAL:
         return None
     if state.revision_mode is RevisionMode.MARKUP:
-        return InlineSpan(InlineKind.INSERTION, text)
-    return InlineSpan(InlineKind.TEXT, text)
+        return InlineSpan(InlineKind.INSERTION, text, styles=styles)
+    return InlineSpan(InlineKind.TEXT, text, styles=styles)
 
 
 def _deletion_spans(state: _State, region: _ChangedRegion) -> list[InlineSpan]:
@@ -494,6 +564,14 @@ def _inline_children(
         elif tag == _q(_TEXT, "a"):
             target = child.get(_q(_XLINK, "href")) or None
             spans.extend(_inline_children(child, state, link_target=target))
+        elif tag == _q(_TEXT, "span"):
+            applied = _resolved_text_styles(child.get(_q(_TEXT, "style-name")), state)
+            state.active_styles.extend(applied)
+            try:
+                spans.extend(_inline_children(child, state, link_target=link_target))
+            finally:
+                for style in applied:
+                    state.active_styles.remove(style)
         elif tag == _q(_DRAW, "frame"):
             span = _frame_span(child, state)
             if span is not None:
@@ -517,12 +595,27 @@ def _inline_children(
         _append_text(spans, state, child.tail or "")
     if link_target is not None:
         return [
-            InlineSpan(InlineKind.LINK, span.text, target=link_target)
+            InlineSpan(InlineKind.LINK, span.text, target=link_target, styles=span.styles)
             if span.kind is InlineKind.TEXT
             else span
             for span in spans
         ]
     return spans
+
+
+def _resolved_text_styles(name: str | None, state: _State) -> tuple[InlineStyle, ...]:
+    """Follow one text style's parent chain into its normalized formatting."""
+    formatting: set[InlineStyle] = set()
+    seen: set[str] = set()
+    current = name
+    while current and current not in seen:
+        seen.add(current)
+        style = state.text_styles.get(current)
+        if style is None:
+            break
+        formatting |= style.formatting
+        current = style.parent
+    return tuple(formatting)
 
 
 def _resolved_paragraph_style(name: str | None, state: _State) -> _ParagraphStyle | None:
@@ -545,7 +638,28 @@ def _resolved_paragraph_style(name: str | None, state: _State) -> _ParagraphStyl
         outline_level=next(
             (item.outline_level for item in chain if item.outline_level is not None), None
         ),
+        formatting=frozenset().union(*(item.formatting for item in chain)),
     )
+
+
+def _paragraph_style_names(name: str | None, state: _State) -> set[str]:
+    """Return every normalized name one paragraph style inherits from.
+
+    Writers routinely derive an automatic style such as `P1` from a document
+    style such as `Quotations`, so the whole parent chain has to be inspected.
+    """
+    names: set[str] = set()
+    seen: set[str] = set()
+    current = name
+    while current and current not in seen:
+        seen.add(current)
+        names.add(_normalized_style_name(current))
+        style = state.paragraph_styles.get(current)
+        if style is None:
+            break
+        names.add(_normalized_style_name(style.display_name))
+        current = style.parent
+    return names
 
 
 def _style_heading_level(name: str | None, state: _State) -> int | None:
@@ -641,7 +755,16 @@ def _paragraph_block(
         )
     elif list_level is None:
         heading_level = _style_heading_level(style_name, state)
-    spans = _inline_children(element, state)
+    resolved = _resolved_paragraph_style(style_name, state)
+    applied = tuple(resolved.formatting) if resolved is not None else ()
+    state.active_styles.extend(applied)
+    try:
+        spans = _inline_children(element, state)
+    finally:
+        for style in applied:
+            state.active_styles.remove(style)
+    style_names = _paragraph_style_names(style_name, state)
+    quote_level = 1 if style_names & _QUOTE_STYLE_NAMES else None
     if heading_level is not None:
         kind = BlockKind.HEADING
         if element.get(_q(_TEXT, "is-list-header")) != "true":
@@ -654,6 +777,8 @@ def _paragraph_block(
             prefix = _marker_prefix(state, list_style, list_level)
             if prefix:
                 spans.insert(0, InlineSpan(InlineKind.TEXT, prefix))
+    elif style_names & _CODE_BLOCK_STYLE_NAMES:
+        kind = BlockKind.CODE_BLOCK
     else:
         kind = BlockKind.PARAGRAPH
     return ContentBlock(
@@ -661,6 +786,7 @@ def _paragraph_block(
         tuple(spans),
         level=heading_level,
         list_level=None if kind is BlockKind.HEADING else list_level,
+        quote_level=quote_level,
         source_anchor=anchor,
     )
 
@@ -861,7 +987,7 @@ def extract_odt_content(
             for root in (content_root, _optional_xml(archive, _STYLES_PART))
             if root is not None
         )
-        paragraph_styles, list_styles, outline_levels = _collect_styles(style_roots)
+        paragraph_styles, list_styles, outline_levels, text_styles = _collect_styles(style_roots)
         body = content_root.find(f"{_q(_OFFICE, 'body')}/{_q(_OFFICE, 'text')}")
         if body is None:
             raise InvalidInputError("ODT document has no text body")
@@ -874,6 +1000,7 @@ def extract_odt_content(
             list_styles=list_styles,
             outline_levels=outline_levels,
             changed_regions=_changed_regions(body),
+            text_styles=text_styles,
         )
         blocks = _blocks(body, state, element_path="/office:document-content/office:body")
         _warn_about_headers_and_footers(archive, state)

@@ -206,16 +206,32 @@ def test_html_source_rejects_artifacts_outside_the_supported_set(tmp_path: Path)
     assert "Markdown, YAML, and JSON" in result.error.message
 
 
-def test_markdown_source_still_rejects_semantic_artifact_targets(tmp_path: Path) -> None:
+def test_markdown_source_produces_semantic_artifacts_without_a_rendering_engine(
+    tmp_path: Path,
+) -> None:
     source = tmp_path / "note.md"
     source.write_text("# 標題\n", encoding="utf-8")
     request = ConversionRequest.from_source(source, artifacts=(ArtifactType.JSON,))
 
     result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
 
+    assert result.success is True
+    assert (tmp_path / "note.json").is_file()
+
+
+def test_markdown_source_rejects_artifacts_outside_the_supported_set(tmp_path: Path) -> None:
+    source = tmp_path / "note.md"
+    source.write_text("# 標題\n", encoding="utf-8")
+    request = ConversionRequest.from_source(source, artifacts=(ArtifactType.MARKDOWN,))
+
+    result = DocumentConversionService((), EnvironmentInfo("linux", False)).convert(request)
+
     assert result.success is False
     assert result.error is not None
-    assert result.error.message == "Markdown sources support only PDF and DOCX outputs"
+    assert result.error.code is ErrorCode.INVALID_INPUT
+    assert result.error.message == (
+        "Markdown sources support only PDF, DOCX, ODT, page image, HTML, YAML, and JSON outputs"
+    )
 
 
 def test_html_semantic_outputs_are_not_overwritten_without_permission(tmp_path: Path) -> None:

@@ -15,6 +15,7 @@ _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 _ODT_MIME = "application/vnd.oasis.opendocument.text"
 _PDF_MIME = "application/pdf"
 _HTML_MIME = "text/html"
+_MARKDOWN_MIME = "text/markdown"
 _REQUIRED_DOCX_PARTS = frozenset({"[Content_Types].xml", "_rels/.rels", "word/document.xml"})
 _REQUIRED_ODT_PARTS = frozenset({"mimetype", "META-INF/manifest.xml", "content.xml"})
 
@@ -145,6 +146,7 @@ def validate_source_document(
         SourceFormat.ODT: _ODT_MIME,
         SourceFormat.PDF: _PDF_MIME,
         SourceFormat.HTML: _HTML_MIME,
+        SourceFormat.MARKDOWN: _MARKDOWN_MIME,
     }.get(source_format)
     if expected_mime is None:
         raise InvalidInputError("source format is not supported by input validation")

@@ -28,12 +28,13 @@ from gordon_doc_converter.models import (
     PageImageFormat,
     PageOrientation,
     RevisionMode,
+    SourceFormat,
 )
 from gordon_doc_converter.models_types import JsonValue
 from gordon_doc_converter.progress import ProgressEvent
 from gordon_doc_converter.raster import PdfiumPageRenderer, PdfRasterizer
 from gordon_doc_converter.service import DocumentConversionService
-from gordon_doc_converter.template import write_blank_html_template
+from gordon_doc_converter.template import write_blank_template
 
 
 class ExitCode(IntEnum):
@@ -202,18 +203,22 @@ def engines(
 
 @_command()
 def template(
-    output: Annotated[Path, typer.Argument(help="HTML template destination.")],
+    output: Annotated[
+        Path,
+        typer.Argument(help="Template destination; .html, .htm, or .md."),
+    ],
     orientation: Annotated[
-        PageOrientation, typer.Option("--orientation", help="A4 page orientation.")
+        PageOrientation,
+        typer.Option("--orientation", help="A4 page orientation; HTML templates only."),
     ] = PageOrientation.PORTRAIT,
     overwrite: Annotated[bool, typer.Option(help="Replace an existing template.")] = False,
     json_output: Annotated[
         bool, typer.Option("--json", help="Emit machine-readable JSON.")
     ] = False,
 ) -> None:
-    """Create an editable blank A4 HTML document template."""
+    """Create an editable blank A4 HTML or Markdown document template."""
     try:
-        write_blank_html_template(output, orientation=orientation, overwrite=overwrite)
+        written = write_blank_template(output, orientation=orientation, overwrite=overwrite)
     except (ConversionError, OSError, ValueError) as error:
         if isinstance(error, ConversionError):
             message = error.message
@@ -225,13 +230,17 @@ def template(
             payload = {"command": "template", "success": False, "error": message}
         _emit(payload, f"Template failed: {message}", json_output=json_output)
         raise typer.Exit(code) from error
+    html = written is SourceFormat.HTML
     payload = {
         "command": "template",
         "success": True,
         "path": str(output),
-        "orientation": orientation.value,
+        "format": written.value,
+        # Markdown carries no page setup; conversion applies the orientation instead.
+        "orientation": orientation.value if html else None,
     }
-    _emit(payload, f"Created HTML template: {output}", json_output=json_output)
+    label = "HTML" if html else "Markdown"
+    _emit(payload, f"Created {label} template: {output}", json_output=json_output)
 
 
 @_command()

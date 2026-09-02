@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import shutil
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import pytest
 from pypdf import PdfWriter
 
+import gordon_doc_converter.engines.pandoc as pandoc_module
+import gordon_doc_converter.engines.wkhtmltopdf as wkhtmltopdf_module
 from gordon_doc_converter.engines.base import EngineExecutionResult
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import EngineFailedError, ErrorCode
@@ -23,6 +27,8 @@ from gordon_doc_converter.models import (
     RevisionMode,
     SourceFormat,
 )
+from gordon_doc_converter.process.runner import ProcessResult
+from gordon_doc_converter.raster import ImageFormat, PdfRasterizer
 from gordon_doc_converter.service import DocumentConversionService
 
 WINDOWS_DESKTOP = EnvironmentInfo("win32", True)
@@ -77,6 +83,7 @@ class StubEngine:
     option_calls: list[tuple[float, RevisionMode, CommentMode]] = field(default_factory=list)
     probe_error: Exception | None = None
     file_render: Callable[[Path, Path, ArtifactType], None] | None = None
+    file_calls: list[tuple[Path, SourceFormat, ArtifactType]] = field(default_factory=list)
 
     def probe(self) -> EngineProbeResult:
         if self.probe_error is not None:
@@ -106,7 +113,8 @@ class StubEngine:
         artifact_type: ArtifactType,
         timeout_seconds: float,
     ) -> EngineExecutionResult:
-        del source_format, timeout_seconds
+        del timeout_seconds
+        self.file_calls.append((source_path, source_format, artifact_type))
         if self.file_render is None:
             raise AssertionError("file renderer was not configured")
         self.file_render(source_path, output_path, artifact_type)
@@ -540,3 +548,309 @@ def test_odt_office_artifacts_still_fail_cleanly_without_libreoffice(
     assert statuses[ArtifactType.DOCX] is ArtifactStatus.FAILED
     assert statuses[ArtifactType.MARKDOWN] is ArtifactStatus.SUCCESS
     assert (tmp_path / "缺引擎.md").is_file()
+
+
+_MARKDOWN_BODY = "# 總則\n\n正文 **重點**\n"
+
+
+def test_markdown_source_produces_semantic_artifacts_without_a_rendering_engine(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.HTML, ArtifactType.JSON, ArtifactType.YAML),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert [item.status for item in result.artifacts] == [ArtifactStatus.SUCCESS] * 3
+    html = (tmp_path / "臺灣 文件.html").read_text(encoding="utf-8")
+    assert "<h1" in html
+    assert "<strong>重點</strong>" in html
+    assert (tmp_path / "臺灣 文件.json").is_file()
+    assert (tmp_path / "臺灣 文件.yaml").is_file()
+
+
+def test_markdown_source_rejects_its_own_format_as_an_artifact(tmp_path: Path) -> None:
+    source = tmp_path / "note.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.MARKDOWN,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "Markdown sources support only PDF, DOCX, ODT, page image, HTML" in result.error.message
+
+
+def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    handed: list[tuple[str, ...]] = []
+    markup: list[str] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        handed.append(items)
+        # The intermediate lives in a working directory removed once rendering ends.
+        markup.append(Path(items[1]).read_text(encoding="utf-8"))
+        Path(items[items.index("--output") + 1]).write_bytes(b"generated document")
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    monkeypatch.setattr(pandoc_module, "_set_docx_page_layout", lambda path, orientation: None)
+    monkeypatch.setattr(pandoc_module.PandocConverter, "_reference_docx", lambda *_: None)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.DOCX,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    rendered = handed[-1]
+    assert rendered[rendered.index("--from") + 1] == "html"
+    assert Path(rendered[1]) != source
+    document = markup[-1]
+    assert "@page" in document
+    assert "size: A4 portrait" in document
+    assert "<strong>重點</strong>" in document
+    # Pandoc renders its own title block from the head metadata, so the copy it reads
+    # must not carry a second one in the body.
+    assert "<title>" in document
+    assert "<header>" not in document
+
+
+class _PageRenderer:
+    """Minimal page renderer standing in for the PDFium backend."""
+
+    def __init__(self) -> None:
+        self.calls: list[int] = []
+
+    def render_page(
+        self,
+        pdf_path: Path,
+        page_number: int,
+        output_path: Path,
+        *,
+        dpi: int,
+        image_format: ImageFormat,
+        quality: int,
+        background: str,
+    ) -> None:
+        del pdf_path, dpi, image_format, quality, background
+        self.calls.append(page_number)
+        output_path.write_bytes(b"\x89PNG\r\n\x1a\npage" + bytes([page_number]))
+
+
+def _markdown_source(tmp_path: Path) -> Path:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    return source
+
+
+def _pdf_engine_stub(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Make the PDF engine write a real one-page PDF, recording every invocation."""
+    calls: list[tuple[str, ...]] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        calls.append(items)
+        _write_pdf(Path(items[-1]))
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
+    return calls
+
+
+def test_markdown_odt_is_rendered_from_the_intermediate_through_libreoffice(
+    tmp_path: Path,
+) -> None:
+    source = _markdown_source(tmp_path)
+    handed: list[str] = []
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del artifact_type
+        handed.append(source_path.read_text(encoding="utf-8"))
+        output_path.write_bytes(b"generated open document")
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("ODT output must not take the DOCX rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.ODT,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    output = tmp_path / "臺灣 文件.odt"
+    assert output.is_file()
+    assert result.artifacts[0].items[0].media_type == "application/vnd.oasis.opendocument.text"
+    intermediate, source_format, artifact_type = engine.file_calls[0]
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.ODT
+    assert intermediate != source
+    assert "size: A4 portrait" in handed[0]
+    assert "<strong>重點</strong>" in handed[0]
+
+
+def test_markdown_odt_reports_a_missing_libreoffice_adapter(tmp_path: Path) -> None:
+    request = ConversionRequest(
+        _markdown_source(tmp_path),
+        SourceFormat.MARKDOWN,
+        (ArtifactType.ODT,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "LibreOffice" in result.error.message
+
+
+def test_markdown_page_images_rasterize_the_rendered_pages(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    calls = _pdf_engine_stub(monkeypatch)
+    renderer = _PageRenderer()
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PAGE_IMAGES,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(renderer),
+    ).convert(request)
+
+    assert result.success is True
+    images = result.artifacts[0]
+    assert images.path == tmp_path / "臺灣 文件.pages"
+    assert [item.page_number for item in images.items] == [1]
+    assert renderer.calls == [1]
+    # The intermediate, not the Markdown source, is what reaches the PDF engine.
+    assert Path(calls[-1][-2]).suffix == ".html"
+
+
+def test_markdown_page_images_reuse_a_requested_pdf_instead_of_rendering_twice(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    calls = _pdf_engine_stub(monkeypatch)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF, ArtifactType.PAGE_IMAGES),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(_PageRenderer()),
+    ).convert(request)
+
+    assert result.success is True
+    assert [item.artifact_type for item in result.artifacts] == [
+        ArtifactType.PDF,
+        ArtifactType.PAGE_IMAGES,
+    ]
+    assert (tmp_path / "臺灣 文件.pdf").is_file()
+    assert (tmp_path / "臺灣 文件.pages").is_dir()
+    assert len(calls) == 1
+
+
+def test_markdown_page_images_report_a_failed_render_without_a_partial_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del arguments, timeout_seconds
+        return ProcessResult(1, "", "wkhtmltopdf: Exit with code 1 due to network error")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
+    request = ConversionRequest(
+        _markdown_source(tmp_path),
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PAGE_IMAGES,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(_PageRenderer()),
+    ).convert(request)
+
+    assert result.success is False
+    assert result.artifacts[0].status is ArtifactStatus.FAILED
+    assert not (tmp_path / "臺灣 文件.pages").exists()
+
+
+def test_markdown_pdf_keeps_the_visible_title_block_in_the_document_it_renders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text("---\ntitle: 報告\n---\n\n正文\n", encoding="utf-8", newline="\n")
+    markup: list[str] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        markup.append(Path(items[-2]).read_text(encoding="utf-8"))
+        _write_pdf(Path(items[-1]))
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    # Nothing downstream prints the head metadata, so the PDF keeps its own header.
+    assert "<header>" in markup[-1]
+    assert "<h1>報告</h1>" in markup[-1]

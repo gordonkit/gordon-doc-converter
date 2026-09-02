@@ -22,18 +22,19 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
-| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | — | × | — | — | — |
+| HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
-`P+` Pandoc with a PDF backend · `PDF` via an intermediate PDF · `—` not supported ·
+`W` wkhtmltopdf · `PDF` via an intermediate PDF · `—` not supported ·
 `×` same format; not a conversion
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
 output artifacts for DOCX, ODT, and PDF sources; Markdown and HTML are also accepted as input
-for PDF/DOCX conversion. HTML input additionally converts to Markdown, YAML, and JSON through
-the same semantic extraction used for DOCX, ODT, and PDF; that route needs no external engine.
-Markdown input still converts only to PDF and DOCX.
+for PDF, DOCX, ODT, and page-image conversion. HTML input additionally converts to Markdown,
+YAML, and JSON through the same semantic extraction used for DOCX, ODT, and PDF; that route
+needs no external engine. Markdown input converts to HTML, YAML, and JSON through that same
+extraction, and to PDF, DOCX, ODT, and page images through the rendering route.
 
 ODT semantic artifacts are read directly from the ODF package, so Markdown, HTML, YAML, and
 JSON need no external engine. ODT page images render the document to PDF first and therefore
@@ -55,11 +56,18 @@ these engine policies:
 ODT support targets ODF-CNS 15251 / ISO/IEC 26300 Writer documents. It validates package
 structure and content readability, but does not promise pixel-identical round trips.
 
-HTML/Markdown conversion to PDF and DOCX requires Pandoc; PDF output additionally requires a
-Pandoc PDF backend such as `wkhtmltopdf`. Create an editable, print-ready A4 starting point
-with `gordon-doc template report.html`, then convert it with
-`gordon-doc convert report.html --to pdf` or `--to docx`. Use `--orientation landscape` for
-an A4 horizontal layout.
+DOCX output from markup requires Pandoc. PDF output requires `wkhtmltopdf`, which renders the
+document itself: Pandoc's HTML reader keeps only the body and the document metadata, so routing
+print HTML through it would discard the page setup and fonts the document carries. ODT output
+requires LibreOffice, and page images render the document to PDF first, so they need
+`wkhtmltopdf` too. Markdown is rendered through a print-ready A4 HTML intermediate, so its PDF,
+DOCX, ODT, and page images all share one page setup and CJK font stack.
+
+Create an editable starting point with `gordon-doc template report.html` or
+`gordon-doc template notes.md`, then convert it with `gordon-doc convert report.html --to pdf`,
+`--to docx`, `--to odt`, or `--to images`. Use `--orientation landscape` for an A4 horizontal
+layout; a Markdown starter carries no page setup of its own, so its orientation is chosen at
+conversion time.
 
 HTML-to-Markdown/YAML/JSON conversion parses the document directly and requires no engine:
 
@@ -72,6 +80,20 @@ metadata are normalized into the same schema DOCX and PDF sources produce. Inlin
 images become files in a `<stem>.assets` directory; images referenced by URL stay linked.
 Script, style, and embedded-object elements are omitted, and every omission or lossy mapping
 is reported as a machine-readable warning.
+
+Markdown input takes the same route, parsing CommonMark with GFM tables and
+strikethrough:
+
+```console
+gordon-doc convert notes.md --to html --to yaml --to json
+```
+
+Headings, paragraphs, nested lists, tables, links, emphasis, code spans and blocks,
+block quotes, and thematic breaks are normalized into that same schema. GFM task-list
+items keep their state as the □ and ☑ symbols, which every output can render. A leading YAML
+front-matter block becomes document metadata. Inline `data:` images become files in
+`<stem>.assets`; images referenced by path or URL stay linked. Raw HTML blocks are
+omitted, apart from the `<ins>`, `<del>`, and `<br>` tags the writers themselves emit.
 
 ## Interfaces
 

@@ -16,6 +16,7 @@ from gordon_doc_converter.content.models import (
     DocumentMetadata,
     InlineKind,
     InlineSpan,
+    InlineStyle,
     LayoutAvailability,
     LayoutMetadata,
     NormalizedContent,
@@ -55,6 +56,39 @@ class _Relationship:
     external: bool
 
 
+# Character styles Word applies without setting the direct b/i toggles.
+_STYLE_NAME_FORMATTING = {
+    "strong": InlineStyle.STRONG,
+    "intensestrong": InlineStyle.STRONG,
+    "emphasis": InlineStyle.EMPHASIS,
+    "intenseemphasis": InlineStyle.EMPHASIS,
+    "subtleemphasis": InlineStyle.EMPHASIS,
+    "htmlcode": InlineStyle.CODE,
+    "code": InlineStyle.CODE,
+    "sourcecode": InlineStyle.CODE,
+    "verbatimchar": InlineStyle.CODE,
+}
+# Paragraph styles that mark a whole block rather than its characters.
+_QUOTE_STYLE_NAMES = frozenset({"quote", "intensequote", "blockquote", "blocktext"})
+_CODE_BLOCK_STYLE_NAMES = frozenset({"htmlpreformatted", "sourcecode", "code", "preformattedtext"})
+_MONOSPACE_FONTS = frozenset(
+    {
+        "consolas",
+        "courier",
+        "couriernew",
+        "dejavusansmono",
+        "lucidaconsole",
+        "menlo",
+        "monaco",
+        "sfmono-regular",
+    }
+)
+
+
+def _normalized_style_name(value: str) -> str:
+    return value.casefold().replace(" ", "").replace("-", "")
+
+
 @dataclass(frozen=True, slots=True)
 class _Style:
     name: str
@@ -62,6 +96,7 @@ class _Style:
     outline_level: int | None
     num_id: str | None
     list_level: int | None
+    run_styles: frozenset[InlineStyle] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +203,36 @@ def _integer_attribute(element: ElementTree.Element | None, name: str) -> int | 
     return int(value) if value is not None and value.isdigit() else None
 
 
+def _toggle(properties: ElementTree.Element | None, name: str) -> bool:
+    """Read one OOXML on/off toggle, whose element defaults to on when present."""
+    if properties is None:
+        return False
+    element = properties.find(_q(_W, name))
+    if element is None:
+        return False
+    return element.get(_q(_W, "val"), "true").casefold() not in {"0", "false", "off"}
+
+
+def _run_properties_styles(properties: ElementTree.Element | None) -> frozenset[InlineStyle]:
+    """Map the direct character formatting of one `w:rPr` to normalized styles."""
+    if properties is None:
+        return frozenset()
+    styles: set[InlineStyle] = set()
+    if _toggle(properties, "b") or _toggle(properties, "bCs"):
+        styles.add(InlineStyle.STRONG)
+    if _toggle(properties, "i") or _toggle(properties, "iCs"):
+        styles.add(InlineStyle.EMPHASIS)
+    fonts = properties.find(_q(_W, "rFonts"))
+    if fonts is not None:
+        names = {
+            _normalized_style_name(fonts.get(_q(_W, attribute), ""))
+            for attribute in ("ascii", "hAnsi", "cs")
+        }
+        if names & _MONOSPACE_FONTS:
+            styles.add(InlineStyle.CODE)
+    return frozenset(styles)
+
+
 def _styles(archive: ZipFile) -> dict[str, _Style]:
     if "word/styles.xml" not in archive.namelist():
         return {}
@@ -182,6 +247,13 @@ def _styles(archive: ZipFile) -> dict[str, _Style]:
         name = element.find(_q(_W, "name"))
         based_on = element.find(_q(_W, "basedOn"))
         num_id = num_properties.find(_q(_W, "numId")) if num_properties is not None else None
+        style_name = name.get(_q(_W, "val"), "") if name is not None else ""
+        run_styles = _run_properties_styles(element.find(_q(_W, "rPr")))
+        named = _STYLE_NAME_FORMATTING.get(_normalized_style_name(style_name))
+        if named is None:
+            named = _STYLE_NAME_FORMATTING.get(_normalized_style_name(style_id))
+        if named is not None:
+            run_styles |= {named}
         styles[style_id] = _Style(
             name.get(_q(_W, "val"), "") if name is not None else "",
             based_on.get(_q(_W, "val")) if based_on is not None else None,
@@ -194,6 +266,7 @@ def _styles(archive: ZipFile) -> dict[str, _Style]:
                 num_properties.find(_q(_W, "ilvl")) if num_properties is not None else None,
                 "val",
             ),
+            run_styles,
         )
     return styles
 
@@ -317,11 +390,25 @@ def _run_text(element: ElementTree.Element) -> str:
     return "".join(text_parts)
 
 
+def _run_styles(element: ElementTree.Element, state: _State) -> frozenset[InlineStyle]:
+    """Resolve one run's character formatting from its style and direct toggles."""
+    properties = element.find(_q(_W, "rPr"))
+    if properties is None:
+        return frozenset()
+    styles = _run_properties_styles(properties)
+    reference = properties.find(_q(_W, "rStyle"))
+    if reference is not None:
+        definition = _resolved_style(reference.get(_q(_W, "val"), ""), state)
+        if definition is not None:
+            styles |= definition.run_styles
+    return styles
+
+
 def _run_spans(element: ElementTree.Element, state: _State) -> list[InlineSpan]:
     spans: list[InlineSpan] = []
     text = _run_text(element)
     if text:
-        spans.append(InlineSpan(InlineKind.TEXT, text))
+        spans.append(InlineSpan(InlineKind.TEXT, text, styles=_run_styles(element, state)))
     for drawing in element.iter(_q(_A, "blip")):
         relationship_id = drawing.get(_q(_R, "embed"))
         if relationship_id:
@@ -351,7 +438,7 @@ def _inline_children(element: ElementTree.Element, state: _State) -> list[Inline
                 relationship.target if relationship is not None and relationship.external else None
             )
             spans.extend(
-                InlineSpan(InlineKind.LINK, span.text, target=target)
+                InlineSpan(InlineKind.LINK, span.text, target=target, styles=span.styles)
                 if span.kind is InlineKind.TEXT
                 else span
                 for span in nested
@@ -368,7 +455,10 @@ def _inline_children(element: ElementTree.Element, state: _State) -> list[Inline
                 revision_spans = _inline_children(child, state)
                 if state.revision_mode is RevisionMode.MARKUP:
                     inline_kind = InlineKind.INSERTION if insertion else InlineKind.DELETION
-                    revision_spans = [InlineSpan(inline_kind, span.text) for span in revision_spans]
+                    revision_spans = [
+                        InlineSpan(inline_kind, span.text, styles=span.styles)
+                        for span in revision_spans
+                    ]
                 spans.extend(revision_spans)
             if state.revision_mode is RevisionMode.MARKUP:
                 annotation_kind = AnnotationKind.INSERTION if insertion else AnnotationKind.DELETION
@@ -438,7 +528,28 @@ def _resolved_style(style_id: str, state: _State) -> _Style | None:
         next((item.outline_level for item in chain if item.outline_level is not None), None),
         next((item.num_id for item in chain if item.num_id is not None), None),
         next((item.list_level for item in chain if item.list_level is not None), None),
+        frozenset().union(*(item.run_styles for item in chain)) if chain else frozenset(),
     )
+
+
+def _paragraph_style_names(style_id: str, state: _State) -> set[str]:
+    """Return every normalized name a paragraph style inherits from.
+
+    A document may derive a custom style from a built-in one such as `Quote`,
+    so the whole `w:basedOn` chain decides how the block is classified.
+    """
+    names: set[str] = set()
+    seen: set[str] = set()
+    current = style_id
+    while current and current not in seen:
+        seen.add(current)
+        names.add(_normalized_style_name(current))
+        style = state.styles.get(current)
+        if style is None:
+            break
+        names.add(_normalized_style_name(style.name))
+        current = style.based_on or ""
+    return names
 
 
 def _heading_level(style_id: str, style: _Style | None) -> int | None:
@@ -586,10 +697,14 @@ def _paragraph(
         and num_id_element is not None
     ):
         heading_level = None
+    style_names = _paragraph_style_names(style_value, state)
+    quote_level = 1 if style_names & _QUOTE_STYLE_NAMES else None
     if heading_level is not None:
         kind = BlockKind.HEADING
     elif num_id is not None:
         kind = BlockKind.LIST_ITEM
+    elif style_names & _CODE_BLOCK_STYLE_NAMES:
+        kind = BlockKind.CODE_BLOCK
     else:
         kind = BlockKind.PARAGRAPH
     spans = _inline_children(element, state)
@@ -617,6 +732,7 @@ def _paragraph(
             if manual_level is not None
             else continuation_level
         ),
+        quote_level=quote_level,
         source_anchor=source_anchor,
     )
 

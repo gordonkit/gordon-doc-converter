@@ -22,17 +22,18 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
-| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | — | × | — | — | — |
+| HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` 依政策自動選擇引擎 · `✓` 內建支援 · `LO` LibreOffice · `P` Pandoc ·
-`P+` Pandoc 搭配 PDF 後端 · `PDF` 先轉為 PDF · `—` 不支援 ·
+`W` wkhtmltopdf · `PDF` 先轉為 PDF · `—` 不支援 ·
 `×` 相同格式，不執行轉換
 
-逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、
-JSON 及圖片；Markdown 與 HTML 也可轉換為 PDF 或 DOCX。HTML 另可透過與 DOCX、ODT、
-PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。Markdown 仍僅能
-轉換為 PDF 與 DOCX。
+逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、JSON
+及圖片；Markdown 與 HTML 也可轉換為 PDF、DOCX、ODT 與逐頁圖片。HTML 另可透過與
+DOCX、ODT、PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。
+Markdown 也可透過同一語意萃取轉換為 HTML、YAML 與 JSON，並可經排版路徑轉換為
+PDF、DOCX、ODT 與逐頁圖片。
 
 ODT 的語意 artifact 直接從 ODF 封裝讀取，因此 Markdown、HTML、YAML 與 JSON 不需要
 外部引擎；ODT 的逐頁圖片會先排版為 PDF，因此需要 LibreOffice。
@@ -53,10 +54,16 @@ DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX �
 ODT 支援以 ODF-CNS 15251／ISO/IEC 26300 Writer 文件為目標，會驗證封裝結構與內容是否
 可讀，但不保證來回轉換後版面完全相同。
 
-HTML／Markdown 轉換為 PDF 與 DOCX 需要 Pandoc；輸出 PDF 時還需要 `wkhtmltopdf` 等
-Pandoc PDF 後端。可先執行 `gordon-doc template 報告.html` 建立可編輯、適合列印的 A4
-範本，再執行 `gordon-doc convert 報告.html --to pdf` 或 `--to docx`。若要使用 A4 橫式
-版面，請加上 `--orientation landscape`。
+Markup 輸出 DOCX 需要 Pandoc；輸出 PDF 需要 `wkhtmltopdf`，並由它直接排版文件本身：
+Pandoc 的 HTML reader 只保留 body 與文件 metadata，若經由它轉送，文件自帶的版面設定
+與字型都會遺失。輸出 ODT 需要 LibreOffice；逐頁圖片會先排版為 PDF，因此同樣需要
+`wkhtmltopdf`。Markdown 會先轉為適合列印的 A4 中介 HTML 再排版，因此 PDF、DOCX、ODT
+與逐頁圖片共用同一組版面設定與 CJK 字型。
+
+可先執行 `gordon-doc template 報告.html` 或 `gordon-doc template 筆記.md` 建立可編輯的
+起始檔，再執行 `gordon-doc convert 報告.html --to pdf`、`--to docx`、`--to odt` 或
+`--to images`。若要使用 A4 橫式版面，請加上 `--orientation landscape`；Markdown 範本
+本身不帶版面設定，方向於轉換時決定。
 
 HTML 轉 Markdown／YAML／JSON 會直接解析文件，不需要任何引擎：
 
@@ -68,6 +75,19 @@ gordon-doc convert 報告.html --to markdown --to yaml --to json
 會正規化為與 DOCX、PDF 相同的 schema。內嵌的 `data:` 圖片會寫入 `<stem>.assets`
 目錄；以 URL 參照的圖片則維持連結。script、style 與內嵌物件元素會被省略，所有省略
 與失真的對應都會回報為機器可讀的警告。
+
+Markdown 輸入走同一條路徑，解析 CommonMark 並支援 GFM 表格與刪除線：
+
+```console
+gordon-doc convert 筆記.md --to html --to yaml --to json
+```
+
+標題、段落、巢狀清單、表格、連結、強調、行內程式碼與程式碼區塊、引用區塊
+及分隔線都會正規化為同一份 schema；GFM 待辦清單會以 □ 與 ☑ 符號保留勾選狀態，
+所有輸出格式皆可顯示。開頭的 YAML front matter 則成為文件
+metadata。內嵌的 `data:` 圖片會寫入 `<stem>.assets`；以路徑或 URL 參照的圖片
+維持連結。原始 HTML 區塊會被省略，但保留輸出端本身會產生的 `<ins>`、`<del>`
+與 `<br>`。
 
 ## 使用介面
 

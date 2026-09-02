@@ -15,6 +15,7 @@ from gordon_doc_converter.exceptions import (
     ConversionTimeoutError,
     EngineFailedError,
     EngineUnavailableError,
+    InvalidInputError,
     OutputExistsError,
     PdfNotCreatedError,
     PdfValidationError,
@@ -377,3 +378,54 @@ def test_convert_file_supports_odt_to_docx_with_target_validation(
     assert result.engine is EngineName.LIBREOFFICE
     assert result.output_path == output
     assert output.is_file()
+
+
+def test_convert_file_imports_html_into_writer_and_saves_a_text_document(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "中介文件.html"
+    source.write_text("<!doctype html><html><body><p>內文</p></body></html>", encoding="utf-8")
+    output = tmp_path / "結果.odt"
+    seen: list[tuple[str, ...]] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        seen.append(tuple(arguments))
+        generated = _output_directory(arguments) / f"{source.stem}.odt"
+        with ZipFile(generated, "w", ZIP_DEFLATED) as archive:
+            archive.writestr("mimetype", "application/vnd.oasis.opendocument.text")
+            archive.writestr("META-INF/manifest.xml", "<manifest/>")
+            archive.writestr("content.xml", "<content/>")
+        return ProcessResult(0, "converted", "")
+
+    monkeypatch.setattr(libreoffice_module, "run_process", fake_run)
+
+    result = LibreOfficeEngine(tmp_path / "soffice").convert_file(
+        source,
+        output,
+        source_format=SourceFormat.HTML,
+        artifact_type=ArtifactType.ODT,
+        timeout_seconds=9,
+    )
+
+    assert result.output_path == output
+    assert output.is_file()
+    arguments = seen[0]
+    # Without both filters LibreOffice saves a Writer/Web document with no page setup.
+    assert "--infilter=HTML (StarWriter)" in arguments
+    assert arguments[arguments.index("--convert-to") + 1] == "odt:writer8"
+
+
+def test_convert_file_rejects_a_source_format_no_filter_covers(tmp_path: Path) -> None:
+    source = tmp_path / "report.pdf"
+    source.write_bytes(b"%PDF-1.7")
+
+    with pytest.raises(InvalidInputError, match="DOCX, ODT, or HTML source"):
+        LibreOfficeEngine(tmp_path / "soffice").convert_file(
+            source,
+            tmp_path / "out.odt",
+            source_format=SourceFormat.PDF,
+            artifact_type=ArtifactType.ODT,
+            timeout_seconds=5,
+        )

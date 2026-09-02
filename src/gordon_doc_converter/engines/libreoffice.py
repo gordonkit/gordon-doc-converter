@@ -40,6 +40,33 @@ from gordon_doc_converter.validation import validate_pdf
 _ENGINE = EngineName.LIBREOFFICE
 _DEFAULT_PROBE_TIMEOUT_SECONDS = 10.0
 _EXECUTABLE_NAMES = ("soffice", "libreoffice")
+_SOURCE_SUFFIXES = {
+    SourceFormat.DOCX: frozenset({".docx"}),
+    SourceFormat.ODT: frozenset({".odt"}),
+    SourceFormat.HTML: frozenset({".html", ".htm"}),
+}
+# Without an explicit filter pair, LibreOffice loads HTML into Writer/Web and saves a web
+# document, which carries neither page setup nor Writer paragraph styles.
+_HTML_IMPORT_FILTER = "HTML (StarWriter)"
+_HTML_EXPORT_FILTERS = {
+    ArtifactType.PDF: "pdf:writer_pdf_Export",
+    ArtifactType.DOCX: "docx:MS Word 2007 XML",
+    ArtifactType.ODT: "odt:writer8",
+}
+
+
+def _import_arguments(source_format: SourceFormat) -> tuple[str, ...]:
+    """Return the input-filter arguments one source format needs, if any."""
+    if source_format is SourceFormat.HTML:
+        return (f"--infilter={_HTML_IMPORT_FILTER}",)
+    return ()
+
+
+def _convert_to(source_format: SourceFormat, artifact_type: ArtifactType) -> str:
+    """Return the --convert-to value, naming the output filter where the default is wrong."""
+    if source_format is SourceFormat.HTML:
+        return _HTML_EXPORT_FILTERS[artifact_type]
+    return artifact_type.value
 
 
 def _find_executable() -> Path | None:
@@ -260,16 +287,20 @@ class LibreOfficeEngine:
         artifact_type: ArtifactType,
         timeout_seconds: float,
     ) -> EngineExecutionResult:
-        """Convert a DOCX or ODT source to a PDF, DOCX, or ODT file."""
-        supported_sources = {SourceFormat.DOCX, SourceFormat.ODT}
+        """Convert a DOCX, ODT, or HTML source to a PDF, DOCX, or ODT file."""
+        supported_sources = {SourceFormat.DOCX, SourceFormat.ODT, SourceFormat.HTML}
         supported_artifacts = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
         if source_format not in supported_sources:
-            raise InvalidInputError("LibreOffice file conversion requires a DOCX or ODT source")
+            raise InvalidInputError(
+                "LibreOffice file conversion requires a DOCX, ODT, or HTML source"
+            )
         if artifact_type not in supported_artifacts:
             raise InvalidInputError("LibreOffice file conversion supports PDF, DOCX, and ODT")
         if timeout_seconds <= 0:
             raise InvalidInputError("timeout_seconds must be greater than zero")
-        if source_path.suffix.casefold() != f".{source_format.value}" or not source_path.is_file():
+        if source_path.suffix.casefold() not in _SOURCE_SUFFIXES[source_format] or (
+            not source_path.is_file()
+        ):
             raise InvalidInputError("LibreOffice source format does not match an existing file")
         expected_suffix = ".pdf" if artifact_type is ArtifactType.PDF else f".{artifact_type.value}"
         if output_path.suffix.casefold() != expected_suffix:
@@ -298,8 +329,9 @@ class LibreOfficeEngine:
                 "--nofirststartwizard",
                 "--nolockcheck",
                 f"-env:UserInstallation={profile_path.as_uri()}",
+                *_import_arguments(source_format),
                 "--convert-to",
-                artifact_type.value,
+                _convert_to(source_format, artifact_type),
                 "--outdir",
                 str(generated_path.parent),
                 str(source_path.resolve()),

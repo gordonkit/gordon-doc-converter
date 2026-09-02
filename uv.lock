@@ -166,6 +166,7 @@ name = "gordon-doc-converter"
 version = "0.8.0"
 source = { editable = "." }
 dependencies = [
+    { name = "markdown-it-py" },
     { name = "pypdf" },
     { name = "pyyaml" },
     { name = "typer" },
@@ -200,6 +201,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115,<1" },
     { name = "httpx", marker = "extra == 'gotenberg'", specifier = ">=0.27,<1" },
+    { name = "markdown-it-py", specifier = ">=3.0,<5" },
     { name = "pillow", marker = "extra == 'images'", specifier = ">=12.3,<13" },
     { name = "pypdf", specifier = ">=5.0,<7" },
     { name = "pypdfium2", marker = "extra == 'images'", specifier = ">=5.12,<6" },
