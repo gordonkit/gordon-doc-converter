@@ -277,3 +277,27 @@ def test_missing_source_and_wrong_extension_raise_invalid_input(tmp_path: Path) 
     other.write_text("# heading", encoding="utf-8")
     with pytest.raises(InvalidInputError):
         extract_markdown_content(other)
+
+
+def test_task_list_checkboxes_become_renderable_symbols(tmp_path: Path) -> None:
+    source = _markdown(tmp_path, "- [ ] 待辦\n- [X] 完成\n- 一般項目\n- [ ]無空白\n")
+
+    content = extract_markdown_content(source)
+
+    assert [block.text for block in content.blocks if block.kind is BlockKind.LIST_ITEM] == [
+        "□ 待辦",
+        "☑ 完成",
+        "一般項目",
+        "[ ]無空白",
+    ]
+
+
+def test_ordered_task_items_keep_their_counter_before_the_checkbox(tmp_path: Path) -> None:
+    source = _markdown(tmp_path, "1. [ ] 第一步\n2. [x] 第二步\n")
+
+    content = extract_markdown_content(source)
+
+    assert [block.text for block in content.blocks if block.kind is BlockKind.LIST_ITEM] == [
+        "1. □ 第一步",
+        "2. ☑ 第二步",
+    ]

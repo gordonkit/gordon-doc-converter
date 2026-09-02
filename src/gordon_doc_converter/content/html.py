@@ -205,14 +205,8 @@ def _render_code_block(block: ContentBlock) -> str:
     return f"<pre{attrs}>{opening}{escape(body)}</code></pre>"
 
 
-def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
-    """Serialize normalized blocks to structured semantic HTML."""
-    head_lines: list[str] = []
-    if content.metadata and content.metadata.title:
-        head_lines.append(f"<title>{escape(content.metadata.title)}</title>")
-    head = "\n".join(head_lines)
-    head_section = f"<head>\n{head}\n</head>\n" if head_lines else ""
-
+def render_body_html(content: NormalizedContent, *, asset_directory: str) -> str:
+    """Serialize normalized blocks to the semantic body markup shared by all HTML output."""
     body: list[str] = []
     body.extend(_render_metadata(content))
 
@@ -261,13 +255,26 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
             index += 1
 
     _adjust_quotes(body, quote_depth, 0)
+    return "\n".join(body)
+
+
+def document_language(content: NormalizedContent) -> str:
+    """Return the BCP 47 language tag a rendered document declares."""
+    return "zh-TW" if _is_traditional_chinese(content) else "en"
+
+
+def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
+    """Serialize normalized blocks to structured semantic HTML."""
+    head_section = ""
+    if content.metadata and content.metadata.title:
+        head_section = f"<head>\n<title>{escape(content.metadata.title)}</title>\n</head>\n"
 
     html = "<!doctype html>\n<html"
-    html += ' lang="zh-TW"' if _is_traditional_chinese(content) else ' lang="en"'
+    html += f' lang="{document_language(content)}"'
     html += ">\n"
     html += head_section
     html += "<body>\n"
-    html += "\n".join(body)
+    html += render_body_html(content, asset_directory=asset_directory)
     html += "\n</body>\n</html>\n"
     return html
 

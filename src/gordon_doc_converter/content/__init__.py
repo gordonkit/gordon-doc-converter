@@ -21,6 +21,7 @@ from gordon_doc_converter.content.models import (
 )
 from gordon_doc_converter.content.odt import extract_odt_content
 from gordon_doc_converter.content.pdf import extract_pdf_content
+from gordon_doc_converter.content.print_html import render_print_html, write_print_document
 from gordon_doc_converter.content.structured import (
     build_jsonl_records,
     build_structured_payload,
@@ -55,6 +56,8 @@ __all__ = [
     "render_json",
     "render_jsonl",
     "render_markdown",
+    "render_print_html",
     "render_yaml",
     "write_content_artifacts",
+    "write_print_document",
 ]

@@ -29,9 +29,26 @@ All notable changes to this project will be documented in this file. The format 
   omitted apart from the `<ins>`, `<del>`, and `<br>` tags the writers emit. Blocks carry a
   `markdown-line` source anchor.
 - Markdown source validation covering extension, declared MIME type, and file size.
+- GFM task-list checkboxes in Markdown sources. `- [ ]` and `- [x]` items now carry the
+  □ and ☑ symbols instead of literal brackets, so every output renders what the author
+  wrote.
 
 ### Changed
 
+- Rendered Markdown output now goes through the normalized content model. Markdown is
+  extracted, serialized to a print-ready A4 HTML intermediate carrying the same CSS as
+  `gordon-doc template`, and only then handed to Pandoc. PDF and DOCX from Markdown therefore
+  get the CJK font stack, `@page` A4 margins, and one consistent look shared with HTML
+  sources, and raw HTML in the source never reaches the PDF engine.
+- Pandoc reads Markdown as `gfm` rather than Pandoc's own dialect, and receives a
+  `--resource-path` pointing at the source directory, so images referenced by relative path
+  resolve against the document instead of the working directory.
+- PDF page setup reaches wkhtmltopdf directly through `--pdf-engine-opt`. The previous
+  `--variable geometry:` settings only apply to LaTeX templates and were silently ignored, so
+  `--orientation landscape` had no effect on Pandoc-rendered PDFs.
+- DOCX output from markup sources is rendered against a generated `--reference-doc` whose
+  default and named styles use CJK-capable fonts at the same 10.5pt body size as the HTML
+  print stylesheet, instead of leaving Pandoc's default fonts in place.
 - The structured JSON and YAML schema is now version `1.4`. Inline payloads gain an optional
   `styles` array, and block payloads gain optional `quote_level` and `language` fields. Every
   1.3 field keeps its meaning, so existing readers continue to work.

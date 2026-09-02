@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -42,6 +42,9 @@ _REVISION_HTML = {"<ins>": InlineKind.INSERTION, "<del>": InlineKind.DELETION}
 _REVISION_HTML_END = frozenset({"</ins>", "</del>"})
 _LINE_BREAK_HTML = frozenset({"<br>", "<br/>", "<br />"})
 _MAX_HEADING_LEVEL = 6
+# GFM checkboxes, kept as symbols with wide CJK font coverage: U+2610 is missing
+# from common print fonts, so an unchecked box uses the white square instead.
+_TASK_MARKERS = {"[ ] ": "□", "[x] ": "☑"}
 
 
 def _safe_target(target: str | None) -> str | None:
@@ -52,6 +55,20 @@ def _safe_target(target: str | None) -> str | None:
     if not value:
         return None
     return value if urlsplit(value).scheme.casefold() in {"", "http", "https", "mailto"} else None
+
+
+def _task_marker(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
+    """Turn a GFM task-list checkbox into the symbol every output can render."""
+    if not spans:
+        return spans
+    first = spans[0]
+    if first.kind is not InlineKind.TEXT:
+        return spans
+    marker = _TASK_MARKERS.get(first.text[:4].casefold())
+    if marker is None:
+        return spans
+    remainder = f"{marker} {first.text[4:]}"
+    return (replace(first, text=remainder), *spans[1:])
 
 
 @dataclass(slots=True)
@@ -130,7 +147,7 @@ class _MarkdownWalker:
             self._item_pending = False
             if kind is BlockKind.PARAGRAPH:
                 kind = BlockKind.LIST_ITEM
-                spans = self._numbered(spans)
+                spans = self._numbered(_task_marker(spans))
         self._emit(
             ContentBlock(
                 kind,

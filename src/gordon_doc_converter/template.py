@@ -7,9 +7,109 @@ from pathlib import Path
 from gordon_doc_converter.exceptions import OutputExistsError
 from gordon_doc_converter.models import PageOrientation
 
+CJK_FONT_STACK = (
+    '"Noto Sans CJK TC", "Noto Sans TC", "Source Han Sans TC", '
+    '"Microsoft JhengHei", "PingFang TC", sans-serif'
+)
+CJK_MONOSPACE_STACK = (
+    '"Noto Sans Mono CJK TC", "Cascadia Mono", "Consolas", "DejaVu Sans Mono", monospace'
+)
+
+
+def print_stylesheet(orientation: PageOrientation = PageOrientation.PORTRAIT) -> str:
+    """Return the shared A4 print CSS used by templates and rendered intermediates."""
+    return f"""@page {{
+  size: A4 {orientation.value};
+  margin: 20mm;
+}}
+
+:root {{
+  color-scheme: light;
+}}
+
+html, body {{
+  margin: 0;
+  padding: 0;
+}}
+
+body {{
+  color: #111827;
+  font-family: {CJK_FONT_STACK};
+  font-size: 10.5pt;
+  line-height: 1.5;
+}}
+
+h1, h2, h3, h4, h5, h6 {{
+  break-after: avoid;
+  page-break-after: avoid;
+  line-height: 1.3;
+}}
+
+table, figure, img, pre {{
+  max-width: 100%;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}}
+
+img {{
+  height: auto;
+}}
+
+table {{
+  border-collapse: collapse;
+}}
+
+th, td {{
+  border: 0.5pt solid #9ca3af;
+  padding: 2mm 3mm;
+  text-align: left;
+  vertical-align: top;
+}}
+
+th {{
+  background: #f3f4f6;
+}}
+
+pre, code {{
+  font-family: {CJK_MONOSPACE_STACK};
+  font-size: 9.5pt;
+}}
+
+pre {{
+  background: #f3f4f6;
+  padding: 3mm;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}}
+
+blockquote {{
+  margin: 0 0 0 4mm;
+  padding-left: 4mm;
+  border-left: 1mm solid #d1d5db;
+  color: #374151;
+}}
+
+hr {{
+  border: 0;
+  border-top: 0.5pt solid #9ca3af;
+}}
+
+.page-break {{
+  break-before: page;
+  page-break-before: always;
+}}
+"""
+
+
+def _indent(text: str, spaces: int) -> str:
+    """Indent every non-empty line of a block of CSS for embedding in HTML."""
+    prefix = " " * spaces
+    return "\n".join(prefix + line if line else line for line in text.splitlines())
+
 
 def blank_html_template(orientation: PageOrientation = PageOrientation.PORTRAIT) -> str:
     """Return a blank A4 HTML document with print-oriented CSS."""
+    styles = _indent(print_stylesheet(orientation), 4)
     return f"""<!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -17,46 +117,7 @@ def blank_html_template(orientation: PageOrientation = PageOrientation.PORTRAIT)
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Untitled document</title>
   <style>
-    @page {{
-      size: A4 {orientation.value};
-      margin: 20mm;
-    }}
-
-    :root {{
-      color-scheme: light;
-    }}
-
-    html, body {{
-      margin: 0;
-      padding: 0;
-    }}
-
-    body {{
-      color: #111827;
-      font-family: "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
-      font-size: 10.5pt;
-      line-height: 1.5;
-    }}
-
-    h1, h2, h3, h4, h5, h6 {{
-      break-after: avoid;
-      page-break-after: avoid;
-    }}
-
-    table, figure, img, pre {{
-      max-width: 100%;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }}
-
-    img {{
-      height: auto;
-    }}
-
-    .page-break {{
-      break-before: page;
-      page-break-before: always;
-    }}
+{styles}
   </style>
 </head>
 <body>

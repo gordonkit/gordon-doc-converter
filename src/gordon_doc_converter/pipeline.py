@@ -19,6 +19,7 @@ from gordon_doc_converter.content import (
     extract_odt_content,
     extract_pdf_content,
     write_content_artifacts,
+    write_print_document,
 )
 from gordon_doc_converter.engines.base import (
     ConverterEngine,
@@ -685,7 +686,18 @@ class ConversionPipeline:
             )
         rendered_types = tuple(item for item in request.artifacts if item not in semantic)
         if rendered_types:
-            self._render_markup_artifacts(request, rendered_types, collected, progress_callback)
+            rendered_warnings = self._render_markup_artifacts(
+                request,
+                rendered_types,
+                collected,
+                progress_callback,
+            )
+            seen = {(warning.code, warning.message) for warning in warnings}
+            warnings.extend(
+                warning
+                for warning in rendered_warnings
+                if (warning.code, warning.message) not in seen
+            )
 
         results = tuple(
             collected[artifact] for artifact in request.artifacts if artifact in collected
@@ -707,11 +719,40 @@ class ConversionPipeline:
         artifact_types: tuple[ArtifactType, ...],
         results: dict[ArtifactType, ArtifactResult],
         progress_callback: ProgressCallback | None,
-    ) -> None:
+    ) -> tuple[ConversionWarning, ...]:
         """Render markup to validated A4 PDF or DOCX documents through Pandoc."""
         converter = PandocConverter()
+        warnings: tuple[ConversionWarning, ...] = ()
         with TemporaryDirectory(prefix="gordon-doc-markup-") as temporary:
             workspace = Path(temporary)
+            render_source = request.source_path
+            render_format = request.source_format
+            if request.source_format is SourceFormat.MARKDOWN:
+                # Markdown reaches the engines as our own print-ready HTML, so both
+                # markup sources render with the same A4 page setup and CJK fonts.
+                try:
+                    self._report(
+                        progress_callback,
+                        "content-extraction",
+                        "Preparing print-ready markup",
+                    )
+                    content = self._extract_content(request)
+                    render_source = write_print_document(
+                        content,
+                        workspace / "intermediate",
+                        orientation=request.options.page_orientation,
+                    )
+                    render_format = SourceFormat.HTML
+                    warnings = content.warnings
+                except ConversionError as error:
+                    failure = _failure_from_exception(error)
+                    for artifact_type in artifact_types:
+                        results[artifact_type] = ArtifactResult(
+                            artifact_type,
+                            ArtifactStatus.FAILED,
+                            error=failure,
+                        )
+                    return warnings
             for artifact_type in artifact_types:
                 suffix = ".pdf" if artifact_type is ArtifactType.PDF else ".docx"
                 output = (
@@ -746,9 +787,9 @@ class ConversionPipeline:
                         artifact=artifact_type,
                     )
                     converter.convert(
-                        request.source_path,
+                        render_source,
                         staged,
-                        source_format=request.source_format,
+                        source_format=render_format,
                         artifact_type=artifact_type,
                         options=request.options,
                     )
@@ -783,6 +824,7 @@ class ConversionPipeline:
                         ArtifactStatus.FAILED,
                         error=_failure_from_exception(error),
                     )
+        return warnings
 
     @staticmethod
     def _should_use_word_com_html(request: ConversionRequest) -> bool:

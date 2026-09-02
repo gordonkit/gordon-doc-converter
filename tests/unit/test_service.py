@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import shutil
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import pytest
 from pypdf import PdfWriter
 
+import gordon_doc_converter.engines.pandoc as pandoc_module
 from gordon_doc_converter.engines.base import EngineExecutionResult
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import EngineFailedError, ErrorCode
@@ -23,6 +26,7 @@ from gordon_doc_converter.models import (
     RevisionMode,
     SourceFormat,
 )
+from gordon_doc_converter.process.runner import ProcessResult
 from gordon_doc_converter.service import DocumentConversionService
 
 WINDOWS_DESKTOP = EnvironmentInfo("win32", True)
@@ -583,3 +587,44 @@ def test_markdown_source_rejects_its_own_format_as_an_artifact(tmp_path: Path) -
     assert result.success is False
     assert result.error is not None
     assert "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON" in result.error.message
+
+
+def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    handed: list[tuple[str, ...]] = []
+    markup: list[str] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        handed.append(items)
+        # The intermediate lives in a working directory removed once rendering ends.
+        markup.append(Path(items[1]).read_text(encoding="utf-8"))
+        Path(items[items.index("--output") + 1]).write_bytes(b"generated document")
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    monkeypatch.setattr(pandoc_module, "_set_docx_page_layout", lambda path, orientation: None)
+    monkeypatch.setattr(pandoc_module.PandocConverter, "_reference_docx", lambda *_: None)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.DOCX,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    rendered = handed[-1]
+    assert rendered[rendered.index("--from") + 1] == "html"
+    assert Path(rendered[1]) != source
+    document = markup[-1]
+    assert "@page" in document
+    assert "size: A4 portrait" in document
+    assert "<strong>重點</strong>" in document
