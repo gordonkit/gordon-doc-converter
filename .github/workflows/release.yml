@@ -19,7 +19,7 @@ jobs:
     env:
       GORDON_DOC_API_KEY: smoke-token
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Start ${{ matrix.profile }} profile
         run: >-
           docker compose -f docker/compose.yaml
@@ -49,7 +49,7 @@ jobs:
     env:
       SOURCE_DATE_EPOCH: "946684800"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.12.x"
@@ -89,7 +89,7 @@ jobs:
     needs: build-and-publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate Docker Hub configuration
         env:
           DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
