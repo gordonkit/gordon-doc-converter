@@ -63,6 +63,12 @@ requires LibreOffice, and page images render the document to PDF first, so they 
 `wkhtmltopdf` too. Markdown is rendered through a print-ready A4 HTML intermediate, so its PDF,
 DOCX, ODT, and page images all share one page setup and CJK font stack.
 
+Where wkhtmltopdf or Pandoc is missing — the container image carries LibreOffice alone — markup
+PDF and DOCX fall back to LibreOffice, and the result reports an `ENGINE_FALLBACK` warning naming
+the engine that was substituted. LibreOffice reads the same intermediate and keeps the A4 page
+setup, table grid, and CJK fonts; it renders headings in a different face and leaves table headers
+unshaded, so install wkhtmltopdf where the exact layout matters.
+
 Create an editable starting point with `gordon-doc template report.html` or
 `gordon-doc template notes.md`, then convert it with `gordon-doc convert report.html --to pdf`,
 `--to docx`, `--to odt`, or `--to images`. Use `--orientation landscape` for an A4 horizontal
