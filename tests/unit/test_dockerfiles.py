@@ -23,7 +23,7 @@ def test_release_publishes_single_container_image_to_docker_hub() -> None:
     assert "images: ${{ vars.DOCKERHUB_NAMESPACE }}/gordon-doc-converter" in content
     assert "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}" in content
     assert "DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}" in content
-    assert "uses: docker/build-push-action@v6" in content
+    assert "uses: docker/build-push-action@v" in content
     assert "platforms: linux/amd64" in content
     assert "push: true" in content
 

@@ -12,3 +12,14 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    groups:
+      react:
+        patterns:
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
+      vite:
+        patterns:
+          - vite
+          - "@vitejs/*"
