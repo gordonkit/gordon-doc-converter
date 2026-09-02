@@ -63,3 +63,18 @@ def test_ci_runs_on_pull_requests_with_a_usable_change_range() -> None:
     assert "github.event.pull_request.head.sha" in content
     # A pull request must never publish the documentation site.
     assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in content
+
+
+def test_release_rehearsal_exercises_the_container_publish_path() -> None:
+    content = (_ROOT / ".github/workflows/test-release.yml").read_text(encoding="utf-8")
+    release = (_ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    # release.yml runs only on a tag, so without this job a bump to either Docker
+    # action would first execute during a real release.
+    for action in ("docker/login-action@", "docker/build-push-action@", "docker/metadata-action@"):
+        assert action in content
+        version = release.split(action, maxsplit=1)[1].splitlines()[0]
+        assert f"{action}{version}" in content, f"{action} drifted from release.yml"
+    # The rehearsal must never publish an image.
+    assert "push: false" in content
+    assert "push: true" not in content
