@@ -27,6 +27,7 @@ from gordon_doc_converter.models import (
     SourceFormat,
 )
 from gordon_doc_converter.process.runner import ProcessResult
+from gordon_doc_converter.raster import ImageFormat, PdfRasterizer
 from gordon_doc_converter.service import DocumentConversionService
 
 WINDOWS_DESKTOP = EnvironmentInfo("win32", True)
@@ -81,6 +82,7 @@ class StubEngine:
     option_calls: list[tuple[float, RevisionMode, CommentMode]] = field(default_factory=list)
     probe_error: Exception | None = None
     file_render: Callable[[Path, Path, ArtifactType], None] | None = None
+    file_calls: list[tuple[Path, SourceFormat, ArtifactType]] = field(default_factory=list)
 
     def probe(self) -> EngineProbeResult:
         if self.probe_error is not None:
@@ -110,7 +112,8 @@ class StubEngine:
         artifact_type: ArtifactType,
         timeout_seconds: float,
     ) -> EngineExecutionResult:
-        del source_format, timeout_seconds
+        del timeout_seconds
+        self.file_calls.append((source_path, source_format, artifact_type))
         if self.file_render is None:
             raise AssertionError("file renderer was not configured")
         self.file_render(source_path, output_path, artifact_type)
@@ -586,7 +589,7 @@ def test_markdown_source_rejects_its_own_format_as_an_artifact(tmp_path: Path) -
 
     assert result.success is False
     assert result.error is not None
-    assert "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON" in result.error.message
+    assert "Markdown sources support only PDF, DOCX, ODT, page image, HTML" in result.error.message
 
 
 def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
@@ -628,3 +631,189 @@ def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
     assert "@page" in document
     assert "size: A4 portrait" in document
     assert "<strong>重點</strong>" in document
+
+
+class _PageRenderer:
+    """Minimal page renderer standing in for the PDFium backend."""
+
+    def __init__(self) -> None:
+        self.calls: list[int] = []
+
+    def render_page(
+        self,
+        pdf_path: Path,
+        page_number: int,
+        output_path: Path,
+        *,
+        dpi: int,
+        image_format: ImageFormat,
+        quality: int,
+        background: str,
+    ) -> None:
+        del pdf_path, dpi, image_format, quality, background
+        self.calls.append(page_number)
+        output_path.write_bytes(b"\x89PNG\r\n\x1a\npage" + bytes([page_number]))
+
+
+def _markdown_source(tmp_path: Path) -> Path:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text(_MARKDOWN_BODY, encoding="utf-8", newline="\n")
+    return source
+
+
+def _pandoc_pdf_stub(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Make Pandoc write a real one-page PDF, recording every invocation."""
+    calls: list[tuple[str, ...]] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        calls.append(items)
+        _write_pdf(Path(items[items.index("--output") + 1]))
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    return calls
+
+
+def test_markdown_odt_is_rendered_from_the_intermediate_through_libreoffice(
+    tmp_path: Path,
+) -> None:
+    source = _markdown_source(tmp_path)
+    handed: list[str] = []
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del artifact_type
+        handed.append(source_path.read_text(encoding="utf-8"))
+        output_path.write_bytes(b"generated open document")
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("ODT output must not take the DOCX rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.ODT,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    output = tmp_path / "臺灣 文件.odt"
+    assert output.is_file()
+    assert result.artifacts[0].items[0].media_type == "application/vnd.oasis.opendocument.text"
+    intermediate, source_format, artifact_type = engine.file_calls[0]
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.ODT
+    assert intermediate != source
+    assert "size: A4 portrait" in handed[0]
+    assert "<strong>重點</strong>" in handed[0]
+
+
+def test_markdown_odt_reports_a_missing_libreoffice_adapter(tmp_path: Path) -> None:
+    request = ConversionRequest(
+        _markdown_source(tmp_path),
+        SourceFormat.MARKDOWN,
+        (ArtifactType.ODT,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "LibreOffice" in result.error.message
+
+
+def test_markdown_page_images_rasterize_the_rendered_pages(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    calls = _pandoc_pdf_stub(monkeypatch)
+    renderer = _PageRenderer()
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PAGE_IMAGES,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(renderer),
+    ).convert(request)
+
+    assert result.success is True
+    images = result.artifacts[0]
+    assert images.path == tmp_path / "臺灣 文件.pages"
+    assert [item.page_number for item in images.items] == [1]
+    assert renderer.calls == [1]
+    # The intermediate, not the Markdown source, is what reaches the PDF engine.
+    assert Path(calls[-1][1]).suffix == ".html"
+
+
+def test_markdown_page_images_reuse_a_requested_pdf_instead_of_rendering_twice(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _markdown_source(tmp_path)
+    calls = _pandoc_pdf_stub(monkeypatch)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF, ArtifactType.PAGE_IMAGES),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(_PageRenderer()),
+    ).convert(request)
+
+    assert result.success is True
+    assert [item.artifact_type for item in result.artifacts] == [
+        ArtifactType.PDF,
+        ArtifactType.PAGE_IMAGES,
+    ]
+    assert (tmp_path / "臺灣 文件.pdf").is_file()
+    assert (tmp_path / "臺灣 文件.pages").is_dir()
+    assert len(calls) == 1
+
+
+def test_markdown_page_images_report_a_failed_render_without_a_partial_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del arguments, timeout_seconds
+        return ProcessResult(1, "", "pandoc: no such filter")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    request = ConversionRequest(
+        _markdown_source(tmp_path),
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PAGE_IMAGES,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService(
+        (),
+        LINUX_DESKTOP,
+        rasterizer=PdfRasterizer(_PageRenderer()),
+    ).convert(request)
+
+    assert result.success is False
+    assert result.artifacts[0].status is ArtifactStatus.FAILED
+    assert not (tmp_path / "臺灣 文件.pages").exists()

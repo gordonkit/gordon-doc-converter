@@ -230,7 +230,7 @@ def test_markdown_source_rejects_artifacts_outside_the_supported_set(tmp_path: P
     assert result.error is not None
     assert result.error.code is ErrorCode.INVALID_INPUT
     assert result.error.message == (
-        "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON outputs"
+        "Markdown sources support only PDF, DOCX, ODT, page image, HTML, YAML, and JSON outputs"
     )
 
 

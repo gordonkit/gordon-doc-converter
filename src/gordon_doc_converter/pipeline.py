@@ -44,6 +44,7 @@ from gordon_doc_converter.models import (
     ArtifactStatus,
     ArtifactType,
     ConversionFailure,
+    ConversionOptions,
     ConversionRequest,
     ConversionResult,
     ConversionWarning,
@@ -147,7 +148,22 @@ def _fix_word_com_html_line_heights(path: Path) -> None:
 
 
 _OFFICE_FILE_ARTIFACTS = frozenset({ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT})
-_RENDERED_MARKUP_ARTIFACTS = (ArtifactType.PDF, ArtifactType.DOCX)
+_RENDERED_MARKUP_ARTIFACTS = (
+    ArtifactType.PDF,
+    ArtifactType.DOCX,
+    ArtifactType.ODT,
+    ArtifactType.PAGE_IMAGES,
+)
+_MARKUP_ARTIFACT_SUFFIXES = {
+    ArtifactType.PDF: ".pdf",
+    ArtifactType.DOCX: ".docx",
+    ArtifactType.ODT: ".odt",
+}
+_MARKUP_MEDIA_TYPES = {
+    ArtifactType.PDF: "application/pdf",
+    ArtifactType.DOCX: ("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    ArtifactType.ODT: "application/vnd.oasis.opendocument.text",
+}
 # Semantic outputs each markup source extracts without a rendering engine. A
 # source never lists its own format, which would not be a conversion.
 _SEMANTIC_MARKUP_ARTIFACTS: dict[SourceFormat, tuple[ArtifactType, ...]] = {
@@ -654,9 +670,11 @@ class ConversionPipeline:
         invalid = set(request.artifacts) - set(_RENDERED_MARKUP_ARTIFACTS) - set(semantic)
         if invalid:
             message = (
-                "HTML sources support only PDF, DOCX, Markdown, YAML, and JSON outputs"
+                "HTML sources support only PDF, DOCX, ODT, page image, Markdown, YAML, "
+                "and JSON outputs"
                 if request.source_format is SourceFormat.HTML
-                else "Markdown sources support only PDF, DOCX, HTML, YAML, and JSON outputs"
+                else "Markdown sources support only PDF, DOCX, ODT, page image, HTML, YAML, "
+                "and JSON outputs"
             )
             return self._failure_result(
                 request,
@@ -753,8 +771,11 @@ class ConversionPipeline:
                             error=failure,
                         )
                     return warnings
+            rendered_pdf: Path | None = None
             for artifact_type in artifact_types:
-                suffix = ".pdf" if artifact_type is ArtifactType.PDF else ".docx"
+                if artifact_type is ArtifactType.PAGE_IMAGES:
+                    continue
+                suffix = _MARKUP_ARTIFACT_SUFFIXES[artifact_type]
                 output = (
                     request.options.output_path
                     if len(request.artifacts) == 1 and request.options.output_path is not None
@@ -786,7 +807,8 @@ class ConversionPipeline:
                         f"Creating {artifact_type.value} artifact",
                         artifact=artifact_type,
                     )
-                    converter.convert(
+                    self._render_markup_file(
+                        converter,
                         render_source,
                         staged,
                         source_format=render_format,
@@ -802,21 +824,15 @@ class ConversionPipeline:
                         staged.replace(output)
                     else:
                         staged.rename(output)
+                    if artifact_type is ArtifactType.PDF:
+                        rendered_pdf = output
                     size = output.stat().st_size
-                    media_type = (
-                        "application/pdf"
-                        if artifact_type is ArtifactType.PDF
-                        else (
-                            "application/vnd.openxmlformats-"
-                            "officedocument.wordprocessingml.document"
-                        )
-                    )
                     results[artifact_type] = ArtifactResult(
                         artifact_type,
                         ArtifactStatus.SUCCESS,
                         output,
                         size,
-                        items=(ArtifactItem(output, size, media_type),),
+                        items=(ArtifactItem(output, size, _MARKUP_MEDIA_TYPES[artifact_type]),),
                     )
                 except ConversionError as error:
                     results[artifact_type] = ArtifactResult(
@@ -824,7 +840,157 @@ class ConversionPipeline:
                         ArtifactStatus.FAILED,
                         error=_failure_from_exception(error),
                     )
+            if ArtifactType.PAGE_IMAGES in artifact_types:
+                self._rasterize_markup(
+                    request,
+                    converter,
+                    workspace,
+                    render_source,
+                    render_format,
+                    rendered_pdf,
+                    results,
+                    progress_callback,
+                )
         return warnings
+
+    def _render_markup_file(
+        self,
+        converter: PandocConverter,
+        source_path: Path,
+        output_path: Path,
+        *,
+        source_format: SourceFormat,
+        artifact_type: ArtifactType,
+        options: ConversionOptions,
+    ) -> None:
+        """Render one markup file through the engine that owns its artifact type."""
+        if artifact_type is not ArtifactType.ODT:
+            converter.convert(
+                source_path,
+                output_path,
+                source_format=source_format,
+                artifact_type=artifact_type,
+                options=options,
+            )
+            return
+        # LibreOffice reads our print CSS, so ODT keeps the A4 page setup Pandoc cannot carry.
+        engine = self._markup_file_engine()
+        execution = engine.convert_file(
+            source_path,
+            output_path,
+            source_format=source_format,
+            artifact_type=artifact_type,
+            timeout_seconds=options.timeout_seconds,
+        )
+        if execution.engine is not EngineName.LIBREOFFICE or execution.output_path != output_path:
+            raise EngineFailedError(
+                "LibreOffice returned a mismatched file conversion result",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+
+    def _markup_file_engine(self) -> FileConverterEngine:
+        """Return a probed LibreOffice file adapter, or explain why markup cannot use one."""
+        engine = self._engines.get(EngineName.LIBREOFFICE)
+        if engine is None or not isinstance(engine, FileConverterEngine):
+            raise EngineFailedError(
+                "LibreOffice file conversion adapter is not configured",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+        try:
+            probe = engine.probe()
+        except Exception as cause:
+            error = EngineFailedError(
+                "LibreOffice file conversion probe failed",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+            error.__cause__ = cause
+            raise error from cause
+        if not probe.available:
+            raise EngineFailedError(
+                probe.reason or "LibreOffice is unavailable",
+                engine=EngineName.LIBREOFFICE.value,
+            )
+        return engine
+
+    def _rasterize_markup(
+        self,
+        request: ConversionRequest,
+        converter: PandocConverter,
+        workspace: Path,
+        render_source: Path,
+        render_format: SourceFormat,
+        rendered_pdf: Path | None,
+        results: dict[ArtifactType, ArtifactResult],
+        progress_callback: ProgressCallback | None,
+    ) -> None:
+        """Rasterize markup pages, reusing a requested PDF instead of rendering twice."""
+        try:
+            if self._rasterizer is None:
+                raise InvalidInputError("page-image output requires a configured rasterizer")
+            source = rendered_pdf
+            if source is None:
+                source = workspace / "pages.pdf"
+                self._report(
+                    progress_callback,
+                    "rendering",
+                    "Rendering pages for rasterization",
+                    artifact=ArtifactType.PAGE_IMAGES,
+                )
+                converter.convert(
+                    render_source,
+                    source,
+                    source_format=render_format,
+                    artifact_type=ArtifactType.PDF,
+                    options=request.options,
+                )
+                validation = validate_pdf(source)
+                if not validation.valid:
+                    raise PdfValidationError("generated PDF failed validation")
+            directory = (
+                request.options.output_path
+                if len(request.artifacts) == 1 and request.options.output_path is not None
+                else _output_stem(request).with_name(f"{_output_stem(request).name}.pages")
+            )
+            self._report(
+                progress_callback,
+                "rasterization",
+                "Rendering PDF pages as images",
+                artifact=ArtifactType.PAGE_IMAGES,
+            )
+            images = self._rasterizer.rasterize(
+                source,
+                directory,
+                options=RasterOptions(
+                    dpi=request.options.image_dpi,
+                    image_format=ImageFormat(request.options.image_format.value),
+                    quality=request.options.image_quality,
+                    pages=request.options.image_pages,
+                    background=request.options.image_background,
+                    overwrite=request.options.overwrite,
+                ),
+            )
+        except ConversionError as error:
+            self._record_artifact_failures(results, (ArtifactType.PAGE_IMAGES,), error)
+            return
+        items = tuple(
+            ArtifactItem(
+                image.path,
+                image.size_bytes,
+                "image/png" if image.image_format is ImageFormat.PNG else "image/jpeg",
+                image.page_number,
+                image.width_pixels,
+                image.height_pixels,
+                image.sha256,
+            )
+            for image in images
+        )
+        results[ArtifactType.PAGE_IMAGES] = ArtifactResult(
+            ArtifactType.PAGE_IMAGES,
+            ArtifactStatus.SUCCESS,
+            directory,
+            sum(item.size_bytes for item in items),
+            items=items,
+        )
 
     @staticmethod
     def _should_use_word_com_html(request: ConversionRequest) -> bool:

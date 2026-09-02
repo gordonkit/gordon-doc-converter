@@ -29,6 +29,11 @@ All notable changes to this project will be documented in this file. The format 
   omitted apart from the `<ins>`, `<del>`, and `<br>` tags the writers emit. Blocks carry a
   `markdown-line` source anchor.
 - Markdown source validation covering extension, declared MIME type, and file size.
+- Markdown-to-ODT and Markdown-to-page-image conversion, plus the same two artifacts from
+  HTML sources. ODT is produced by LibreOffice from the print-ready HTML intermediate, which
+  carries the A4 page setup and CJK fonts into the ODF page layout; page images rasterize the
+  rendered PDF through the existing raster route and reuse a PDF artifact when one was
+  requested in the same run, instead of rendering it twice.
 - GFM task-list checkboxes in Markdown sources. `- [ ]` and `- [x]` items now carry the
   □ and ☑ symbols instead of literal brackets, so every output renders what the author
   wrote.
@@ -40,6 +45,9 @@ All notable changes to this project will be documented in this file. The format 
   `gordon-doc template`, and only then handed to Pandoc. PDF and DOCX from Markdown therefore
   get the CJK font stack, `@page` A4 margins, and one consistent look shared with HTML
   sources, and raw HTML in the source never reaches the PDF engine.
+- The LibreOffice file adapter accepts HTML sources, loading them with the
+  `HTML (StarWriter)` import filter and saving through an explicit output filter, so an HTML
+  source becomes a Writer text document rather than a Writer/Web document without page setup.
 - Pandoc reads Markdown as `gfm` rather than Pandoc's own dialect, and receives a
   `--resource-path` pointing at the source directory, so images referenced by relative path
   resolve against the document instead of the working directory.
