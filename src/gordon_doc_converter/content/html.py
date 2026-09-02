@@ -205,10 +205,20 @@ def _render_code_block(block: ContentBlock) -> str:
     return f"<pre{attrs}>{opening}{escape(body)}</code></pre>"
 
 
-def render_body_html(content: NormalizedContent, *, asset_directory: str) -> str:
-    """Serialize normalized blocks to the semantic body markup shared by all HTML output."""
+def render_body_html(
+    content: NormalizedContent,
+    *,
+    asset_directory: str,
+    include_metadata: bool = True,
+) -> str:
+    """Serialize normalized blocks to the semantic body markup shared by all HTML output.
+
+    Writers that hand the markup to an engine rendering its own title block ask for
+    ``include_metadata=False``, so the title and author appear exactly once.
+    """
     body: list[str] = []
-    body.extend(_render_metadata(content))
+    if include_metadata:
+        body.extend(_render_metadata(content))
 
     index = 0
     blocks = content.blocks

@@ -16,12 +16,7 @@ from gordon_doc_converter.exceptions import (
     EngineFailedError,
     EngineUnavailableError,
 )
-from gordon_doc_converter.models import (
-    ArtifactType,
-    ConversionOptions,
-    PageOrientation,
-    SourceFormat,
-)
+from gordon_doc_converter.models import ConversionOptions, SourceFormat
 from gordon_doc_converter.process.runner import ProcessResult, ProcessTimeoutError
 
 _DOCUMENT = (
@@ -54,10 +49,8 @@ def _source(tmp_path: Path) -> Path:
     return source
 
 
-def _converter(tmp_path: Path, *, pdf_engine: Path | None = None) -> PandocConverter:
-    converter = PandocConverter(str(tmp_path / "pandoc"))
-    converter._pdf_engine = str(pdf_engine) if pdf_engine is not None else None
-    return converter
+def _converter(tmp_path: Path) -> PandocConverter:
+    return PandocConverter(str(tmp_path / "pandoc"))
 
 
 def test_missing_pandoc_is_reported_as_unavailable(
@@ -70,9 +63,8 @@ def test_missing_pandoc_is_reported_as_unavailable(
     with pytest.raises(EngineUnavailableError):
         converter.convert(
             _source(tmp_path),
-            tmp_path / "out.pdf",
+            tmp_path / "out.docx",
             source_format=SourceFormat.MARKDOWN,
-            artifact_type=ArtifactType.PDF,
             options=ConversionOptions(),
         )
 
@@ -82,68 +74,30 @@ def test_markdown_is_read_as_gfm_with_the_source_resource_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = _source(tmp_path)
-    output = tmp_path / "out.pdf"
+    output = tmp_path / "out.docx"
     calls: list[tuple[str, ...]] = []
 
     def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
         del timeout_seconds
-        calls.append(tuple(arguments))
-        output.write_bytes(b"%PDF-1.7 generated")
+        items = tuple(arguments)
+        calls.append(items)
+        _write_docx(Path(items[items.index("--output") + 1]))
         return ProcessResult(0, "", "")
 
     monkeypatch.setattr(pandoc_module, "run_process", fake_run)
 
-    _converter(tmp_path, pdf_engine=tmp_path / "wkhtmltopdf").convert(
+    _converter(tmp_path).convert(
         source,
         output,
         source_format=SourceFormat.MARKDOWN,
-        artifact_type=ArtifactType.PDF,
-        options=ConversionOptions(page_orientation=PageOrientation.LANDSCAPE),
-    )
-
-    arguments = calls[0]
-    assert arguments[arguments.index("--from") + 1] == "gfm"
-    assert arguments[arguments.index("--resource-path") + 1] == str(source.parent)
-    # geometry: variables never reach wkhtmltopdf, so page setup goes to the engine.
-    assert not any(item.startswith("geometry:") for item in arguments)
-    assert "--pdf-engine-opt=--page-size" in arguments
-    assert "--pdf-engine-opt=A4" in arguments
-    assert "--pdf-engine-opt=--orientation" in arguments
-    assert "--pdf-engine-opt=Landscape" in arguments
-
-
-def test_portrait_pdf_requests_portrait_orientation_from_the_pdf_engine(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    output = tmp_path / "out.pdf"
-
-    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
-        del timeout_seconds
-        assert "--pdf-engine-opt=Portrait" in tuple(arguments)
-        output.write_bytes(b"%PDF-1.7 generated")
-        return ProcessResult(0, "", "")
-
-    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
-
-    _converter(tmp_path, pdf_engine=tmp_path / "wkhtmltopdf").convert(
-        _source(tmp_path),
-        output,
-        source_format=SourceFormat.HTML,
-        artifact_type=ArtifactType.PDF,
         options=ConversionOptions(),
     )
 
-
-def test_pdf_without_wkhtmltopdf_is_reported_as_unavailable(tmp_path: Path) -> None:
-    with pytest.raises(EngineUnavailableError):
-        _converter(tmp_path).convert(
-            _source(tmp_path),
-            tmp_path / "out.pdf",
-            source_format=SourceFormat.HTML,
-            artifact_type=ArtifactType.PDF,
-            options=ConversionOptions(),
-        )
+    arguments = calls[-1]
+    assert arguments[arguments.index("--from") + 1] == "gfm"
+    assert arguments[arguments.index("--resource-path") + 1] == str(source.parent)
+    # PDF rendering left this adapter, so no engine wiring should remain.
+    assert not any(item.startswith("--pdf-engine") for item in arguments)
 
 
 def test_docx_conversion_uses_a_restyled_reference_document(
@@ -178,7 +132,6 @@ def test_docx_conversion_uses_a_restyled_reference_document(
         _source(tmp_path),
         output,
         source_format=SourceFormat.MARKDOWN,
-        artifact_type=ArtifactType.DOCX,
         options=ConversionOptions(),
     )
 
@@ -215,7 +168,6 @@ def test_docx_conversion_continues_when_the_reference_build_fails(
         _source(tmp_path),
         output,
         source_format=SourceFormat.MARKDOWN,
-        artifact_type=ArtifactType.DOCX,
         options=ConversionOptions(),
     )
 
@@ -238,7 +190,6 @@ def test_failed_pandoc_run_reports_the_last_stderr_line(
             _source(tmp_path),
             tmp_path / "out.docx",
             source_format=SourceFormat.HTML,
-            artifact_type=ArtifactType.DOCX,
             options=ConversionOptions(),
         )
 
@@ -258,6 +209,5 @@ def test_timed_out_pandoc_run_is_reported_as_a_timeout(
             _source(tmp_path),
             tmp_path / "out.docx",
             source_format=SourceFormat.HTML,
-            artifact_type=ArtifactType.DOCX,
             options=ConversionOptions(),
         )

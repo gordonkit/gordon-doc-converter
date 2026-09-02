@@ -11,6 +11,7 @@ import pytest
 from pypdf import PdfWriter
 
 import gordon_doc_converter.engines.pandoc as pandoc_module
+import gordon_doc_converter.engines.wkhtmltopdf as wkhtmltopdf_module
 from gordon_doc_converter.engines.base import EngineExecutionResult
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import EngineFailedError, ErrorCode
@@ -631,6 +632,10 @@ def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
     assert "@page" in document
     assert "size: A4 portrait" in document
     assert "<strong>重點</strong>" in document
+    # Pandoc renders its own title block from the head metadata, so the copy it reads
+    # must not carry a second one in the body.
+    assert "<title>" in document
+    assert "<header>" not in document
 
 
 class _PageRenderer:
@@ -661,19 +666,19 @@ def _markdown_source(tmp_path: Path) -> Path:
     return source
 
 
-def _pandoc_pdf_stub(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
-    """Make Pandoc write a real one-page PDF, recording every invocation."""
+def _pdf_engine_stub(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Make the PDF engine write a real one-page PDF, recording every invocation."""
     calls: list[tuple[str, ...]] = []
 
     def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
         del timeout_seconds
         items = tuple(arguments)
         calls.append(items)
-        _write_pdf(Path(items[items.index("--output") + 1]))
+        _write_pdf(Path(items[-1]))
         return ProcessResult(0, "", "")
 
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
-    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
     return calls
 
 
@@ -738,7 +743,7 @@ def test_markdown_page_images_rasterize_the_rendered_pages(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = _markdown_source(tmp_path)
-    calls = _pandoc_pdf_stub(monkeypatch)
+    calls = _pdf_engine_stub(monkeypatch)
     renderer = _PageRenderer()
     request = ConversionRequest(
         source,
@@ -759,7 +764,7 @@ def test_markdown_page_images_rasterize_the_rendered_pages(
     assert [item.page_number for item in images.items] == [1]
     assert renderer.calls == [1]
     # The intermediate, not the Markdown source, is what reaches the PDF engine.
-    assert Path(calls[-1][1]).suffix == ".html"
+    assert Path(calls[-1][-2]).suffix == ".html"
 
 
 def test_markdown_page_images_reuse_a_requested_pdf_instead_of_rendering_twice(
@@ -767,7 +772,7 @@ def test_markdown_page_images_reuse_a_requested_pdf_instead_of_rendering_twice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = _markdown_source(tmp_path)
-    calls = _pandoc_pdf_stub(monkeypatch)
+    calls = _pdf_engine_stub(monkeypatch)
     request = ConversionRequest(
         source,
         SourceFormat.MARKDOWN,
@@ -797,10 +802,10 @@ def test_markdown_page_images_report_a_failed_render_without_a_partial_artifact(
 ) -> None:
     def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
         del arguments, timeout_seconds
-        return ProcessResult(1, "", "pandoc: no such filter")
+        return ProcessResult(1, "", "wkhtmltopdf: Exit with code 1 due to network error")
 
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
-    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
     request = ConversionRequest(
         _markdown_source(tmp_path),
         SourceFormat.MARKDOWN,
@@ -817,3 +822,35 @@ def test_markdown_page_images_report_a_failed_render_without_a_partial_artifact(
     assert result.success is False
     assert result.artifacts[0].status is ArtifactStatus.FAILED
     assert not (tmp_path / "臺灣 文件.pages").exists()
+
+
+def test_markdown_pdf_keeps_the_visible_title_block_in_the_document_it_renders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "臺灣 文件.md"
+    source.write_text("---\ntitle: 報告\n---\n\n正文\n", encoding="utf-8", newline="\n")
+    markup: list[str] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        markup.append(Path(items[-2]).read_text(encoding="utf-8"))
+        _write_pdf(Path(items[-1]))
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(wkhtmltopdf_module, "run_process", fake_run)
+    request = ConversionRequest(
+        source,
+        SourceFormat.MARKDOWN,
+        (ArtifactType.PDF,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    # Nothing downstream prints the head metadata, so the PDF keeps its own header.
+    assert "<header>" in markup[-1]
+    assert "<h1>報告</h1>" in markup[-1]

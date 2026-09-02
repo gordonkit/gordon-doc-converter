@@ -27,6 +27,7 @@ from gordon_doc_converter.engines.base import (
     FileConverterEngine,
 )
 from gordon_doc_converter.engines.pandoc import PandocConverter
+from gordon_doc_converter.engines.wkhtmltopdf import WkhtmltopdfConverter
 from gordon_doc_converter.engines.word_com import WordComEngine
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import (
@@ -738,12 +739,12 @@ class ConversionPipeline:
         results: dict[ArtifactType, ArtifactResult],
         progress_callback: ProgressCallback | None,
     ) -> tuple[ConversionWarning, ...]:
-        """Render markup to validated A4 PDF or DOCX documents through Pandoc."""
-        converter = PandocConverter()
+        """Render markup to validated A4 documents through the engine each artifact needs."""
         warnings: tuple[ConversionWarning, ...] = ()
         with TemporaryDirectory(prefix="gordon-doc-markup-") as temporary:
             workspace = Path(temporary)
-            render_source = request.source_path
+            print_source = request.source_path
+            docx_source = request.source_path
             render_format = request.source_format
             if request.source_format is SourceFormat.MARKDOWN:
                 # Markdown reaches the engines as our own print-ready HTML, so both
@@ -755,10 +756,18 @@ class ConversionPipeline:
                         "Preparing print-ready markup",
                     )
                     content = self._extract_content(request)
-                    render_source = write_print_document(
+                    print_source = write_print_document(
                         content,
                         workspace / "intermediate",
                         orientation=request.options.page_orientation,
+                    )
+                    # Pandoc renders its own title block from the head metadata, so the
+                    # copy it reads leaves the visible one out.
+                    docx_source = write_print_document(
+                        content,
+                        workspace / "intermediate-docx",
+                        orientation=request.options.page_orientation,
+                        metadata_block=False,
                     )
                     render_format = SourceFormat.HTML
                     warnings = content.warnings
@@ -808,8 +817,7 @@ class ConversionPipeline:
                         artifact=artifact_type,
                     )
                     self._render_markup_file(
-                        converter,
-                        render_source,
+                        print_source if artifact_type is not ArtifactType.DOCX else docx_source,
                         staged,
                         source_format=render_format,
                         artifact_type=artifact_type,
@@ -843,10 +851,8 @@ class ConversionPipeline:
             if ArtifactType.PAGE_IMAGES in artifact_types:
                 self._rasterize_markup(
                     request,
-                    converter,
                     workspace,
-                    render_source,
-                    render_format,
+                    print_source,
                     rendered_pdf,
                     results,
                     progress_callback,
@@ -855,7 +861,6 @@ class ConversionPipeline:
 
     def _render_markup_file(
         self,
-        converter: PandocConverter,
         source_path: Path,
         output_path: Path,
         *,
@@ -864,12 +869,15 @@ class ConversionPipeline:
         options: ConversionOptions,
     ) -> None:
         """Render one markup file through the engine that owns its artifact type."""
-        if artifact_type is not ArtifactType.ODT:
-            converter.convert(
+        if artifact_type is ArtifactType.PDF:
+            # The PDF engine reads the document itself, keeping its stylesheet intact.
+            WkhtmltopdfConverter().convert(source_path, output_path, options=options)
+            return
+        if artifact_type is ArtifactType.DOCX:
+            PandocConverter().convert(
                 source_path,
                 output_path,
                 source_format=source_format,
-                artifact_type=artifact_type,
                 options=options,
             )
             return
@@ -915,10 +923,8 @@ class ConversionPipeline:
     def _rasterize_markup(
         self,
         request: ConversionRequest,
-        converter: PandocConverter,
         workspace: Path,
-        render_source: Path,
-        render_format: SourceFormat,
+        print_source: Path,
         rendered_pdf: Path | None,
         results: dict[ArtifactType, ArtifactResult],
         progress_callback: ProgressCallback | None,
@@ -936,11 +942,9 @@ class ConversionPipeline:
                     "Rendering pages for rasterization",
                     artifact=ArtifactType.PAGE_IMAGES,
                 )
-                converter.convert(
-                    render_source,
+                WkhtmltopdfConverter().convert(
+                    print_source,
                     source,
-                    source_format=render_format,
-                    artifact_type=ArtifactType.PDF,
                     options=request.options,
                 )
                 validation = validate_pdf(source)

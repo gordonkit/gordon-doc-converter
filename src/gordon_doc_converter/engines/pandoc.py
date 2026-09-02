@@ -1,4 +1,4 @@
-"""Pandoc adapter for HTML and Markdown document sources."""
+"""Pandoc adapter that renders HTML and Markdown sources to DOCX."""
 
 from __future__ import annotations
 
@@ -13,12 +13,7 @@ from gordon_doc_converter.exceptions import (
     EngineFailedError,
     EngineUnavailableError,
 )
-from gordon_doc_converter.models import (
-    ArtifactType,
-    ConversionOptions,
-    PageOrientation,
-    SourceFormat,
-)
+from gordon_doc_converter.models import ConversionOptions, PageOrientation, SourceFormat
 from gordon_doc_converter.process import ProcessStartError, ProcessTimeoutError, run_process
 
 _W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -114,11 +109,14 @@ def _restyle_reference_docx(path: Path) -> None:
 
 
 class PandocConverter:
-    """Convert HTML or Markdown sources to A4 PDF or DOCX using Pandoc."""
+    """Convert HTML or Markdown sources to A4 DOCX using Pandoc.
+
+    PDF output does not come through here: Pandoc's HTML reader keeps only the body and
+    the document metadata, which would discard the page setup a print document carries.
+    """
 
     def __init__(self, executable: str | None = None) -> None:
         self._executable = executable or shutil.which("pandoc")
-        self._pdf_engine = shutil.which("wkhtmltopdf")
 
     def convert(
         self,
@@ -126,7 +124,6 @@ class PandocConverter:
         output_path: Path,
         *,
         source_format: SourceFormat,
-        artifact_type: ArtifactType,
         options: ConversionOptions,
     ) -> None:
         """Run Pandoc with bounded execution and apply the requested A4 layout."""
@@ -146,37 +143,13 @@ class PandocConverter:
             str(source_path.parent),
         ]
         with tempfile.TemporaryDirectory(prefix="gordon-pandoc-") as directory:
-            workspace = Path(directory)
-            if artifact_type is ArtifactType.PDF:
-                if self._pdf_engine is None:
-                    raise EngineUnavailableError(
-                        "wkhtmltopdf is required for Pandoc PDF conversion"
-                    )
-                orientation = (
-                    "Landscape"
-                    if options.page_orientation is PageOrientation.LANDSCAPE
-                    else "Portrait"
-                )
-                arguments += [
-                    "--pdf-engine",
-                    self._pdf_engine,
-                    "--standalone",
-                    # geometry: variables only reach LaTeX templates, so page setup goes
-                    # to wkhtmltopdf itself.
-                    "--pdf-engine-opt=--page-size",
-                    "--pdf-engine-opt=A4",
-                    "--pdf-engine-opt=--orientation",
-                    f"--pdf-engine-opt={orientation}",
-                ]
-            else:
-                reference = self._reference_docx(workspace, options.timeout_seconds)
-                if reference is not None:
-                    arguments += ["--reference-doc", str(reference)]
+            reference = self._reference_docx(Path(directory), options.timeout_seconds)
+            if reference is not None:
+                arguments += ["--reference-doc", str(reference)]
             self._run(arguments, options.timeout_seconds)
         if not output_path.is_file() or output_path.stat().st_size == 0:
             raise EngineFailedError("Pandoc did not create the requested output", engine="pandoc")
-        if artifact_type is ArtifactType.DOCX:
-            _set_docx_page_layout(output_path, options.page_orientation)
+        _set_docx_page_layout(output_path, options.page_orientation)
 
     def _reference_docx(self, workspace: Path, timeout_seconds: float) -> Path | None:
         """Build a restyled copy of Pandoc's own reference document, or skip it on failure."""

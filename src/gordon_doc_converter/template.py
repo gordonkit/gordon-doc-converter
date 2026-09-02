@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from gordon_doc_converter.exceptions import OutputExistsError
-from gordon_doc_converter.models import PageOrientation
+from gordon_doc_converter.models import PageOrientation, SourceFormat
 
 CJK_FONT_STACK = (
     '"Noto Sans CJK TC", "Noto Sans TC", "Source Han Sans TC", '
@@ -128,18 +128,44 @@ def blank_html_template(orientation: PageOrientation = PageOrientation.PORTRAIT)
 """
 
 
-def write_blank_html_template(
+def blank_markdown_template() -> str:
+    """Return a blank Markdown document whose front matter carries document metadata.
+
+    Markdown holds no page setup of its own: rendering applies the A4 print stylesheet
+    and the orientation requested at conversion time. The body opens on a section
+    heading, because the rendered document takes its title from the front matter.
+    """
+    return """---
+title: Untitled document
+author: Author name
+---
+
+# Section heading
+
+Replace this text with your content.
+"""
+
+
+def write_blank_template(
     output_path: Path,
     *,
     orientation: PageOrientation = PageOrientation.PORTRAIT,
     overwrite: bool = False,
-) -> None:
-    """Write an editable blank A4 HTML template."""
+) -> SourceFormat:
+    """Write the editable starter its extension names, returning the format written."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    if output_path.suffix.casefold() not in {".html", ".htm"}:
-        raise ValueError("HTML template output must use the .html or .htm extension")
+    suffix = output_path.suffix.casefold()
+    if suffix in {".html", ".htm"}:
+        source_format = SourceFormat.HTML
+        body = blank_html_template(orientation)
+    elif suffix == ".md":
+        source_format = SourceFormat.MARKDOWN
+        body = blank_markdown_template()
+    else:
+        raise ValueError("template output must use the .html, .htm, or .md extension")
     if output_path.exists() and not overwrite:
-        raise OutputExistsError("HTML template already exists")
+        raise OutputExistsError("template already exists")
     mode = "w" if overwrite else "x"
     with output_path.open(mode, encoding="utf-8", newline="\n") as stream:
-        stream.write(blank_html_template(orientation))
+        stream.write(body)
+    return source_format

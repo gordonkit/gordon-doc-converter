@@ -22,18 +22,19 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
 | PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
-| HTML | P | P+ | — | × | ✓ | ✓ | ✓ | — |
-| Markdown | P | P+ | — | ✓ | × | ✓ | ✓ | — |
+| HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` ポリシーに基づくエンジン選択 · `✓` 標準対応 · `LO` LibreOffice · `P` Pandoc ·
-`P+` Pandoc と PDF backend · `PDF` 中間 PDF 経由 · `—` 非対応 ·
+`W` wkhtmltopdf · `PDF` 中間 PDF 経由 · `—` 非対応 ·
 `×` 同一フォーマットのため変換しない
 
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
-DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX への変換の
-入力としても受け付けます。HTML はさらに、DOCX、ODT、PDF と同じセマンティック抽出によって
-Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは不要です。Markdown も同じ抽出によって HTML、YAML、JSON へ変換でき、
-PDF と DOCX へは Pandoc を介して変換します。
+DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX / ODT /
+ページ画像への変換の入力としても受け付けます。HTML はさらに、DOCX、ODT、PDF と同じ
+セマンティック抽出によって Markdown、YAML、JSON へ変換でき、この経路に外部エンジンは
+不要です。Markdown も同じ抽出によって HTML、YAML、JSON へ変換でき、PDF、DOCX、ODT、
+ページ画像へはレンダリング経路を介して変換します。
 
 ODT のセマンティック artifact は ODF パッケージから直接読み取るため、Markdown、HTML、
 YAML、JSON に外部エンジンは不要です。ODT のページ画像は先に PDF へ組版するため
@@ -56,11 +57,18 @@ ODT のサポート対象は ODF-CNS 15251 / ISO/IEC 26300 の Writer ドキュ�
 構造と内容の読み取り可能性を検証しますが、ピクセル単位で同一のラウンドトリップは保証
 しません。
 
-HTML / Markdown から PDF と DOCX への変換には Pandoc が必要です。PDF 出力にはさらに
-`wkhtmltopdf` などの Pandoc PDF backend が必要です。`gordon-doc template report.html` で
-編集可能な印刷向け A4 の出発点を作成し、`gordon-doc convert report.html --to pdf` または
-`--to docx` で変換します。A4 横向きのレイアウトには `--orientation landscape` を使って
-ください。
+マークアップからの DOCX 出力には Pandoc が必要です。PDF 出力には `wkhtmltopdf` が必要で、
+ドキュメント自体をそのままレンダリングします。Pandoc の HTML reader は body と
+ドキュメント metadata しか残さないため、印刷用 HTML を経由させるとページ設定と
+フォントが失われるからです。ODT 出力には LibreOffice が必要で、ページ画像は先に PDF へ
+組版するため同じく `wkhtmltopdf` を使います。Markdown は印刷向け A4 の中間 HTML を経て
+レンダリングされるため、PDF、DOCX、ODT、ページ画像は同じページ設定と CJK フォントを
+共有します。
+
+`gordon-doc template report.html` または `gordon-doc template notes.md` で編集可能な
+出発点を作成し、`gordon-doc convert report.html --to pdf`、`--to docx`、`--to odt`、
+`--to images` で変換します。A4 横向きのレイアウトには `--orientation landscape` を使って
+ください。Markdown のひな形自体はページ設定を持たないため、向きは変換時に決まります。
 
 HTML から Markdown / YAML / JSON への変換はドキュメントを直接解析するため、エンジンは
 不要です。
@@ -83,7 +91,8 @@ gordon-doc convert notes.md --to html --to yaml --to json
 ```
 
 見出し、段落、入れ子のリスト、表、リンク、強調、インラインコードとコードブロック、
-引用、区切り線は同じスキーマに正規化され、先頭の YAML front matter は
+引用、区切り線は同じスキーマに正規化されます。GFM のタスクリストは □ と ☑ の記号で
+状態を保ち、どの出力でも表示できます。先頭の YAML front matter は
 ドキュメント metadata になります。インラインの `data:` 画像は `<stem>.assets` の
 ファイルになり、パスや URL で参照される画像はリンクのまま残ります。生の HTML
 ブロックは省略されますが、ライター自身が出力する `<ins>`、`<del>`、`<br>` は

@@ -19,11 +19,14 @@ def render_print_html(
     *,
     asset_directory: str = ASSET_DIRECTORY_NAME,
     orientation: PageOrientation = PageOrientation.PORTRAIT,
+    metadata_block: bool = True,
 ) -> str:
     """Serialize normalized content to a standalone A4 HTML document.
 
     The result carries the same print CSS as the authoring template, so every
-    markup source reaches the rendering engines with one consistent look.
+    markup source reaches the rendering engines with one consistent look. Set
+    ``metadata_block`` to False for an engine that renders its own title block from
+    the head metadata, such as Pandoc's DOCX writer.
     """
     metadata = content.metadata
     title = metadata.title if metadata and metadata.title else "Document"
@@ -42,7 +45,11 @@ def render_print_html(
     head.append("<style>")
     head.append(print_stylesheet(orientation))
     head.append("</style>")
-    body = render_body_html(content, asset_directory=asset_directory)
+    body = render_body_html(
+        content,
+        asset_directory=asset_directory,
+        include_metadata=metadata_block,
+    )
     return (
         "<!doctype html>\n"
         f'<html lang="{document_language(content)}">\n'
@@ -56,6 +63,7 @@ def write_print_document(
     directory: Path,
     *,
     orientation: PageOrientation = PageOrientation.PORTRAIT,
+    metadata_block: bool = True,
 ) -> Path:
     """Write the print-ready intermediate and its assets into a working directory."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -66,5 +74,7 @@ def write_print_document(
             (assets / asset.filename).write_bytes(asset.data)
     document = directory / DOCUMENT_FILENAME
     with document.open("w", encoding="utf-8", newline="\n") as stream:
-        stream.write(render_print_html(content, orientation=orientation))
+        stream.write(
+            render_print_html(content, orientation=orientation, metadata_block=metadata_block)
+        )
     return document

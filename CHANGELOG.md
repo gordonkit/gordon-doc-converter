@@ -34,6 +34,11 @@ All notable changes to this project will be documented in this file. The format 
   carries the A4 page setup and CJK fonts into the ODF page layout; page images rasterize the
   rendered PDF through the existing raster route and reuse a PDF artifact when one was
   requested in the same run, instead of rendering it twice.
+- `gordon-doc template notes.md` writes a Markdown starter whose YAML front matter carries
+  document metadata. The command now picks the starter from the output extension, so
+  `.html`/`.htm` still writes the A4 print-ready document; `--orientation` applies to HTML
+  templates only, since Markdown holds no page setup of its own, and the JSON payload reports
+  the `format` written.
 - GFM task-list checkboxes in Markdown sources. `- [ ]` and `- [x]` items now carry the
   □ and ☑ symbols instead of literal brackets, so every output renders what the author
   wrote.
@@ -45,15 +50,24 @@ All notable changes to this project will be documented in this file. The format 
   `gordon-doc template`, and only then handed to Pandoc. PDF and DOCX from Markdown therefore
   get the CJK font stack, `@page` A4 margins, and one consistent look shared with HTML
   sources, and raw HTML in the source never reaches the PDF engine.
+- `write_blank_html_template` became `write_blank_template`, which returns the `SourceFormat`
+  it wrote. The compatibility tables in all four README locales and on the documentation site
+  now show ODT and page images for HTML and Markdown sources.
 - The LibreOffice file adapter accepts HTML sources, loading them with the
   `HTML (StarWriter)` import filter and saving through an explicit output filter, so an HTML
   source becomes a Writer text document rather than a Writer/Web document without page setup.
 - Pandoc reads Markdown as `gfm` rather than Pandoc's own dialect, and receives a
   `--resource-path` pointing at the source directory, so images referenced by relative path
   resolve against the document instead of the working directory.
-- PDF page setup reaches wkhtmltopdf directly through `--pdf-engine-opt`. The previous
-  `--variable geometry:` settings only apply to LaTeX templates and were silently ignored, so
-  `--orientation landscape` had no effect on Pandoc-rendered PDFs.
+- Markup PDF output is rendered by wkhtmltopdf directly instead of through Pandoc. Pandoc's
+  HTML reader keeps only the body and the document metadata, so it replaced the print
+  stylesheet with its own defaults and added a second title block: rendered pages came out
+  36em wide on a tinted background with the title printed twice. The engine now reads the
+  document as written, with A4, the requested orientation, and the stylesheet's 20mm margins
+  passed as arguments, since wkhtmltopdf ignores `@page`. The earlier `--variable geometry:`
+  settings only ever applied to LaTeX templates and were silently ignored.
+- The DOCX intermediate leaves the visible title block out, because Pandoc's DOCX writer
+  renders its own from the head metadata. Title and author appeared twice before.
 - DOCX output from markup sources is rendered against a generated `--reference-doc` whose
   default and named styles use CJK-capable fonts at the same 10.5pt body size as the HTML
   print stylesheet, instead of leaving Pandoc's default fonts in place.

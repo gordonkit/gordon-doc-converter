@@ -411,3 +411,38 @@ def test_convert_defaults_to_nested_json_without_the_flag(tmp_path: Path) -> Non
 
     assert result.exit_code == 0
     assert StubService.requests[-1].options.json_lines is False
+
+
+def test_template_writes_a_markdown_starter_and_reports_no_page_setup(tmp_path: Path) -> None:
+    output = tmp_path / "筆記.md"
+
+    result = runner.invoke(app, ["template", str(output), "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == {
+        "command": "template",
+        "success": True,
+        "path": str(output),
+        "format": "md",
+        "orientation": None,
+    }
+    assert output.read_text(encoding="utf-8").splitlines()[0] == "---"
+
+
+def test_template_reports_the_orientation_written_into_an_html_starter(tmp_path: Path) -> None:
+    output = tmp_path / "報告.html"
+
+    result = runner.invoke(app, ["template", str(output), "--orientation", "landscape", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["format"] == "html"
+    assert payload["orientation"] == "landscape"
+    assert "size: A4 landscape" in output.read_text(encoding="utf-8")
+
+
+def test_template_rejects_an_extension_it_cannot_write(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["template", str(tmp_path / "報告.docx")])
+
+    assert result.exit_code == 2
+    assert "template output must use" in _plain_text(result.stdout)
