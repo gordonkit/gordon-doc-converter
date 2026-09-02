@@ -169,10 +169,10 @@ export const pages: Page[] = [
             ],
           },
           legend: {
-            en: ["Auto Policy-based engine selection", "✓ Built in", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF Via intermediate PDF", "— Not supported", "Gray × Same format; disabled"],
-            "zh-TW": ["Auto 依環境政策自動選擇引擎", "✓ 內建支援", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 經由中間 PDF", "— 不支援", "灰底 × 相同格式，停用"],
-            "zh-CN": ["Auto 依环境策略自动选择引擎", "✓ 内置支持", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 经由中间 PDF", "— 不支持", "灰底 × 相同格式，停用"],
-            ja: ["Auto ポリシーに基づくエンジン選択", "✓ 標準対応", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 中間 PDF 経由", "— 非対応", "グレー × 同一フォーマットのため無効"],
+            en: ["Auto Policy-based engine selection", "✓ Built in", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF Via intermediate PDF", "— Not supported", "Markup PDF and DOCX fall back to LibreOffice where wkhtmltopdf or Pandoc is missing, reporting an ENGINE_FALLBACK warning", "Gray × Same format; disabled"],
+            "zh-TW": ["Auto 依環境政策自動選擇引擎", "✓ 內建支援", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 經由中間 PDF", "— 不支援", "缺少 wkhtmltopdf 或 Pandoc 時，markup 的 PDF 與 DOCX 會退回 LibreOffice，並回報 ENGINE_FALLBACK warning", "灰底 × 相同格式，停用"],
+            "zh-CN": ["Auto 依环境策略自动选择引擎", "✓ 内置支持", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 经由中间 PDF", "— 不支持", "缺少 wkhtmltopdf 或 Pandoc 时，markup 的 PDF 与 DOCX 会退回 LibreOffice，并报告 ENGINE_FALLBACK warning", "灰底 × 相同格式，停用"],
+            ja: ["Auto ポリシーに基づくエンジン選択", "✓ 標準対応", "LO LibreOffice", "P Pandoc", "W wkhtmltopdf", "PDF 中間 PDF 経由", "— 非対応", "wkhtmltopdf または Pandoc がない場合、マークアップの PDF と DOCX は LibreOffice にフォールバックし、ENGINE_FALLBACK warning を返します", "グレー × 同一フォーマットのため無効"],
           },
         },
         bullets: {

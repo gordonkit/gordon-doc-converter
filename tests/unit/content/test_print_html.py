@@ -81,3 +81,25 @@ def test_write_print_document_stages_assets_beside_the_document(tmp_path: Path) 
     staged = document.parent / ASSET_DIRECTORY_NAME / asset.filename
     assert staged.read_bytes() == b"binary"
     assert f'src="{ASSET_DIRECTORY_NAME}/{asset.filename}"' in document.read_text(encoding="utf-8")
+
+
+def test_print_tables_carry_the_border_attribute_libreoffice_needs() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.MARKDOWN,
+        blocks=(
+            ContentBlock(
+                BlockKind.TABLE,
+                rows=(
+                    ((InlineSpan(InlineKind.TEXT, "項目"),),),
+                    ((InlineSpan(InlineKind.TEXT, "值"),),),
+                ),
+            ),
+        ),
+    )
+
+    html = render_print_html(content)
+
+    # LibreOffice's HTML importer ignores the cell border CSS, so without the
+    # presentational attribute its tables arrive with no grid at all.
+    assert '<table border="1"' in html
+    assert "border-style: solid" in html

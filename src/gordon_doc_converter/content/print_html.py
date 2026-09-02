@@ -14,6 +14,18 @@ ASSET_DIRECTORY_NAME = "assets"
 DOCUMENT_FILENAME = "document.html"
 
 
+def _bordered_tables(body: str) -> str:
+    """Carry the table grid to engines that read HTML attributes rather than cell CSS.
+
+    LibreOffice's HTML importer ignores the border declarations on ``th`` and ``td``,
+    so an imported table arrives with no grid at all. The presentational attribute is
+    the only one it honours; wkhtmltopdf keeps using the stylesheet, which wins over
+    the attribute in the cascade. LibreOffice also drops the header background, and a
+    ``bgcolor`` attribute does not bring it back, so its tables stay unshaded.
+    """
+    return body.replace("<table", '<table border="1"')
+
+
 def render_print_html(
     content: NormalizedContent,
     *,
@@ -50,6 +62,7 @@ def render_print_html(
         asset_directory=asset_directory,
         include_metadata=metadata_block,
     )
+    body = _bordered_tables(body)
     return (
         "<!doctype html>\n"
         f'<html lang="{document_language(content)}">\n'

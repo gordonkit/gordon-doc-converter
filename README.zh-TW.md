@@ -60,6 +60,11 @@ Pandoc 的 HTML reader 只保留 body 與文件 metadata，若經由它轉送，
 `wkhtmltopdf`。Markdown 會先轉為適合列印的 A4 中介 HTML 再排版，因此 PDF、DOCX、ODT
 與逐頁圖片共用同一組版面設定與 CJK 字型。
 
+若環境沒有 wkhtmltopdf 或 Pandoc（容器映像僅內含 LibreOffice），markup 的 PDF 與 DOCX
+會退回 LibreOffice 排版，並在結果中回報 `ENGINE_FALLBACK` warning 指出被替換的引擎。
+LibreOffice 讀取同一份中介檔，會保留 A4 版面設定、表格框線與 CJK 字型；但標題字體不同，
+表頭也不會有底色，因此對版面精確度有要求時請安裝 wkhtmltopdf。
+
 可先執行 `gordon-doc template 報告.html` 或 `gordon-doc template 筆記.md` 建立可編輯的
 起始檔，再執行 `gordon-doc convert 報告.html --to pdf`、`--to docx`、`--to odt` 或
 `--to images`。若要使用 A4 橫式版面，請加上 `--orientation landscape`；Markdown 範本

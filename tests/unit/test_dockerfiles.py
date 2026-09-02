@@ -50,3 +50,16 @@ def test_container_entrypoint_requires_api_key_only_for_api() -> None:
     assert '[ -z "${GORDON_DOC_API_KEY:-}" ]' in api_branch
     assert "exit 64" in api_branch
     assert 'exec gordon-doc "$@"' in content
+
+
+def test_ci_runs_on_pull_requests_with_a_usable_change_range() -> None:
+    content = (_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    # Without this trigger a pull request only ever ran CodeQL, so dependency and
+    # workflow breakage reached main before anything checked it.
+    assert "pull_request:" in content
+    # The path filter reads push-event fields, which a pull request does not carry.
+    assert "github.event.pull_request.base.sha" in content
+    assert "github.event.pull_request.head.sha" in content
+    # A pull request must never publish the documentation site.
+    assert "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" in content

@@ -3,10 +3,18 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: "23 4 * * 1"
     - cron: "41 3 * * 3"
   workflow_dispatch:
+
+# A pull request that is pushed to again abandons the run already in flight; pushes to
+# main and scheduled runs always finish, because main gates the documentation deploy.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -29,8 +37,12 @@ jobs:
         name: Classify changed paths
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
+          BASE_SHA: >-
+            ${{ github.event_name == 'pull_request'
+            && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: >-
+            ${{ github.event_name == 'pull_request'
+            && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           cjk=false
