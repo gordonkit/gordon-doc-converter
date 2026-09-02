@@ -16,7 +16,7 @@ from gordon_doc_converter.content.models import (
     SourceAnchor,
 )
 
-SCHEMA_VERSION = "1.3"
+SCHEMA_VERSION = "1.4"
 
 
 class _ReadableSafeDumper(yaml.SafeDumper):
@@ -39,6 +39,8 @@ def _inline_payload(span: InlineSpan) -> dict[str, object]:
         payload["asset_id"] = span.asset_id
     if span.annotation_id is not None:
         payload["annotation_id"] = span.annotation_id
+    if span.styles:
+        payload["styles"] = [style.value for style in span.ordered_styles]
     return payload
 
 
@@ -54,6 +56,7 @@ def _coalesce_spans(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
                 and previous.target == span.target
                 and previous.asset_id == span.asset_id
                 and previous.annotation_id == span.annotation_id
+                and previous.styles == span.styles
             ):
                 coalesced[-1] = InlineSpan(
                     previous.kind,
@@ -61,6 +64,7 @@ def _coalesce_spans(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
                     previous.target,
                     previous.asset_id,
                     previous.annotation_id,
+                    previous.styles,
                 )
                 continue
         coalesced.append(span)
@@ -70,7 +74,9 @@ def _coalesce_spans(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
 def _content_payload(spans: tuple[InlineSpan, ...]) -> dict[str, object]:
     normalized = _coalesce_spans(spans)
     payload: dict[str, object] = {"text": "".join(span.text for span in normalized)}
-    if normalized and (len(normalized) != 1 or normalized[0].kind.value != "text"):
+    if normalized and (
+        len(normalized) != 1 or normalized[0].kind.value != "text" or normalized[0].styles
+    ):
         payload["inlines"] = [_inline_payload(span) for span in normalized]
     return payload
 
@@ -136,6 +142,10 @@ def _block_payload(block: ContentBlock, source_order: int) -> dict[str, object]:
         payload["source_anchor"] = _source_anchor_payload(block.source_anchor, anchor_text)
     if block.list_level is not None:
         payload["list_level"] = block.list_level
+    if block.quote_level is not None:
+        payload["quote_level"] = block.quote_level
+    if block.language is not None:
+        payload["language"] = block.language
     if block.rows:
         payload["rows"] = [
             [

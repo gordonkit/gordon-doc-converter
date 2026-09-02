@@ -19,6 +19,31 @@ class InlineKind(StrEnum):
     COMMENT_REFERENCE = "comment-reference"
 
 
+class InlineStyle(StrEnum):
+    """Character formatting that may accompany any inline kind.
+
+    Styles are orthogonal to `InlineKind` so a link, insertion, or deletion can
+    stay itself while also carrying emphasis.
+    """
+
+    STRONG = "strong"
+    EMPHASIS = "emphasis"
+    CODE = "code"
+
+
+# The order writers apply when one span carries several styles.
+INLINE_STYLE_ORDER: tuple[InlineStyle, ...] = (
+    InlineStyle.STRONG,
+    InlineStyle.EMPHASIS,
+    InlineStyle.CODE,
+)
+
+
+def ordered_styles(styles: frozenset[InlineStyle]) -> tuple[InlineStyle, ...]:
+    """Return one span's styles in a deterministic, writer-friendly order."""
+    return tuple(style for style in INLINE_STYLE_ORDER if style in styles)
+
+
 class BlockKind(StrEnum):
     """Normalized block categories supported by deterministic writers."""
 
@@ -26,6 +51,8 @@ class BlockKind(StrEnum):
     PARAGRAPH = "paragraph"
     LIST_ITEM = "list-item"
     TABLE = "table"
+    CODE_BLOCK = "code-block"
+    THEMATIC_BREAK = "thematic-break"
 
 
 class PageContentKind(StrEnum):
@@ -86,6 +113,12 @@ class InlineSpan:
     target: str | None = None
     asset_id: str | None = None
     annotation_id: str | None = None
+    styles: frozenset[InlineStyle] = frozenset()
+
+    @property
+    def ordered_styles(self) -> tuple[InlineStyle, ...]:
+        """Return this span's styles in deterministic writer order."""
+        return ordered_styles(self.styles)
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +130,8 @@ class ContentBlock:
     level: int | None = None
     list_level: int | None = None
     rows: tuple[tuple[tuple[InlineSpan, ...], ...], ...] = ()
+    quote_level: int | None = None
+    language: str | None = None
     page_number: int | None = None
     display_page_label: str | None = None
     source_anchor: SourceAnchor | None = None

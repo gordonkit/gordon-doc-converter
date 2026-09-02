@@ -10,8 +10,15 @@ from gordon_doc_converter.content.models import (
     ContentBlock,
     InlineKind,
     InlineSpan,
+    InlineStyle,
     NormalizedContent,
 )
+
+_STYLE_TAGS = {
+    InlineStyle.STRONG: "strong",
+    InlineStyle.EMPHASIS: "em",
+    InlineStyle.CODE: "code",
+}
 
 
 def _safe_target(target: str | None) -> str | None:
@@ -23,8 +30,18 @@ def _safe_target(target: str | None) -> str | None:
     return target
 
 
+def _styled(value: str, span: InlineSpan) -> str:
+    """Wrap escaped text in its character-formatting elements, code innermost."""
+    if not value:
+        return value
+    for style in reversed(span.ordered_styles):
+        tag = _STYLE_TAGS[style]
+        value = f"<{tag}>{value}</{tag}>"
+    return value
+
+
 def _render_span(span: InlineSpan, asset_directory: str) -> str:
-    text = escape(span.text)
+    text = _styled(escape(span.text), span)
     if span.kind is InlineKind.INSERTION:
         return f"<ins>{text}</ins>"
     if span.kind is InlineKind.DELETION:
@@ -112,6 +129,8 @@ def _render_metadata(content: NormalizedContent) -> list[str]:
 
 def _has_content(block: ContentBlock) -> bool:
     """Check if a block has renderable content."""
+    if block.kind is BlockKind.THEMATIC_BREAK:
+        return True
     if block.rows:
         return True
     text = block.text.strip()
@@ -177,6 +196,15 @@ def _render_list_items(
     return lines, index
 
 
+def _render_code_block(block: ContentBlock) -> str:
+    """Render one code block, keeping its body literal."""
+    body = "".join(span.text for span in block.inlines)
+    language = (block.language or "").strip().split(" ", 1)[0]
+    attrs = _block_data_attributes(block)
+    opening = f'<code class="language-{escape(language, quote=True)}">' if language else "<code>"
+    return f"<pre{attrs}>{opening}{escape(body)}</code></pre>"
+
+
 def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
     """Serialize normalized blocks to structured semantic HTML."""
     head_lines: list[str] = []
@@ -190,6 +218,7 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
 
     index = 0
     blocks = content.blocks
+    quote_depth = 0
     while index < len(blocks):
         block = blocks[index]
 
@@ -197,7 +226,17 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
             index += 1
             continue
 
-        if block.kind is BlockKind.HEADING:
+        quote_depth = _adjust_quotes(body, quote_depth, block.quote_level or 0)
+
+        if block.kind is BlockKind.THEMATIC_BREAK:
+            body.append("<hr>")
+            index += 1
+
+        elif block.kind is BlockKind.CODE_BLOCK:
+            body.append(_render_code_block(block))
+            index += 1
+
+        elif block.kind is BlockKind.HEADING:
             level = min(max(block.level or 1, 1), 6)
             attrs = _block_data_attributes(block)
             body.append(
@@ -221,6 +260,8 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
             body.append(f"<p{attrs}>{_render_inlines(block.inlines, asset_directory)}</p>")
             index += 1
 
+    _adjust_quotes(body, quote_depth, 0)
+
     html = "<!doctype html>\n<html"
     html += ' lang="zh-TW"' if _is_traditional_chinese(content) else ' lang="en"'
     html += ">\n"
@@ -229,6 +270,17 @@ def render_html(content: NormalizedContent, *, asset_directory: str) -> str:
     html += "\n".join(body)
     html += "\n</body>\n</html>\n"
     return html
+
+
+def _adjust_quotes(body: list[str], depth: int, target: int) -> int:
+    """Open or close blockquote elements until the nesting matches the block."""
+    while depth < target:
+        body.append("<blockquote>")
+        depth += 1
+    while depth > target:
+        body.append("</blockquote>")
+        depth -= 1
+    return depth
 
 
 def _is_traditional_chinese(content: NormalizedContent) -> bool:

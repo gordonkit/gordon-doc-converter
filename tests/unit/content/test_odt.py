@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from gordon_doc_converter.content.models import BlockKind, InlineKind
+from gordon_doc_converter.content.models import BlockKind, InlineKind, InlineStyle
 from gordon_doc_converter.content.odt import extract_odt_content
 from gordon_doc_converter.exceptions import InvalidInputError
 from gordon_doc_converter.models import (
@@ -327,3 +327,59 @@ def test_a_package_without_a_text_body_is_rejected(
 
     with pytest.raises(InvalidInputError, match="no text body"):
         extract_odt_content(write_odt(tmp_path / "空白包.odt", content_xml=content_xml))
+
+
+_FORMATTING_STYLES = """<office:automatic-styles>
+ <style:style style:name="T1" style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>
+ <style:style style:name="T2" style:family="text"><style:text-properties fo:font-style="italic"/></style:style>
+ <style:style style:name="T3" style:family="text" style:parent-style-name="T1"><style:text-properties style:font-name="Consolas"/></style:style>
+ <style:style style:name="P1" style:family="paragraph" style:parent-style-name="Quotations"/>
+ <style:style style:name="P2" style:family="paragraph" style:parent-style-name="Preformatted_20_Text"/>
+</office:automatic-styles>"""
+_FORMATTING_DOCUMENT_STYLES = """<office:styles>
+ <style:style style:name="Quotations" style:family="paragraph" style:display-name="Quotations"/>
+ <style:style style:name="Preformatted_20_Text" style:family="paragraph" style:display-name="Preformatted Text"/>
+</office:styles>"""
+_FORMATTING_BODY = """<text:p>一般<text:span text:style-name="T1">粗體</text:span><text:span text:style-name="T2">斜體</text:span><text:span text:style-name="T3">等寬粗體</text:span></text:p>
+<text:p text:style-name="P1">引用段落</text:p>
+<text:p text:style-name="P2">code line</text:p>"""
+
+
+def test_odt_text_styles_become_inline_styles(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(
+        tmp_path / "formatted.odt",
+        _FORMATTING_BODY,
+        styles_xml=_FORMATTING_STYLES,
+        document_styles=_FORMATTING_DOCUMENT_STYLES,
+    )
+
+    content = extract_odt_content(source)
+
+    styles = {span.text: span.styles for span in content.blocks[0].inlines}
+    assert styles["一般"] == frozenset()
+    assert styles["粗體"] == frozenset({InlineStyle.STRONG})
+    assert styles["斜體"] == frozenset({InlineStyle.EMPHASIS})
+    # A text style inherits the formatting of the style it is derived from.
+    assert styles["等寬粗體"] == frozenset({InlineStyle.STRONG, InlineStyle.CODE})
+
+
+def test_odt_quote_and_preformatted_styles_become_block_facts(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    source = write_odt(
+        tmp_path / "formatted.odt",
+        _FORMATTING_BODY,
+        styles_xml=_FORMATTING_STYLES,
+        document_styles=_FORMATTING_DOCUMENT_STYLES,
+    )
+
+    content = extract_odt_content(source)
+
+    quote = content.blocks[1]
+    assert quote.kind is BlockKind.PARAGRAPH
+    assert quote.quote_level == 1
+    code = content.blocks[2]
+    assert code.kind is BlockKind.CODE_BLOCK
+    assert code.text == "code line"

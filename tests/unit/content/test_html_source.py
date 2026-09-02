@@ -8,7 +8,12 @@ import pytest
 
 from gordon_doc_converter.content.html_source import extract_html_content
 from gordon_doc_converter.content.markdown import render_markdown
-from gordon_doc_converter.content.models import BlockKind, InlineKind, LayoutAvailability
+from gordon_doc_converter.content.models import (
+    BlockKind,
+    InlineKind,
+    InlineStyle,
+    LayoutAvailability,
+)
 from gordon_doc_converter.exceptions import InvalidInputError
 from gordon_doc_converter.models import MetadataDetail, SourceFormat
 
@@ -239,3 +244,68 @@ def test_missing_source_and_wrong_extension_raise_invalid_input(tmp_path: Path) 
     other.write_text("<p>text</p>", encoding="utf-8")
     with pytest.raises(InvalidInputError):
         extract_html_content(other)
+
+
+def test_character_formatting_becomes_normalized_inline_styles(tmp_path: Path) -> None:
+    source = _html(
+        tmp_path,
+        "<p>一般 <strong>重點</strong> <em>強調</em> <code>x = 1</code> <b><i>兩者</i></b></p>",
+    )
+
+    content = extract_html_content(source)
+
+    styles = {span.text.strip(): span.styles for span in content.blocks[0].inlines}
+    assert styles["重點"] == frozenset({InlineStyle.STRONG})
+    assert styles["強調"] == frozenset({InlineStyle.EMPHASIS})
+    assert styles["x = 1"] == frozenset({InlineStyle.CODE})
+    assert styles["兩者"] == frozenset({InlineStyle.STRONG, InlineStyle.EMPHASIS})
+
+
+def test_preformatted_blocks_keep_their_body_and_language(tmp_path: Path) -> None:
+    source = _html(
+        tmp_path,
+        '<pre><code class="language-python">def f():\n    return 1</code></pre>',
+    )
+
+    content = extract_html_content(source)
+
+    block = content.blocks[0]
+    assert block.kind is BlockKind.CODE_BLOCK
+    assert block.language == "python"
+    assert block.text == "def f():\n    return 1"
+    # The inner <code> marks the language, never a code span inside the block.
+    assert all(not span.styles for span in block.inlines)
+
+
+def test_blockquotes_and_rules_become_quote_levels_and_thematic_breaks(
+    tmp_path: Path,
+) -> None:
+    source = _html(
+        tmp_path,
+        "<blockquote><p>外層</p><blockquote><p>內層</p></blockquote></blockquote><hr><p>之後</p>",
+    )
+
+    content = extract_html_content(source)
+
+    kinds = [(block.kind, block.text, block.quote_level) for block in content.blocks]
+    assert kinds == [
+        (BlockKind.PARAGRAPH, "外層", 1),
+        (BlockKind.PARAGRAPH, "內層", 2),
+        (BlockKind.THEMATIC_BREAK, "", None),
+        (BlockKind.PARAGRAPH, "之後", None),
+    ]
+
+
+def test_formatted_html_round_trips_into_markdown(tmp_path: Path) -> None:
+    source = _html(
+        tmp_path,
+        "<p><strong>重點</strong></p><blockquote><p>引用</p></blockquote>"
+        '<pre><code class="language-sh">ls -l</code></pre><hr>',
+    )
+
+    markdown = render_markdown(extract_html_content(source), asset_directory="a.assets")
+
+    assert "**重點**" in markdown
+    assert "> 引用" in markdown
+    assert "```sh\nls -l\n```" in markdown
+    assert "\n---" in markdown

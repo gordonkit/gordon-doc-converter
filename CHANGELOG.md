@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Character formatting in the normalized content model. Inline spans now carry an orthogonal
+  `styles` set (`strong`, `emphasis`, `code`), so bold, italic, and monospace runs survive
+  extraction instead of being flattened to plain text. Styles combine with the existing span
+  kinds, letting a link or a tracked revision stay itself while also carrying emphasis.
+- Code blocks, block quotes, and thematic breaks in the normalized content model, as the
+  `code-block` and `thematic-break` block kinds plus `quote_level` and `language` block
+  fields. DOCX reads them from the `Quote` and `HTML Preformatted` paragraph styles, ODT from
+  `Quotations` and `Preformatted Text`, and HTML from `<blockquote>`, `<pre>`, and `<hr>`.
+- Markdown and HTML writers render the new facts: `**strong**`, `*emphasis*`, backtick code
+  spans whose fence clears any backticks they contain, fenced code blocks with their info
+  string, `> ` quote prefixes, and `---` rules; HTML emits `<strong>`, `<em>`, `<code>`,
+  `<pre><code class="language-...">`, nested `<blockquote>`, and `<hr>`.
+
+### Changed
+
+- The structured JSON and YAML schema is now version `1.4`. Inline payloads gain an optional
+  `styles` array, and block payloads gain optional `quote_level` and `language` fields. Every
+  1.3 field keeps its meaning, so existing readers continue to work.
+
 ## [0.8.0] - 2026-08-28
 
 ### Added

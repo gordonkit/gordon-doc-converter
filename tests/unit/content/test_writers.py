@@ -16,6 +16,7 @@ from gordon_doc_converter.content.models import (
     ContentBlock,
     InlineKind,
     InlineSpan,
+    InlineStyle,
     NormalizedContent,
     SourceAnchor,
 )
@@ -240,7 +241,7 @@ def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
     yaml_payload = yaml.safe_load(render_yaml(content))
 
     assert yaml_payload == json_payload
-    assert json_payload["schema_version"] == "1.3"
+    assert json_payload["schema_version"] == "1.4"
     assert json_payload["root_blocks"][0]["text"] == "前言"
     chapter = json_payload["sections"][0]
     assert chapter["title"] == "第一章"
@@ -517,3 +518,108 @@ def test_json_lines_output_is_protected_from_overwrite(tmp_path: Path) -> None:
         json_lines=True,
     )
     assert existing.read_text(encoding="utf-8") == render_jsonl(content)
+
+
+def _formatted_content() -> NormalizedContent:
+    return NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (
+                    InlineSpan(InlineKind.TEXT, "一般 "),
+                    InlineSpan(InlineKind.TEXT, "重點", styles=frozenset({InlineStyle.STRONG})),
+                    InlineSpan(
+                        InlineKind.TEXT,
+                        "強調",
+                        styles=frozenset({InlineStyle.STRONG, InlineStyle.EMPHASIS}),
+                    ),
+                    InlineSpan(InlineKind.TEXT, "a*b", styles=frozenset({InlineStyle.CODE})),
+                    InlineSpan(
+                        InlineKind.LINK,
+                        "連結",
+                        target="https://example.com/a",
+                        styles=frozenset({InlineStyle.STRONG}),
+                    ),
+                ),
+            ),
+            ContentBlock(BlockKind.THEMATIC_BREAK),
+            ContentBlock(
+                BlockKind.CODE_BLOCK,
+                (InlineSpan(InlineKind.TEXT, "print('hi')\nprint('bye')"),),
+                language="python",
+            ),
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "引用第一段"),),
+                quote_level=1,
+            ),
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (InlineSpan(InlineKind.TEXT, "巢狀引用"),),
+                quote_level=2,
+            ),
+        ),
+    )
+
+
+def test_markdown_renders_character_formatting_code_blocks_quotes_and_rules() -> None:
+    markdown = render_markdown(_formatted_content(), asset_directory="doc.assets")
+
+    assert "**重點**" in markdown
+    assert "***強調***" in markdown
+    # A code span is never escaped and its fence clears the backticks it holds.
+    assert "`a*b`" in markdown
+    assert "[**連結**](https://example.com/a)" in markdown
+    assert "\n---\n" in markdown
+    assert "```python\nprint('hi')\nprint('bye')\n```" in markdown
+    assert "> 引用第一段" in markdown
+    assert "> > 巢狀引用" in markdown
+
+
+def test_markdown_code_span_fence_grows_past_embedded_backticks() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            ContentBlock(
+                BlockKind.PARAGRAPH,
+                (
+                    InlineSpan(
+                        InlineKind.TEXT,
+                        "a ` b",
+                        styles=frozenset({InlineStyle.CODE}),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert "``a ` b``" in render_markdown(content, asset_directory="doc.assets")
+
+
+def test_html_renders_character_formatting_code_blocks_quotes_and_rules() -> None:
+    html = render_html(_formatted_content(), asset_directory="doc.assets")
+
+    assert "<strong>重點</strong>" in html
+    assert "<strong><em>強調</em></strong>" in html
+    assert "<code>a*b</code>" in html
+    assert '<a href="https://example.com/a"><strong>連結</strong></a>' in html
+    assert "<hr>" in html
+    assert '<pre><code class="language-python">' in html
+    assert html.count("<blockquote>") == 2
+    assert html.count("</blockquote>") == 2
+
+
+def test_structured_payload_records_styles_language_and_quote_level() -> None:
+    payload = json.loads(render_json(_formatted_content()))
+
+    blocks = payload["root_blocks"]
+    inlines = blocks[0]["inlines"]
+    assert inlines[1]["styles"] == ["strong"]
+    assert inlines[2]["styles"] == ["strong", "emphasis"]
+    assert inlines[3]["styles"] == ["code"]
+    assert blocks[1]["kind"] == "thematic-break"
+    assert blocks[2]["kind"] == "code-block"
+    assert blocks[2]["language"] == "python"
+    assert blocks[3]["quote_level"] == 1
+    assert blocks[4]["quote_level"] == 2

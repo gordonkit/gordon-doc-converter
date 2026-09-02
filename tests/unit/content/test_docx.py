@@ -8,7 +8,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from gordon_doc_converter.content.docx import extract_docx_content
-from gordon_doc_converter.content.models import BlockKind, InlineKind
+from gordon_doc_converter.content.models import BlockKind, InlineKind, InlineStyle
 from gordon_doc_converter.models import CommentMode, MetadataDetail, RevisionMode
 
 _CONTENT_TYPES = """<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -302,3 +302,56 @@ def test_parent_restarts_child_numbering_across_num_instances(tmp_path: Path) ->
         "二、 第二節",
         "1. 丙",
     ]
+
+
+_FORMATTED_STYLES = """<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:style w:type="character" w:styleId="Strong"><w:name w:val="Strong"/></w:style>
+<w:style w:type="character" w:styleId="CodeChar"><w:name w:val="HTML Code"/></w:style>
+<w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/></w:style>
+<w:style w:type="paragraph" w:styleId="HTMLPreformatted"><w:name w:val="HTML Preformatted"/></w:style>
+</w:styles>"""
+_FORMATTED_DOCUMENT = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:r><w:t>一般</w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>粗體</w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>斜體</w:t></w:r><w:r><w:rPr><w:b w:val="0"/></w:rPr><w:t>關閉</w:t></w:r></w:p>
+<w:p><w:r><w:rPr><w:rStyle w:val="Strong"/></w:rPr><w:t>樣式粗體</w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/></w:rPr><w:t>等寬</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>引用段落</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="HTMLPreformatted"/></w:pPr><w:r><w:t>code line</w:t></w:r></w:p>
+</w:body></w:document>"""
+
+
+def _write_formatted_docx(path: Path) -> None:
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", _FORMATTED_DOCUMENT)
+        archive.writestr("word/styles.xml", _FORMATTED_STYLES)
+
+
+def test_run_properties_and_character_styles_become_inline_styles(tmp_path: Path) -> None:
+    source = tmp_path / "formatted.docx"
+    _write_formatted_docx(source)
+
+    content = extract_docx_content(source)
+
+    direct = {span.text: span.styles for span in content.blocks[0].inlines}
+    assert direct["一般"] == frozenset()
+    assert direct["粗體"] == frozenset({InlineStyle.STRONG})
+    assert direct["斜體"] == frozenset({InlineStyle.EMPHASIS})
+    # An explicit w:val="0" turns the toggle off rather than on.
+    assert direct["關閉"] == frozenset()
+    styled = {span.text: span.styles for span in content.blocks[1].inlines}
+    assert styled["樣式粗體"] == frozenset({InlineStyle.STRONG})
+    assert styled["等寬"] == frozenset({InlineStyle.CODE})
+
+
+def test_quote_and_preformatted_paragraph_styles_become_block_facts(tmp_path: Path) -> None:
+    source = tmp_path / "formatted.docx"
+    _write_formatted_docx(source)
+
+    content = extract_docx_content(source)
+
+    quote = content.blocks[2]
+    assert quote.kind is BlockKind.PARAGRAPH
+    assert quote.quote_level == 1
+    code = content.blocks[3]
+    assert code.kind is BlockKind.CODE_BLOCK
+    assert code.text == "code line"

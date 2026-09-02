@@ -17,6 +17,7 @@ from gordon_doc_converter.content.models import (
     DocumentMetadata,
     InlineKind,
     InlineSpan,
+    InlineStyle,
     LayoutAvailability,
     LayoutMetadata,
     NormalizedContent,
@@ -93,6 +94,20 @@ _VOID_TAGS = frozenset(
     }
 )
 _LIST_TAGS = frozenset({"ol", "ul"})
+_STYLE_TAGS = {
+    "b": InlineStyle.STRONG,
+    "strong": InlineStyle.STRONG,
+    "em": InlineStyle.EMPHASIS,
+    "i": InlineStyle.EMPHASIS,
+    "cite": InlineStyle.EMPHASIS,
+    "dfn": InlineStyle.EMPHASIS,
+    "var": InlineStyle.EMPHASIS,
+    "code": InlineStyle.CODE,
+    "kbd": InlineStyle.CODE,
+    "samp": InlineStyle.CODE,
+    "tt": InlineStyle.CODE,
+}
+_LANGUAGE_CLASS = re.compile(r"(?:^|\s)(?:language|lang)-([A-Za-z0-9_+#.-]{1,32})(?:\s|$)")
 _TABLE_CELL_TAGS = frozenset({"td", "th"})
 _PARAGRAPH_TAG = frozenset({"p"})
 # An omitted end tag is never recovered across one of these enclosing elements.
@@ -142,7 +157,13 @@ def _strip_spans(spans: list[InlineSpan]) -> tuple[InlineSpan, ...]:
 
 
 def _replace_text(span: InlineSpan, text: str) -> InlineSpan:
-    return InlineSpan(span.kind, text, span.target, span.asset_id, span.annotation_id)
+    return InlineSpan(span.kind, text, span.target, span.asset_id, span.annotation_id, span.styles)
+
+
+def _language(attributes: dict[str, str]) -> str | None:
+    """Read a highlighting language from an element's class attribute."""
+    match = _LANGUAGE_CLASS.search(attributes.get("class", ""))
+    return match.group(1) if match is not None else None
 
 
 @dataclass(slots=True)
@@ -153,6 +174,8 @@ class _Leaf:
     spans: list[InlineSpan] = field(default_factory=list)
     level: int | None = None
     list_level: int | None = None
+    quote_level: int | None = None
+    language: str | None = None
     anchor: SourceAnchor | None = None
     preformatted: bool = False
 
@@ -188,6 +211,8 @@ class _Element:
     opened_table: bool = False
     opened_cell: bool = False
     opened_row: bool = False
+    opened_quote: bool = False
+    opened_style: InlineStyle | None = None
 
 
 class _HtmlContentParser(HTMLParser):
@@ -207,6 +232,8 @@ class _HtmlContentParser(HTMLParser):
         self._tables: list[_Table] = []
         self._links: list[str | None] = []
         self._revisions: list[InlineKind] = []
+        self._styles: list[InlineStyle] = []
+        self._quote_depth = 0
         self._dropped_depth = 0
         self._head_depth = 0
         self._in_title = False
@@ -270,6 +297,8 @@ class _HtmlContentParser(HTMLParser):
                 spans,
                 level=leaf.level,
                 list_level=leaf.list_level,
+                quote_level=leaf.quote_level,
+                language=leaf.language,
                 source_anchor=leaf.anchor,
             )
         )
@@ -342,6 +371,7 @@ class _HtmlContentParser(HTMLParser):
         if tag in _VOID_TAGS:
             if tag == "hr":
                 self._flush_leaf()
+                self._emit(ContentBlock(BlockKind.THEMATIC_BREAK, quote_level=self._quote()))
             return
 
         self._implicit_close(tag)
@@ -363,6 +393,16 @@ class _HtmlContentParser(HTMLParser):
             self._revisions.append(
                 InlineKind.INSERTION if tag == "ins" else InlineKind.DELETION,
             )
+        elif tag in _STYLE_TAGS:
+            if tag == "code" and self._leaf is not None and self._leaf.kind is BlockKind.CODE_BLOCK:
+                self._leaf.language = self._leaf.language or _language(attributes)
+            else:
+                element.opened_style = _STYLE_TAGS[tag]
+                self._styles.append(_STYLE_TAGS[tag])
+        elif tag == "blockquote":
+            self._flush_leaf()
+            self._quote_depth += 1
+            element.opened_quote = True
         elif tag in _LIST_TAGS:
             self._flush_leaf()
             self._lists.append(_List(tag == "ol", _list_start(attributes)))
@@ -430,7 +470,14 @@ class _HtmlContentParser(HTMLParser):
             return
         if not text:
             return
-        self._append(InlineSpan(self._inline_kind(), text, target=self._link()))
+        self._append(
+            InlineSpan(
+                self._inline_kind(),
+                text,
+                target=self._link(),
+                styles=frozenset(self._styles),
+            )
+        )
 
     def close(self) -> None:
         """Finish parsing and close every element the document left open."""
@@ -448,23 +495,50 @@ class _HtmlContentParser(HTMLParser):
             return self._revisions[-1]
         return InlineKind.LINK if self._links and self._links[-1] else InlineKind.TEXT
 
+    def _quote(self) -> int | None:
+        return self._quote_depth or None
+
     def _leaf_for(self, tag: str, path: str, attributes: dict[str, str]) -> _Leaf:
         anchor = self._anchor(path, attributes)
+        quote_level = self._quote()
         if tag in _HEADING_TAGS:
-            return _Leaf(BlockKind.HEADING, level=_HEADING_TAGS[tag], anchor=anchor)
+            return _Leaf(
+                BlockKind.HEADING,
+                level=_HEADING_TAGS[tag],
+                quote_level=quote_level,
+                anchor=anchor,
+            )
         if tag == "li":
             list_level = max(len(self._lists) - 1, 0)
-            leaf = _Leaf(BlockKind.LIST_ITEM, list_level=list_level, anchor=anchor)
+            leaf = _Leaf(
+                BlockKind.LIST_ITEM,
+                list_level=list_level,
+                quote_level=quote_level,
+                anchor=anchor,
+            )
             if self._lists and self._lists[-1].ordered:
                 leaf.spans.append(InlineSpan(InlineKind.TEXT, f"{self._lists[-1].counter}. "))
                 self._lists[-1].counter += 1
             return leaf
-        return _Leaf(BlockKind.PARAGRAPH, anchor=anchor, preformatted=tag == "pre")
+        if tag == "pre":
+            return _Leaf(
+                BlockKind.CODE_BLOCK,
+                quote_level=quote_level,
+                language=_language(attributes),
+                anchor=anchor,
+                preformatted=True,
+            )
+        return _Leaf(BlockKind.PARAGRAPH, quote_level=quote_level, anchor=anchor)
 
     def _close_element(self, element: _Element) -> None:
         self._elements.pop()
         if element.tag == "head":
             self._head_depth = max(self._head_depth - 1, 0)
+        if element.opened_style is not None and self._styles:
+            self._styles.remove(element.opened_style)
+        if element.opened_quote:
+            self._flush_leaf()
+            self._quote_depth = max(self._quote_depth - 1, 0)
         if element.opened_cell and self._tables:
             table = self._tables[-1]
             self._flush_leaf()
@@ -510,6 +584,7 @@ class _HtmlContentParser(HTMLParser):
             ContentBlock(
                 BlockKind.TABLE,
                 rows=tuple(table.rows),
+                quote_level=self._quote(),
                 source_anchor=table.anchor,
             )
         )
