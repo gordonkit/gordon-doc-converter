@@ -65,6 +65,12 @@ ODT のサポート対象は ODF-CNS 15251 / ISO/IEC 26300 の Writer ドキュ�
 レンダリングされるため、PDF、DOCX、ODT、ページ画像は同じページ設定と CJK フォントを
 共有します。
 
+wkhtmltopdf または Pandoc がない環境（コンテナイメージには LibreOffice のみ同梱）では、
+マークアップの PDF と DOCX は LibreOffice にフォールバックし、置き換えたエンジンを示す
+`ENGINE_FALLBACK` warning を結果に返します。LibreOffice は同じ中間ファイルを読み、A4 の
+ページ設定、表の罫線、CJK フォントを保ちますが、見出しの書体が異なり表ヘッダーの背景色は
+付きません。レイアウトの厳密さが必要な場合は wkhtmltopdf をインストールしてください。
+
 `gordon-doc template report.html` または `gordon-doc template notes.md` で編集可能な
 出発点を作成し、`gordon-doc convert report.html --to pdf`、`--to docx`、`--to odt`、
 `--to images` で変換します。A4 横向きのレイアウトには `--orientation landscape` を使って
