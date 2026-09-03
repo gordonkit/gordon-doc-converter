@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-03
+
 ### Added
 
 - Character formatting in the normalized content model. Inline spans now carry an orthogonal
@@ -42,6 +44,14 @@ All notable changes to this project will be documented in this file. The format 
 - GFM task-list checkboxes in Markdown sources. `- [ ]` and `- [x]` items now carry the
   □ and ☑ symbols instead of literal brackets, so every output renders what the author
   wrote.
+- Markup PDF and DOCX fall back to LibreOffice when wkhtmltopdf or Pandoc is unavailable,
+  reporting an `ENGINE_FALLBACK` warning that names the substituted engine. The container
+  image carries LibreOffice alone, so Markdown and HTML sources could previously produce
+  neither artifact inside it; wkhtmltopdf cannot be added, having been dropped from Debian
+  after upstream archived it. LibreOffice reads the same print-ready intermediate and keeps
+  the A4 page setup, table grid, and CJK fonts, but renders headings in a different face and
+  leaves table headers unshaded, so an installation carrying wkhtmltopdf or Pandoc still
+  renders through them.
 
 ### Changed
 
@@ -76,6 +86,22 @@ All notable changes to this project will be documented in this file. The format 
   1.3 field keeps its meaning, so existing readers continue to work.
 - `markdown-it-py` is now a direct dependency, used only by the Markdown content reader. It
   was already installed transitively, so no new package enters the environment.
+
+### Fixed
+
+- Markup and semantic artifacts are published across a filesystem boundary. They were moved
+  onto the output path with `Path.rename`, which raises `EXDEV` when the temporary staging
+  directory and the destination are different devices — routinely the case for a mounted
+  output directory in a container, where every markup and semantic conversion failed at the
+  final move regardless of engine.
+- Tables rendered by LibreOffice carry their grid. Its HTML importer ignores the border
+  declarations on `th` and `td`, so imported tables arrived with no borders at all; the print
+  intermediate now also carries the presentational `border` attribute, which is the only
+  instruction it honours. wkhtmltopdf continues to use the stylesheet, which outranks the
+  attribute in the cascade.
+- Thematic breaks appear in wkhtmltopdf output. Its WebKit discards a sub-pixel top border,
+  so every `---` in a Markdown or HTML source rendered as nothing; the rule is drawn as a
+  filled block instead.
 
 ## [0.8.0] - 2026-08-28
 
