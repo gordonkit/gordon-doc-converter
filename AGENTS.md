@@ -102,6 +102,33 @@ Library / CLI / future API
 - Real Word integration tests run only on a controlled Windows environment with a
   licensed Office installation. Do not assume hosted CI runners provide Word.
 
+## Release Process
+
+- A release is triggered by pushing a tag matching `v[0-9]+.[0-9]+.[0-9]+`, and by nothing
+  else. Merging a release pull request publishes nothing. Existing tags are annotated; keep
+  that convention.
+- The tag publishes to PyPI, Docker Hub, and GitHub Releases at once. None of it can be
+  undone: a PyPI version number can never be reused, so a broken `0.9.0` must be abandoned
+  in favour of `0.9.1`.
+- Rehearse first with `gh workflow run test-release.yml --ref main -f target=all`, which
+  publishes to TestPyPI, downloads the wheel back, and builds the container image without
+  pushing it. Use `target=containers` to exercise only the Docker path, or `target=pypi`
+  for only the package. TestPyPI version numbers are equally unreusable, so bump the
+  version before rehearsing the same release twice.
+- `scripts/check_release.py` gates the tag. It requires `project.version` in
+  `pyproject.toml`, `__version__` in `src/gordon_doc_converter/__init__.py`, and the tag to
+  agree, plus a dated `## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md`. Run
+  `uv run python scripts/check_release.py --tag vX.Y.Z` before tagging.
+- Bumping a version touches five tracked places — `pyproject.toml`, `__version__`,
+  the CLI version assertion in `tests/unit/cli/test_app.py`, `uv.lock` (through `uv lock`),
+  and the exported OpenAPI contract (through `npm run openapi:export` plus `npm run build`,
+  which refreshes the committed `docs/` copy).
+- In `CHANGELOG.md`, keep the empty `## [Unreleased]` heading and insert the dated release
+  section directly below it. Write the entries when the change lands, not at release time.
+- `release.yml` runs only on a tag and matches no path filter in `ci.yml`, so a dependency
+  bump inside it is unexercised by ordinary CI. The rehearsal covers the login, metadata,
+  and build steps; the `type=semver` tag templates are reached only by a real tag.
+
 ## Documentation and Change Discipline
 
 - Use English for public API names and docstrings. User documentation may have

@@ -95,6 +95,28 @@ Library / CLI / future API
 - 真實 Word 整合測試只能在具合法 Office 的受控 Windows 環境執行；不得假設
   hosted CI runner 已安裝 Word。
 
+## 發版流程
+
+- 發版只由推送符合 `v[0-9]+.[0-9]+.[0-9]+` 的 tag 觸發，別無其他途徑；合併發版 pull request
+  本身不會發布任何東西。既有 tag 皆為 annotated，請延續此慣例。
+- 打 tag 會同時發布到 PyPI、Docker Hub 與 GitHub Releases，且全部無法撤回：PyPI 的版本號
+  永不可重用，發壞的 `0.9.0` 只能作廢改發 `0.9.1`。
+- 先演練：`gh workflow run test-release.yml --ref main -f target=all`，它會發布到 TestPyPI、
+  再把 wheel 下載回來驗證，並建置容器映像但不推送。`target=containers` 只演練 Docker 路徑，
+  `target=pypi` 只演練套件。TestPyPI 的版本號同樣不可重用，要重複演練同一版本前必須先 bump。
+- `scripts/check_release.py` 是 tag 的守門員：要求 `pyproject.toml` 的 `project.version`、
+  `src/gordon_doc_converter/__init__.py` 的 `__version__` 與 tag 三者一致，且 `CHANGELOG.md`
+  必須有帶日期的 `## [X.Y.Z] - YYYY-MM-DD` 區段。打 tag 前先執行
+  `uv run python scripts/check_release.py --tag vX.Y.Z`。
+- 版號共存在五處：`pyproject.toml`、`__version__`、`tests/unit/cli/test_app.py` 的版本斷言、
+  `uv.lock`（透過 `uv lock` 更新），以及匯出的 OpenAPI contract（透過 `npm run openapi:export`
+  與 `npm run build`，後者會更新已提交的 `docs/` 副本）。
+- `CHANGELOG.md` 保留空的 `## [Unreleased]` 標題，將帶日期的發版區段插入其下方。條目應在變更
+  合併當下就寫好，而非等到發版前才補。
+- `release.yml` 只在 tag 觸發，且不符合 `ci.yml` 的任何 path filter，因此其中的相依套件升級
+  不會被一般 CI 執行到。演練涵蓋 login、metadata 與 build 步驟；`type=semver` 標籤樣板則只有
+  真正的 tag 才會跑到。
+
 ## 文件與變更紀律
 
 - 公開 API 名稱及 docstring 使用英文；使用者文件可提供繁中、簡中與日文翻譯。
