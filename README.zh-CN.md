@@ -246,7 +246,7 @@ PDF 没有语义标记，因此区块由版式推论而来。转换器会依字�
 破坏 DOCX 定位契约。没有值的可选定位字段不会输出为 null。
 
 ```yaml
-schema_version: "1.3"
+schema_version: "1.5"
 source: {format: "pdf", sha256: "<来源文件-sha256>"}
 root_blocks: [{
     id: "block-000001",

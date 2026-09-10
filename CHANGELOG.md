@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Ordered-list facts in the normalized content model. Blocks carry `ordered` and `list_start`,
+  which DOCX, ODT, HTML, and Markdown sources fill from the list type each already resolved
+  while numbering its items. A source claims a list is ordered only for a marker a writer can
+  regenerate from a counter alone — a single-level decimal counter, optionally suffixed with
+  `.` or `)`. Compound markers such as `%1.%2.`, prefixed ones such as `第%1章` and `(1)`, and
+  lettered, roman, or ideographic formats leave the fields unset and keep their literal text,
+  as does inferred PDF structure.
+
+### Changed
+
+- The structured JSON and YAML schema is now version `1.5`, adding the optional `ordered` and
+  `list_start` block fields. Both are written only when a source stated them, so any document
+  that carried no such fact serializes exactly as it did under `1.4`. The rendered marker
+  stays in `text`: this payload generates no counter of its own, and its
+  `source_anchor.content_sha256` fingerprints the text the source actually held.
+
+### Fixed
+
+- A numbered list no longer fuses into the bullet list before it. The HTML writer wrapped
+  every contiguous run of list items in one `<ul>`, so a bullet list followed by a numbered
+  list became a single list whose numbers survived only as literal text. Numbered runs now
+  render as `<ol>`, carrying `start` when they begin anywhere but 1, and their items drop the
+  counter the source rendered into text rather than printing it beside the generated one.
+- A bullet item whose text merely begins with a counter is no longer rewritten as an ordered
+  item. The Markdown writer decided a list's type by matching a counter against the item's
+  text, so a bullet reading `3. 看似編號` was written back as `3. 看似編號` and changed the
+  list. The type now comes from the list itself, and only an item whose source stated no type
+  falls back to reading the text, which is what inferred PDF structure relies on.
+
 ## [0.9.0] - 2026-09-03
 
 ### Added

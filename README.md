@@ -268,7 +268,7 @@ than a bounding box; a future layout provider can add page coordinates without c
 DOCX locator contract. Optional locator fields are omitted instead of being serialized as null.
 
 ```yaml
-schema_version: "1.3"
+schema_version: "1.5"
 source: {format: "pdf", sha256: "<source-file-sha256>"}
 root_blocks: [{
     id: "block-000001",

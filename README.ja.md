@@ -271,7 +271,7 @@ PDF の block は 1 起点の物理ページを指します。PDF の anchor は
 できます。任意の locator フィールドは null としてシリアライズされるのではなく省略されます。
 
 ```yaml
-schema_version: "1.3"
+schema_version: "1.5"
 source: {format: "pdf", sha256: "<source-file-sha256>"}
 root_blocks: [{
     id: "block-000001",
