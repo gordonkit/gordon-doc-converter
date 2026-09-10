@@ -138,6 +138,53 @@ def test_html_escapes_content_and_never_emits_active_source_values() -> None:
     ) in rendered
 
 
+def _list_run() -> NormalizedContent:
+    """A bullet run, a numbered run starting at 3 with a nested bullet, then bullets again."""
+
+    def item(text: str, **fields: object) -> ContentBlock:
+        return ContentBlock(BlockKind.LIST_ITEM, (InlineSpan(InlineKind.TEXT, text),), **fields)
+
+    return NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            item("項目", list_level=0, ordered=False),
+            item("3. 甲", list_level=0, ordered=True, list_start=3),
+            item("4. 乙", list_level=0, ordered=True),
+            item("巢狀", list_level=1, ordered=False),
+            item("之後", list_level=0, ordered=False),
+        ),
+    )
+
+
+def test_html_separates_bullet_and_numbered_runs_instead_of_fusing_them() -> None:
+    rendered = render_html(_list_run(), asset_directory="文件.assets")
+
+    assert (
+        "<ul>\n<li>項目\n</li>\n</ul>\n"
+        '<ol start="3">\n<li>甲\n</li>\n<li>乙\n'
+        "<ul>\n<li>巢狀\n</li>\n</ul>\n</li>\n</ol>\n"
+        "<ul>\n<li>之後\n</li>\n</ul>"
+    ) in rendered
+
+
+def test_html_keeps_a_marker_no_counter_can_reproduce_as_literal_text() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "第一章 總則"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    rendered = render_html(content, asset_directory="文件.assets")
+
+    assert "<ul>\n<li>第一章 總則\n</li>\n</ul>" in rendered
+    assert "<ol" not in rendered
+
+
 def test_markdown_normalizes_skipped_word_list_levels_and_tabs() -> None:
     content = NormalizedContent(
         source_format=SourceFormat.DOCX,

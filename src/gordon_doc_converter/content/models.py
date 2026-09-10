@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from gordon_doc_converter.models import ConversionWarning, NormalizedAnnotation, SourceFormat
@@ -42,6 +43,27 @@ INLINE_STYLE_ORDER: tuple[InlineStyle, ...] = (
 def ordered_styles(styles: frozenset[InlineStyle]) -> tuple[InlineStyle, ...]:
     """Return one span's styles in a deterministic, writer-friendly order."""
     return tuple(style for style in INLINE_STYLE_ORDER if style in styles)
+
+
+# The counter a source renders ahead of an ordered item, which a writer that
+# numbers the list itself must drop rather than print twice.
+_COUNTER_MARKER = re.compile(r"^([0-9]{1,3})[.)](?!\d)\s*")
+
+
+def without_counter_marker(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
+    """Drop the rendered counter an ordered list item carries as leading text."""
+    if not spans:
+        return spans
+    first = spans[0]
+    if first.kind is not InlineKind.TEXT:
+        return spans
+    match = _COUNTER_MARKER.match(first.text)
+    if match is None:
+        return spans
+    remainder = first.text[match.end() :]
+    if not remainder:
+        return spans[1:]
+    return (replace(first, text=remainder), *spans[1:])
 
 
 class BlockKind(StrEnum):
