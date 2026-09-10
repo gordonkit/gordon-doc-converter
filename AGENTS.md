@@ -141,4 +141,3 @@ Library / CLI / future API
   `<type>(<scope>): <imperative summary>`, concise English, and at most 72 characters.
 - Treat `AGENTS.zh-TW.md` as a human-readable translation. This file is the authoritative
   Codex instruction source; update both files together when these rules change.
-

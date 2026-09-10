@@ -16,7 +16,7 @@ This project does **not** implement a document renderer. It orchestrates externa
 
 ## Source Structure
 
-```
+```text
 src/gordon_doc_converter/    # Core Python package
   __init__.py                # Public exports
   cli.py                     # Typer CLI entrypoint (gordon-doc)
@@ -80,7 +80,7 @@ Key exports: `ConversionRequest`, `convert`, `DocumentConversionService`, `conve
 ## CLI Stable Exit Codes
 
 | Code | Meaning |
-|------|---------|
+| ------ | --------- |
 | 0 | Success |
 | 2 | Invalid input or existing output |
 | 3 | Engine or capability unavailability |
@@ -90,7 +90,7 @@ Key exports: `ConversionRequest`, `convert`, `DocumentConversionService`, `conve
 ## Optional Dependencies
 
 | Extra | Purpose |
-|-------|---------|
+| ------- | --------- |
 | `word` | pywin32 for Word COM (Windows only) |
 | `gotenberg` | httpx for Gotenberg remote adapter |
 | `api` | FastAPI + uvicorn for HTTP API |
@@ -107,7 +107,7 @@ Key exports: `ConversionRequest`, `convert`, `DocumentConversionService`, `conve
 
 Conventional Commits: `<type>(<scope>): <imperative summary>`, ≤72 chars.
 
-```
+```text
 feat(engines): add Gotenberg timeout configuration
 fix(cli): handle spaces in output path
 docs(README): add Chinese translation link
@@ -132,7 +132,7 @@ docs(README): add Chinese translation link
 ## Key Files
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `pyproject.toml` | Dependencies, tool config, build system |
 | `AGENTS.md` | Authoritative AI assistant instructions |
 | `CHANGELOG.md` | Version history and changes |

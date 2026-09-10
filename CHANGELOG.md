@@ -50,7 +50,7 @@ All notable changes to this project will be documented in this file. The format 
   `Quotations` and `Preformatted Text`, and HTML from `<blockquote>`, `<pre>`, and `<hr>`.
 - Markdown and HTML writers render the new facts: `**strong**`, `*emphasis*`, backtick code
   spans whose fence clears any backticks they contain, fenced code blocks with their info
-  string, `> ` quote prefixes, and `---` rules; HTML emits `<strong>`, `<em>`, `<code>`,
+  string, `>` quote prefixes, and `---` rules; HTML emits `<strong>`, `<em>`, `<code>`,
   `<pre><code class="language-...">`, nested `<blockquote>`, and `<hr>`.
 - Markdown-to-HTML, Markdown-to-YAML, and Markdown-to-JSON conversion through the same
   semantic extraction used for DOCX, ODT, PDF, and HTML sources, with no external engine
