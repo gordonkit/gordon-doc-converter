@@ -156,6 +156,47 @@ def _list_run() -> NormalizedContent:
     )
 
 
+def test_markdown_numbers_a_list_its_source_declared_ordered() -> None:
+    rendered = render_markdown(_list_run(), asset_directory="文件.assets")
+
+    assert rendered == "- 項目\n3. 甲\n4. 乙\n   - 巢狀\n- 之後\n"
+
+
+def test_markdown_keeps_a_bullet_item_that_merely_begins_with_a_counter() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 看似編號"),),
+                list_level=0,
+                ordered=False,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="文件.assets")
+
+    assert rendered == "- 3\\. 看似編號\n"
+
+
+def test_markdown_reads_an_inferred_counter_when_no_list_type_is_stated() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 推論項目"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="文件.assets")
+
+    assert rendered == "3. 推論項目\n"
+
+
 def test_html_separates_bullet_and_numbered_runs_instead_of_fusing_them() -> None:
     rendered = render_html(_list_run(), asset_directory="文件.assets")
 

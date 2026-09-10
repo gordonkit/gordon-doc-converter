@@ -151,6 +151,27 @@ def _separator(block: ContentBlock, following: ContentBlock | None) -> str:
     return ">" * shared
 
 
+def _escaped_leader(text: str) -> str:
+    """Escape a leading counter so a bullet item is not read back as an ordered one."""
+    return re.sub(r"^([0-9A-Za-z]+)\.(?!\d)", r"\1\\.", text)
+
+
+def _list_marker(block: ContentBlock, text: str) -> tuple[str, str]:
+    """Return the marker and the body one list item is written with."""
+    match = _ORDERED_MARKER.match(text)
+    if block.ordered is None:
+        # Inferred structure names no list type, so a counter the source rendered
+        # into text is the only evidence the item is numbered.
+        if match is not None:
+            return f"{match.group(1)}. ", text[match.end() :]
+        return "- ", _escaped_leader(text)
+    if not block.ordered:
+        return "- ", _escaped_leader(text)
+    if match is not None:
+        return f"{match.group(1)}. ", text[match.end() :]
+    return f"{block.list_start or 1}. ", text
+
+
 def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
     """Serialize normalized blocks into deterministic UTF-8-ready Markdown text."""
     lines: list[str] = []
@@ -196,14 +217,7 @@ def render_markdown(content: NormalizedContent, *, asset_directory: str) -> str:
                     list_levels.append(level)
                     list_indents.append(parent_indent + " " * parent_width)
                     marker_widths.append(0)
-                # An item already numbered by the source becomes an ordered item.
-                ordered = _ORDERED_MARKER.match(text)
-                if ordered is not None:
-                    marker = f"{ordered.group(1)}. "
-                    body = text[ordered.end() :]
-                else:
-                    marker = "- "
-                    body = re.sub(r"^([0-9A-Za-z]+)\.(?!\d)", r"\1\\.", text)
+                marker, body = _list_marker(block, text)
                 marker_widths[-1] = len(marker)
                 produced.append(f"{list_indents[-1]}{marker}{body}")
             else:
