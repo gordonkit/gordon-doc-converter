@@ -329,7 +329,7 @@ def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
     yaml_payload = yaml.safe_load(render_yaml(content))
 
     assert yaml_payload == json_payload
-    assert json_payload["schema_version"] == "1.4"
+    assert json_payload["schema_version"] == "1.5"
     assert json_payload["root_blocks"][0]["text"] == "前言"
     chapter = json_payload["sections"][0]
     assert chapter["title"] == "第一章"
@@ -337,6 +337,40 @@ def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
     assert chapter["children"][0]["blocks"][0]["physical_page_number"] == 2
     assert render_json(content) == render_json(content)
     assert render_yaml(content) == render_yaml(content)
+
+
+def test_structured_blocks_state_the_list_type_without_dropping_the_marker() -> None:
+    json_payload = json.loads(render_json(_list_run()))
+    yaml_payload = yaml.safe_load(render_yaml(_list_run()))
+
+    assert yaml_payload == json_payload
+    items = json_payload["root_blocks"]
+    assert [(item.get("ordered"), item.get("list_start"), item["text"]) for item in items] == [
+        (False, None, "項目"),
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+        (False, None, "巢狀"),
+        (False, None, "之後"),
+    ]
+
+
+def test_structured_blocks_omit_a_list_type_no_source_stated() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 推論項目"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    block = json.loads(render_json(content))["root_blocks"][0]
+
+    assert "ordered" not in block
+    assert "list_start" not in block
+    assert block["text"] == "3. 推論項目"
 
 
 def test_structured_content_coalesces_word_runs_and_keeps_semantic_inlines() -> None:
