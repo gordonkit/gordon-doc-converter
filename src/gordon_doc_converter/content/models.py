@@ -123,12 +123,21 @@ class InlineSpan:
 
 @dataclass(frozen=True, slots=True)
 class ContentBlock:
-    """One normalized semantic block with optional table cells and page source."""
+    """One normalized semantic block with optional table cells and page source.
+
+    `ordered` records whether a list item belongs to a numbered list. `None` means
+    the source stated no such fact, and writers keep whatever marker the item
+    carries as inline text; that is the case for inferred structure and for
+    numbering formats no writer can reproduce. `list_start` carries the counter an
+    ordered run begins at, and is set only on the item that opens the run.
+    """
 
     kind: BlockKind
     inlines: tuple[InlineSpan, ...] = ()
     level: int | None = None
     list_level: int | None = None
+    ordered: bool | None = None
+    list_start: int | None = None
     rows: tuple[tuple[tuple[InlineSpan, ...], ...], ...] = ()
     quote_level: int | None = None
     language: str | None = None
