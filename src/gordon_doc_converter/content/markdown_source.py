@@ -73,10 +73,11 @@ def _task_marker(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
 
 @dataclass(slots=True)
 class _List:
-    """One open list and its ordered-item counter."""
+    """One open list, its ordered-item counter, and the counter it began at."""
 
     ordered: bool
     counter: int
+    start: int
 
 
 @dataclass(slots=True)
@@ -143,16 +144,24 @@ class _MarkdownWalker:
     ) -> None:
         """Emit one inline-bearing block, opening a list item when one is due."""
         list_level = self._list_level()
+        ordered: bool | None = None
+        list_start: int | None = None
         if self._item_pending and list_level is not None:
             self._item_pending = False
             if kind is BlockKind.PARAGRAPH:
                 kind = BlockKind.LIST_ITEM
+                current = self._lists[-1]
+                ordered = current.ordered
+                if ordered and current.counter == current.start:
+                    list_start = current.start
                 spans = self._numbered(_task_marker(spans))
         self._emit(
             ContentBlock(
                 kind,
                 spans,
                 list_level=list_level if kind is not BlockKind.HEADING else None,
+                ordered=ordered,
+                list_start=list_start,
                 quote_level=self._quote(),
                 source_anchor=self._anchor(token),
                 **fields,
@@ -208,7 +217,8 @@ class _MarkdownWalker:
             self._quote_depth = max(self._quote_depth - 1, 0)
             return 1
         if kind in {"bullet_list_open", "ordered_list_open"}:
-            self._lists.append(_List(kind == "ordered_list_open", _list_start(token)))
+            start = _list_start(token)
+            self._lists.append(_List(kind == "ordered_list_open", start, start))
             return 1
         if kind in {"bullet_list_close", "ordered_list_close"}:
             if self._lists:

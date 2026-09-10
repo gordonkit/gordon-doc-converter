@@ -164,6 +164,8 @@ class _Leaf:
     spans: list[InlineSpan] = field(default_factory=list)
     level: int | None = None
     list_level: int | None = None
+    ordered: bool | None = None
+    list_start: int | None = None
     quote_level: int | None = None
     language: str | None = None
     anchor: SourceAnchor | None = None
@@ -172,10 +174,11 @@ class _Leaf:
 
 @dataclass(slots=True)
 class _List:
-    """One open list element and its ordered-item counter."""
+    """One open list element, its ordered-item counter, and the counter it began at."""
 
     ordered: bool
     counter: int
+    start: int
 
 
 @dataclass(slots=True)
@@ -287,6 +290,8 @@ class _HtmlContentParser(HTMLParser):
                 spans,
                 level=leaf.level,
                 list_level=leaf.list_level,
+                ordered=leaf.ordered,
+                list_start=leaf.list_start,
                 quote_level=leaf.quote_level,
                 language=leaf.language,
                 source_anchor=leaf.anchor,
@@ -395,7 +400,8 @@ class _HtmlContentParser(HTMLParser):
             element.opened_quote = True
         elif tag in _LIST_TAGS:
             self._flush_leaf()
-            self._lists.append(_List(tag == "ol", _list_start(attributes)))
+            start = _list_start(attributes)
+            self._lists.append(_List(tag == "ol", start, start))
             element.opened_list = True
         elif tag == "table":
             self._flush_leaf()
@@ -506,9 +512,14 @@ class _HtmlContentParser(HTMLParser):
                 quote_level=quote_level,
                 anchor=anchor,
             )
-            if self._lists and self._lists[-1].ordered:
-                leaf.spans.append(InlineSpan(InlineKind.TEXT, f"{self._lists[-1].counter}. "))
-                self._lists[-1].counter += 1
+            if self._lists:
+                current = self._lists[-1]
+                leaf.ordered = current.ordered
+                if current.ordered:
+                    if current.counter == current.start:
+                        leaf.list_start = current.start
+                    leaf.spans.append(InlineSpan(InlineKind.TEXT, f"{current.counter}. "))
+                    current.counter += 1
             return leaf
         if tag == "pre":
             return _Leaf(

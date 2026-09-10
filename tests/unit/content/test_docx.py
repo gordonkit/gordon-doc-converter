@@ -117,6 +117,47 @@ def _write_restart_docx(path: Path) -> None:
         archive.writestr("word/numbering.xml", _NUMBERING)
 
 
+_LIST_NUMBERING = """<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum w:abstractNumId="10">
+<w:lvl w:ilvl="0"><w:start w:val="3"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl>
+<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1.%2."/></w:lvl>
+</w:abstractNum>
+<w:abstractNum w:abstractNumId="11">
+<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/></w:lvl>
+</w:abstractNum>
+<w:num w:numId="5"><w:abstractNumId w:val="10"/></w:num>
+<w:num w:numId="6"><w:abstractNumId w:val="11"/></w:num>
+</w:numbering>"""
+
+
+def _write_list_docx(path: Path) -> None:
+    document = """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="6"/></w:numPr></w:pPr><w:r><w:t>符號</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/></w:numPr></w:pPr><w:r><w:t>甲</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/></w:numPr></w:pPr><w:r><w:t>乙</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="5"/></w:numPr></w:pPr><w:r><w:t>丙</w:t></w:r></w:p>
+</w:body></w:document>"""
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("word/document.xml", document)
+        archive.writestr("word/numbering.xml", _LIST_NUMBERING)
+
+
+def test_list_items_record_whether_writers_can_regenerate_their_marker(tmp_path: Path) -> None:
+    source = tmp_path / "清單.docx"
+    _write_list_docx(source)
+
+    content = extract_docx_content(source)
+
+    assert [(block.ordered, block.list_start, block.text) for block in content.blocks] == [
+        (False, None, "• 符號"),
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+        (None, None, "4.1. 丙"),
+    ]
+
+
 def test_extract_docx_preserves_semantic_blocks_links_images_and_source(tmp_path: Path) -> None:
     source = tmp_path / "繁體 中文.docx"
     _write_docx(source)
