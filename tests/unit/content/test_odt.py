@@ -316,6 +316,34 @@ def test_continued_lists_keep_counting_across_separate_list_elements(
     assert [block.text for block in content.blocks] == ["1. 甲", "2. 乙", "1. 丙"]
 
 
+def test_list_items_record_whether_writers_can_regenerate_their_marker(
+    tmp_path: Path, write_odt: Callable[..., Path]
+) -> None:
+    styles = """<office:automatic-styles>
+ <text:list-style style:name="LN">
+  <text:list-level-style-number text:level="1" style:num-format="1" style:num-suffix="." text:start-value="3"/>
+ </text:list-style>
+ <text:list-style style:name="LP">
+  <text:list-level-style-number text:level="1" style:num-format="1" style:num-prefix="(" style:num-suffix=")"/>
+ </text:list-style>
+ <text:list-style style:name="LB">
+  <text:list-level-style-bullet text:level="1" text:bullet-char="•"/>
+ </text:list-style>
+</office:automatic-styles>"""
+    body = """<text:list text:style-name="LN"><text:list-item><text:p>甲</text:p></text:list-item><text:list-item><text:p>乙</text:p></text:list-item></text:list>
+ <text:list text:style-name="LB"><text:list-item><text:p>符號</text:p></text:list-item></text:list>
+ <text:list text:style-name="LP"><text:list-item><text:p>丙</text:p></text:list-item></text:list>"""
+
+    content = extract_odt_content(write_odt(tmp_path / "清單.odt", body, styles_xml=styles))
+
+    assert [(block.ordered, block.list_start, block.text) for block in content.blocks] == [
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+        (False, None, "符號"),
+        (None, None, "(1) 丙"),
+    ]
+
+
 def test_a_package_without_a_text_body_is_rejected(
     tmp_path: Path, write_odt: Callable[..., Path]
 ) -> None:

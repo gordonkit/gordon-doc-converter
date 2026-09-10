@@ -16,7 +16,7 @@ from gordon_doc_converter.content.models import (
     SourceAnchor,
 )
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 
 
 class _ReadableSafeDumper(yaml.SafeDumper):
@@ -142,6 +142,12 @@ def _block_payload(block: ContentBlock, source_order: int) -> dict[str, object]:
         payload["source_anchor"] = _source_anchor_payload(block.source_anchor, anchor_text)
     if block.list_level is not None:
         payload["list_level"] = block.list_level
+    # The marker stays in `text`: this payload renders no counter of its own, so
+    # unlike the HTML and Markdown writers it has nothing to duplicate.
+    if block.ordered is not None:
+        payload["ordered"] = block.ordered
+    if block.list_start is not None:
+        payload["list_start"] = block.list_start
     if block.quote_level is not None:
         payload["quote_level"] = block.quote_level
     if block.language is not None:

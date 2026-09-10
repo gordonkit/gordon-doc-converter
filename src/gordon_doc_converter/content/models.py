@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from gordon_doc_converter.models import ConversionWarning, NormalizedAnnotation, SourceFormat
@@ -42,6 +43,27 @@ INLINE_STYLE_ORDER: tuple[InlineStyle, ...] = (
 def ordered_styles(styles: frozenset[InlineStyle]) -> tuple[InlineStyle, ...]:
     """Return one span's styles in a deterministic, writer-friendly order."""
     return tuple(style for style in INLINE_STYLE_ORDER if style in styles)
+
+
+# The counter a source renders ahead of an ordered item, which a writer that
+# numbers the list itself must drop rather than print twice.
+_COUNTER_MARKER = re.compile(r"^([0-9]{1,3})[.)](?!\d)\s*")
+
+
+def without_counter_marker(spans: tuple[InlineSpan, ...]) -> tuple[InlineSpan, ...]:
+    """Drop the rendered counter an ordered list item carries as leading text."""
+    if not spans:
+        return spans
+    first = spans[0]
+    if first.kind is not InlineKind.TEXT:
+        return spans
+    match = _COUNTER_MARKER.match(first.text)
+    if match is None:
+        return spans
+    remainder = first.text[match.end() :]
+    if not remainder:
+        return spans[1:]
+    return (replace(first, text=remainder), *spans[1:])
 
 
 class BlockKind(StrEnum):
@@ -123,12 +145,21 @@ class InlineSpan:
 
 @dataclass(frozen=True, slots=True)
 class ContentBlock:
-    """One normalized semantic block with optional table cells and page source."""
+    """One normalized semantic block with optional table cells and page source.
+
+    `ordered` records whether a list item belongs to a numbered list. `None` means
+    the source stated no such fact, and writers keep whatever marker the item
+    carries as inline text; that is the case for inferred structure and for
+    numbering formats no writer can reproduce. `list_start` carries the counter an
+    ordered run begins at, and is set only on the item that opens the run.
+    """
 
     kind: BlockKind
     inlines: tuple[InlineSpan, ...] = ()
     level: int | None = None
     list_level: int | None = None
+    ordered: bool | None = None
+    list_start: int | None = None
     rows: tuple[tuple[tuple[InlineSpan, ...], ...], ...] = ()
     quote_level: int | None = None
     language: str | None = None

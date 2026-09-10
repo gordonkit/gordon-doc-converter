@@ -12,6 +12,7 @@ from gordon_doc_converter.content.models import (
     InlineSpan,
     InlineStyle,
     NormalizedContent,
+    without_counter_marker,
 )
 
 _STYLE_TAGS = {
@@ -137,6 +138,20 @@ def _has_content(block: ContentBlock) -> bool:
     return bool(text)
 
 
+def _list_tag(block: ContentBlock) -> str:
+    """Return the list element one item belongs in."""
+    return "ol" if block.ordered else "ul"
+
+
+def _open_list(block: ContentBlock) -> str:
+    """Open the list element one item's ordered facts call for."""
+    if not block.ordered:
+        return "<ul>"
+    if block.list_start is not None and block.list_start != 1:
+        return f'<ol start="{block.list_start}">'
+    return "<ol>"
+
+
 def _render_list_items(
     blocks: tuple[ContentBlock, ...],
     start_index: int,
@@ -146,30 +161,36 @@ def _render_list_items(
     lines: list[str] = []
     index = start_index
     base_level = blocks[index].list_level or 0
-    current_level = base_level
-    lines.append("<ul>")
+    # One entry per open list element, innermost last. A nested list lives inside
+    # the item that introduced it, so depth and open items rise and fall together.
+    open_tags: list[str] = []
 
     while index < len(blocks):
         block = blocks[index]
 
         if block.kind is BlockKind.LIST_ITEM:
-            level = block.list_level or 0
-            text = _render_inlines(block.inlines, asset_directory)
+            depth = max(block.list_level or 0, base_level) - base_level + 1
+            tag = _list_tag(block)
+            # An item numbered by the writer must not also print the counter its
+            # source rendered into text.
+            spans = without_counter_marker(block.inlines) if block.ordered else block.inlines
+            text = _render_inlines(spans, asset_directory)
             attrs = _block_data_attributes(block)
 
-            if level > current_level:
-                while current_level < level:
-                    lines.append("<ul>")
-                    current_level += 1
-            elif level < current_level:
-                lines.append("</li>")
-                while current_level > level:
-                    lines.append("</ul>")
-                    current_level -= 1
-                lines.append("</li>")
+            if depth > len(open_tags):
+                while len(open_tags) < depth:
+                    lines.append(_open_list(block))
+                    open_tags.append(tag)
             else:
-                if index > start_index:
+                while len(open_tags) > depth:
                     lines.append("</li>")
+                    lines.append(f"</{open_tags.pop()}>")
+                lines.append("</li>")
+                # A bullet run and a numbered run are two lists, not one.
+                if open_tags[-1] != tag:
+                    lines.append(f"</{open_tags.pop()}>")
+                    lines.append(_open_list(block))
+                    open_tags.append(tag)
 
             lines.append(f"<li{attrs}>{text}")
             index += 1
@@ -183,16 +204,9 @@ def _render_list_items(
         else:
             break
 
-    lines.append("</li>")
-    exit_depth = current_level
-    while current_level > base_level:
-        lines.append("</ul>")
-        current_level -= 1
-        if current_level > base_level:
-            lines.append("</li>")
-    if exit_depth > base_level:
+    while open_tags:
         lines.append("</li>")
-    lines.append("</ul>")
+        lines.append(f"</{open_tags.pop()}>")
     return lines, index
 
 

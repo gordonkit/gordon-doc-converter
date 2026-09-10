@@ -247,7 +247,7 @@ PDF 沒有語意標記，因此區塊由版面推論而來。轉換器會依字�
 破壞 DOCX 定位契約。沒有值的選用定位欄位不會輸出為 null。
 
 ```yaml
-schema_version: "1.3"
+schema_version: "1.5"
 source: {format: "pdf", sha256: "<來源檔案-sha256>"}
 root_blocks: [{
     id: "block-000001",

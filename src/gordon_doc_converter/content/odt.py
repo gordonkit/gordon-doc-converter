@@ -714,6 +714,40 @@ def _marker_prefix(state: _State, style_name: str | None, level: int) -> str:
     return f"{rendered} " if rendered else ""
 
 
+# An `<ol>` renders a plain decimal counter and nothing else, so any style that
+# adds a prefix, an unusual suffix, a non-decimal system, or a compound
+# multi-level marker keeps its literal text and stays unordered to the writers.
+_REPRODUCIBLE_SUFFIXES = frozenset({"", ".", ")"})
+
+
+def _reproducible_counter(definition: _ListLevel) -> bool:
+    """Report whether writers can regenerate this level's marker from a counter alone."""
+    return (
+        definition.system is OrdinalSystem.DECIMAL
+        and definition.display_levels == 1
+        and not definition.prefix
+        and definition.suffix in _REPRODUCIBLE_SUFFIXES
+    )
+
+
+def _ordered_facts(
+    state: _State, style_name: str | None, level: int, numbered: bool
+) -> tuple[bool | None, int | None]:
+    """Resolve one list item's ordered-list facts before its marker advances the counter."""
+    if not numbered:
+        return None, None
+    definition = state.list_styles.get(style_name or "", {}).get(level)
+    if definition is None:
+        return None, None
+    if definition.system is None:
+        return False, None
+    if not _reproducible_counter(definition):
+        return None, None
+    counters = state.list_counters.get(style_name or "")
+    opening = counters is None or not counters[level]
+    return True, definition.start_value if opening else None
+
+
 def _outline_prefix(state: _State, level: int) -> str:
     """Render the chapter-numbering marker `text:outline-style` assigns to a heading."""
     index = level - 1
@@ -765,6 +799,8 @@ def _paragraph_block(
             state.active_styles.remove(style)
     style_names = _paragraph_style_names(style_name, state)
     quote_level = 1 if style_names & _QUOTE_STYLE_NAMES else None
+    ordered: bool | None = None
+    list_start: int | None = None
     if heading_level is not None:
         kind = BlockKind.HEADING
         if element.get(_q(_TEXT, "is-list-header")) != "true":
@@ -773,6 +809,8 @@ def _paragraph_block(
                 spans.insert(0, InlineSpan(InlineKind.TEXT, prefix))
     elif list_level is not None:
         kind = BlockKind.LIST_ITEM if list_leading else BlockKind.PARAGRAPH
+        if list_leading:
+            ordered, list_start = _ordered_facts(state, list_style, list_level, numbered)
         if numbered and list_leading:
             prefix = _marker_prefix(state, list_style, list_level)
             if prefix:
@@ -786,6 +824,8 @@ def _paragraph_block(
         tuple(spans),
         level=heading_level,
         list_level=None if kind is BlockKind.HEADING else list_level,
+        ordered=ordered,
+        list_start=list_start,
         quote_level=quote_level,
         source_anchor=anchor,
     )

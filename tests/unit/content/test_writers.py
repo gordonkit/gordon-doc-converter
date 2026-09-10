@@ -138,6 +138,94 @@ def test_html_escapes_content_and_never_emits_active_source_values() -> None:
     ) in rendered
 
 
+def _list_run() -> NormalizedContent:
+    """A bullet run, a numbered run starting at 3 with a nested bullet, then bullets again."""
+
+    def item(text: str, **fields: object) -> ContentBlock:
+        return ContentBlock(BlockKind.LIST_ITEM, (InlineSpan(InlineKind.TEXT, text),), **fields)
+
+    return NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            item("項目", list_level=0, ordered=False),
+            item("3. 甲", list_level=0, ordered=True, list_start=3),
+            item("4. 乙", list_level=0, ordered=True),
+            item("巢狀", list_level=1, ordered=False),
+            item("之後", list_level=0, ordered=False),
+        ),
+    )
+
+
+def test_markdown_numbers_a_list_its_source_declared_ordered() -> None:
+    rendered = render_markdown(_list_run(), asset_directory="文件.assets")
+
+    assert rendered == "- 項目\n3. 甲\n4. 乙\n   - 巢狀\n- 之後\n"
+
+
+def test_markdown_keeps_a_bullet_item_that_merely_begins_with_a_counter() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.HTML,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 看似編號"),),
+                list_level=0,
+                ordered=False,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="文件.assets")
+
+    assert rendered == "- 3\\. 看似編號\n"
+
+
+def test_markdown_reads_an_inferred_counter_when_no_list_type_is_stated() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 推論項目"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    rendered = render_markdown(content, asset_directory="文件.assets")
+
+    assert rendered == "3. 推論項目\n"
+
+
+def test_html_separates_bullet_and_numbered_runs_instead_of_fusing_them() -> None:
+    rendered = render_html(_list_run(), asset_directory="文件.assets")
+
+    assert (
+        "<ul>\n<li>項目\n</li>\n</ul>\n"
+        '<ol start="3">\n<li>甲\n</li>\n<li>乙\n'
+        "<ul>\n<li>巢狀\n</li>\n</ul>\n</li>\n</ol>\n"
+        "<ul>\n<li>之後\n</li>\n</ul>"
+    ) in rendered
+
+
+def test_html_keeps_a_marker_no_counter_can_reproduce_as_literal_text() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.DOCX,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "第一章 總則"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    rendered = render_html(content, asset_directory="文件.assets")
+
+    assert "<ul>\n<li>第一章 總則\n</li>\n</ul>" in rendered
+    assert "<ol" not in rendered
+
+
 def test_markdown_normalizes_skipped_word_list_levels_and_tabs() -> None:
     content = NormalizedContent(
         source_format=SourceFormat.DOCX,
@@ -241,7 +329,7 @@ def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
     yaml_payload = yaml.safe_load(render_yaml(content))
 
     assert yaml_payload == json_payload
-    assert json_payload["schema_version"] == "1.4"
+    assert json_payload["schema_version"] == "1.5"
     assert json_payload["root_blocks"][0]["text"] == "前言"
     chapter = json_payload["sections"][0]
     assert chapter["title"] == "第一章"
@@ -249,6 +337,40 @@ def test_json_and_yaml_share_one_versioned_heading_hierarchy() -> None:
     assert chapter["children"][0]["blocks"][0]["physical_page_number"] == 2
     assert render_json(content) == render_json(content)
     assert render_yaml(content) == render_yaml(content)
+
+
+def test_structured_blocks_state_the_list_type_without_dropping_the_marker() -> None:
+    json_payload = json.loads(render_json(_list_run()))
+    yaml_payload = yaml.safe_load(render_yaml(_list_run()))
+
+    assert yaml_payload == json_payload
+    items = json_payload["root_blocks"]
+    assert [(item.get("ordered"), item.get("list_start"), item["text"]) for item in items] == [
+        (False, None, "項目"),
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+        (False, None, "巢狀"),
+        (False, None, "之後"),
+    ]
+
+
+def test_structured_blocks_omit_a_list_type_no_source_stated() -> None:
+    content = NormalizedContent(
+        source_format=SourceFormat.PDF,
+        blocks=(
+            ContentBlock(
+                BlockKind.LIST_ITEM,
+                (InlineSpan(InlineKind.TEXT, "3. 推論項目"),),
+                list_level=0,
+            ),
+        ),
+    )
+
+    block = json.loads(render_json(content))["root_blocks"][0]
+
+    assert "ordered" not in block
+    assert "list_start" not in block
+    assert block["text"] == "3. 推論項目"
 
 
 def test_structured_content_coalesces_word_runs_and_keeps_semantic_inlines() -> None:

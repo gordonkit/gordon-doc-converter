@@ -99,6 +99,18 @@ def test_lists_carry_nesting_depth_and_ordered_counters(tmp_path: Path) -> None:
     ]
 
 
+def test_list_items_record_whether_their_list_is_ordered(tmp_path: Path) -> None:
+    source = _markdown(tmp_path, "- 項目\n\n3. 甲\n1. 乙\n")
+
+    content = extract_markdown_content(source)
+
+    assert [(block.ordered, block.list_start, block.text) for block in content.blocks] == [
+        (False, None, "項目"),
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+    ]
+
+
 def test_paragraphs_after_the_first_stay_inside_their_list_item(tmp_path: Path) -> None:
     source = _markdown(tmp_path, "- first\n\n  continuation\n\n- second\n")
 

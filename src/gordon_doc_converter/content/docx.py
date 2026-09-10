@@ -580,6 +580,37 @@ def _format_number(value: int, number_format: str) -> str:
     return format_ordinal(value, system)
 
 
+# An `<ol>` renders a plain decimal counter and nothing else, so only a single-level
+# decimal `lvlText` naming its own level can be regenerated from a counter. Compound
+# markers such as `%1.%2.` and lettered or roman formats keep their literal text.
+_REPRODUCIBLE_LEVEL_TEXT = re.compile(r"^%(\d)[.)]?$")
+
+
+def _ordered_facts(
+    num_id: str | None, level: int | None, state: _State
+) -> tuple[bool | None, int | None]:
+    """Resolve one list item's ordered-list facts before its marker advances the counter."""
+    if num_id is None:
+        return None, None
+    numbering = state.numbering.get(num_id)
+    if numbering is None:
+        return None, None
+    list_level = level or 0
+    definition = numbering.levels.get(list_level)
+    if definition is None:
+        return None, None
+    if definition.number_format == "bullet":
+        return False, None
+    match = _REPRODUCIBLE_LEVEL_TEXT.match(definition.level_text or "")
+    if definition.number_format != "decimal" or match is None:
+        return None, None
+    if match.group(1) != str(list_level + 1):
+        return None, None
+    counters = state.counters.get(num_id)
+    opening = counters is None or not counters[list_level]
+    return True, definition.start if opening else None
+
+
 def _number_prefix(num_id: str | None, level: int | None, state: _State) -> str:
     if num_id is None:
         return ""
@@ -708,6 +739,7 @@ def _paragraph(
     else:
         kind = BlockKind.PARAGRAPH
     spans = _inline_children(element, state)
+    ordered, list_start = _ordered_facts(num_id, list_level, state)
     prefix = _number_prefix(num_id, list_level, state)
     if prefix:
         spans.insert(0, InlineSpan(InlineKind.TEXT, prefix))
@@ -732,6 +764,8 @@ def _paragraph(
             if manual_level is not None
             else continuation_level
         ),
+        ordered=ordered if kind is BlockKind.LIST_ITEM else None,
+        list_start=list_start if kind is BlockKind.LIST_ITEM else None,
         quote_level=quote_level,
         source_anchor=source_anchor,
     )

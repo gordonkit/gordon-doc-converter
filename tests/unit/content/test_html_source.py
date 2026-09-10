@@ -66,6 +66,18 @@ def test_nested_and_ordered_lists_keep_level_and_numbering(tmp_path: Path) -> No
     ]
 
 
+def test_list_items_record_whether_their_list_is_ordered(tmp_path: Path) -> None:
+    source = _html(tmp_path, '<ul><li>項目</li></ul><ol start="3"><li>甲</li><li>乙</li></ol>')
+
+    content = extract_html_content(source)
+
+    assert [(block.ordered, block.list_start, block.text) for block in content.blocks] == [
+        (False, None, "項目"),
+        (True, 3, "3. 甲"),
+        (True, None, "4. 乙"),
+    ]
+
+
 def test_tables_recover_omitted_end_tags_and_report_merged_cells(tmp_path: Path) -> None:
     source = _html(
         tmp_path,
