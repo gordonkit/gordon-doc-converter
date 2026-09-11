@@ -141,8 +141,16 @@ def test_html_escapes_content_and_never_emits_active_source_values() -> None:
 def _list_run() -> NormalizedContent:
     """A bullet run, a numbered run starting at 3 with a nested bullet, then bullets again."""
 
-    def item(text: str, **fields: object) -> ContentBlock:
-        return ContentBlock(BlockKind.LIST_ITEM, (InlineSpan(InlineKind.TEXT, text),), **fields)
+    def item(
+        text: str, *, list_level: int, ordered: bool, list_start: int | None = None
+    ) -> ContentBlock:
+        return ContentBlock(
+            BlockKind.LIST_ITEM,
+            (InlineSpan(InlineKind.TEXT, text),),
+            list_level=list_level,
+            ordered=ordered,
+            list_start=list_start,
+        )
 
     return NormalizedContent(
         source_format=SourceFormat.HTML,
