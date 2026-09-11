@@ -93,6 +93,31 @@ def _markup_fallback_warning(unavailable: str, error: EngineUnavailableError) ->
     )
 
 
+def _deduplicated(warnings: Sequence[ConversionWarning]) -> list[ConversionWarning]:
+    """Keep the first of each warning, for routes that report the same one twice."""
+    seen: set[tuple[str, str]] = set()
+    unique: list[ConversionWarning] = []
+    for warning in warnings:
+        key = (warning.code, warning.message)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(warning)
+    return unique
+
+
+def _layout_not_preserved_warning() -> ConversionWarning:
+    """Report that an office artifact was rebuilt from content, not converted in place."""
+    return ConversionWarning(
+        code="LAYOUT_NOT_PRESERVED",
+        message=(
+            "PDF carries no editable document model, so this artifact was rebuilt from the "
+            "extracted content: pagination, columns, fonts, tables, and inline styles are not "
+            "carried over"
+        ),
+    )
+
+
 def _exception_warning(error: ConversionError, engine: EngineName) -> ConversionWarning:
     return ConversionWarning(
         code="ENGINE_FALLBACK",
@@ -338,8 +363,10 @@ class ConversionPipeline:
         if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
             result = self._convert_markup(request, progress_callback)
         elif (
-            request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts
-        ) and set(request.artifacts) <= _OFFICE_FILE_ARTIFACTS:
+            request.source_format is not SourceFormat.PDF
+            and (request.source_format is SourceFormat.ODT or ArtifactType.ODT in request.artifacts)
+            and set(request.artifacts) <= _OFFICE_FILE_ARTIFACTS
+        ):
             result = self._convert_office_files(request, progress_callback)
         elif request.source_format in {SourceFormat.ODT, SourceFormat.PDF} or request.artifacts != (
             ArtifactType.PDF,
@@ -874,6 +901,102 @@ class ConversionPipeline:
                 )
         return warnings
 
+    def _render_content_office_artifacts(
+        self,
+        request: ConversionRequest,
+        artifact_types: tuple[ArtifactType, ...],
+        results: dict[ArtifactType, ArtifactResult],
+        progress_callback: ProgressCallback | None,
+        content: NormalizedContent,
+    ) -> tuple[ConversionWarning, ...]:
+        """Rebuild DOCX or ODT from extracted content, for sources engines cannot convert.
+
+        A PDF holds no editable document model, so LibreOffice cannot convert the file
+        itself. Its office artifacts take the route Markdown already takes: semantic
+        extraction into the print-ready A4 intermediate, then the engine each artifact
+        needs. The result is the content, not the source layout, so it carries a
+        ``LAYOUT_NOT_PRESERVED`` warning.
+        """
+        warnings: list[ConversionWarning] = []
+        with TemporaryDirectory(prefix="gordon-doc-content-office-") as temporary:
+            workspace = Path(temporary)
+            try:
+                self._report(
+                    progress_callback,
+                    "rendering",
+                    "Preparing print-ready markup",
+                )
+                print_source = write_print_document(
+                    content,
+                    workspace / "intermediate",
+                    orientation=request.options.page_orientation,
+                )
+                # Pandoc renders its own title block from the head metadata, so the
+                # copy it reads leaves the visible one out.
+                docx_source = write_print_document(
+                    content,
+                    workspace / "intermediate-docx",
+                    orientation=request.options.page_orientation,
+                    metadata_block=False,
+                )
+            except ConversionError as error:
+                self._record_artifact_failures(results, artifact_types, error)
+                return tuple(warnings)
+            warnings.extend(content.warnings)
+            warnings.append(_layout_not_preserved_warning())
+            for artifact_type in artifact_types:
+                suffix = _MARKUP_ARTIFACT_SUFFIXES[artifact_type]
+                output = (
+                    request.options.output_path
+                    if len(request.artifacts) == 1 and request.options.output_path is not None
+                    else _output_stem(request).with_suffix(suffix)
+                )
+                if output.suffix.casefold() != suffix:
+                    self._record_artifact_failures(
+                        results,
+                        (artifact_type,),
+                        InvalidInputError(
+                            f"{artifact_type.value} output must use the {suffix} extension"
+                        ),
+                    )
+                    continue
+                if output.exists() and not request.options.overwrite:
+                    self._record_artifact_failures(
+                        results,
+                        (artifact_type,),
+                        OutputExistsError("output already exists"),
+                    )
+                    continue
+                staged = workspace / f"output{suffix}"
+                try:
+                    self._report(
+                        progress_callback,
+                        "rendering",
+                        f"Creating {artifact_type.value} artifact",
+                        artifact=artifact_type,
+                    )
+                    warnings.extend(
+                        self._render_markup_file(
+                            docx_source if artifact_type is ArtifactType.DOCX else print_source,
+                            staged,
+                            source_format=SourceFormat.HTML,
+                            artifact_type=artifact_type,
+                            options=request.options,
+                        )
+                    )
+                    _publish_staged_artifact(staged, output, overwrite=request.options.overwrite)
+                    size = output.stat().st_size
+                    results[artifact_type] = ArtifactResult(
+                        artifact_type,
+                        ArtifactStatus.SUCCESS,
+                        output,
+                        size,
+                        items=(ArtifactItem(output, size, _MARKUP_MEDIA_TYPES[artifact_type]),),
+                    )
+                except ConversionError as error:
+                    self._record_artifact_failures(results, (artifact_type,), error)
+        return tuple(_deduplicated(warnings))
+
     def _render_markup_file(
         self,
         source_path: Path,
@@ -1120,11 +1243,13 @@ class ConversionPipeline:
         content_types: tuple[ArtifactType, ...],
         results: dict[ArtifactType, ArtifactResult],
         progress_callback: ProgressCallback | None,
+        content: NormalizedContent | None = None,
     ) -> tuple[ConversionWarning, ...]:
-        """Extract and serialize semantic artifacts sharing one asset directory."""
+        """Serialize semantic artifacts sharing one asset directory, and one extraction."""
         try:
-            self._report(progress_callback, "content-extraction", "Extracting semantic content")
-            content = self._extract_content(request)
+            if content is None:
+                self._report(progress_callback, "content-extraction", "Extracting semantic content")
+                content = self._extract_content(request)
             self._report(progress_callback, "serialization", "Writing semantic artifacts")
             written = write_content_artifacts(
                 content,
@@ -1219,7 +1344,30 @@ class ConversionPipeline:
             for artifact in request.artifacts
             if artifact in {ArtifactType.DOCX, ArtifactType.ODT}
         )
-        if office_types:
+        extracted: NormalizedContent | None = None
+        if office_types and request.source_format is SourceFormat.PDF:
+            # Extraction is the expensive half of a PDF conversion, so the office and
+            # semantic artifacts of one request share a single pass over the source.
+            try:
+                self._report(
+                    progress_callback,
+                    "content-extraction",
+                    "Extracting semantic content",
+                )
+                extracted = self._extract_content(request)
+            except ConversionError as error:
+                self._record_artifact_failures(results, office_types, error)
+            else:
+                warnings.extend(
+                    self._render_content_office_artifacts(
+                        request,
+                        office_types,
+                        results,
+                        progress_callback,
+                        extracted,
+                    )
+                )
+        elif office_types:
             office_result = self._convert_office_files(
                 replace(request, artifacts=office_types),
                 progress_callback,
@@ -1279,6 +1427,7 @@ class ConversionPipeline:
                     content_types,
                     results,
                     progress_callback,
+                    content=extracted,
                 )
             )
 
@@ -1426,6 +1575,7 @@ class ConversionPipeline:
                             )
 
         ordered = tuple(results[artifact] for artifact in request.artifacts)
+        warnings = _deduplicated(warnings)
         successful = all(item.status is ArtifactStatus.SUCCESS for item in ordered)
         first_error = next((item.error for item in ordered if item.error is not None), None)
         return ConversionResult(
