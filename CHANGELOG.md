@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-11
+
 ### Added
 
 - Single-step PDF-to-DOCX and PDF-to-ODT conversion. A PDF carries no editable document
@@ -16,7 +18,6 @@ All notable changes to this project will be documented in this file. The format 
 - A `LAYOUT_NOT_PRESERVED` warning on every artifact rebuilt from extracted content, so a
   caller expecting a layout-faithful conversion learns that headings, paragraphs, and lists
   survived while pagination, columns, fonts, tables, and inline styles did not.
-
 - Ordered-list facts in the normalized content model. Blocks carry `ordered` and `list_start`,
   which DOCX, ODT, HTML, and Markdown sources fill from the list type each already resolved
   while numbering its items. A source claims a list is ordered only for a marker a writer can
