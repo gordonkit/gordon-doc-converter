@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Single-step PDF-to-DOCX and PDF-to-ODT conversion. A PDF carries no editable document
+  model, so LibreOffice cannot convert the file itself; the route instead runs the same
+  semantic extraction the other PDF artifacts use, writes the print-ready A4 intermediate
+  Markdown already renders through, and hands that to Pandoc for DOCX or LibreOffice for
+  ODT within one `convert` call. Page orientation follows `--orientation`, and office and
+  semantic artifacts can be requested together as they can for any other source.
+- A `LAYOUT_NOT_PRESERVED` warning on every artifact rebuilt from extracted content, so a
+  caller expecting a layout-faithful conversion learns that headings, paragraphs, and lists
+  survived while pagination, columns, fonts, tables, and inline styles did not.
+
 - Ordered-list facts in the normalized content model. Blocks carry `ordered` and `list_start`,
   which DOCX, ODT, HTML, and Markdown sources fill from the list type each already resolved
   while numbering its items. A source claims a list is ordered only for a marker a writer can
@@ -17,6 +27,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
+- The CLI reports conversion warnings in text mode, one line per warning code with a count
+  for a code raised more than once. They previously reached `--json` alone, which hid the
+  engine substitutions and fidelity limits a plain `convert` run still carries.
+- The README and documentation format matrix is split into two tables, one for a local
+  install with every engine present and one for the container image, which carries
+  LibreOffice alone. One combined table could not state both what a route prefers and what
+  a LibreOffice-only deployment actually does with it.
 - The structured JSON and YAML schema is now version `1.5`, adding the optional `ordered` and
   `list_start` block fields. Both are written only when a source stated them, so any document
   that carried no such fact serializes exactly as it did under `1.4`. The rendered marker
