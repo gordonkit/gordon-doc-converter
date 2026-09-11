@@ -14,6 +14,7 @@ from pypdf import PdfWriter
 
 import gordon_doc_converter.engines.pandoc as pandoc_module
 import gordon_doc_converter.engines.wkhtmltopdf as wkhtmltopdf_module
+import gordon_doc_converter.pipeline as pipeline_module
 from gordon_doc_converter.engines.base import EngineExecutionResult
 from gordon_doc_converter.environment import EnvironmentInfo
 from gordon_doc_converter.exceptions import EngineFailedError, ErrorCode
@@ -999,3 +1000,128 @@ def test_markdown_pdf_keeps_the_visible_title_block_in_the_document_it_renders(
     # Nothing downstream prints the head metadata, so the PDF keeps its own header.
     assert "<header>" in markup[-1]
     assert "<h1>報告</h1>" in markup[-1]
+
+
+def _pdf_source(tmp_path: Path, name: str = "臺灣 文件.pdf") -> Path:
+    source = tmp_path / name
+    _write_pdf(source, "public")
+    return source
+
+
+def test_pdf_docx_rebuilds_the_document_from_extracted_content(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _pdf_source(tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del source_path, artifact_type
+        output_path.write_bytes(b"generated word document")
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("a PDF source must not take the DOCX-to-PDF rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.PDF,
+        (ArtifactType.DOCX,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert (tmp_path / "臺灣 文件.docx").is_file()
+    intermediate, source_format, artifact_type = engine.file_calls[0]
+    assert intermediate != source
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.DOCX
+    codes = [item.code for item in result.warnings]
+    assert codes.count("LAYOUT_NOT_PRESERVED") == 1
+
+
+def test_pdf_odt_renders_the_intermediate_rather_than_the_source_package(tmp_path: Path) -> None:
+    source = _pdf_source(tmp_path)
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del source_path, artifact_type
+        output_path.write_bytes(b"generated open document")
+
+    def unused_render(source_path: Path, output_path: Path) -> None:
+        raise AssertionError("a PDF source must not take the DOCX-to-PDF rendering path")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        unused_render,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.PDF,
+        (ArtifactType.ODT,),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert (tmp_path / "臺灣 文件.odt").is_file()
+    intermediate, source_format, artifact_type = engine.file_calls[0]
+    assert intermediate != source
+    assert intermediate.suffix == ".html"
+    assert source_format is SourceFormat.HTML
+    assert artifact_type is ArtifactType.ODT
+    assert "LAYOUT_NOT_PRESERVED" in [item.code for item in result.warnings]
+
+
+def test_pdf_office_and_semantic_artifacts_share_one_extraction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = _pdf_source(tmp_path)
+    extractions = 0
+    extract = pipeline_module.extract_pdf_content
+
+    def counted_extract(*args: object, **kwargs: object) -> object:
+        nonlocal extractions
+        extractions += 1
+        return extract(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(pipeline_module, "extract_pdf_content", counted_extract)
+
+    def render_file(source_path: Path, output_path: Path, artifact_type: ArtifactType) -> None:
+        del source_path, artifact_type
+        output_path.write_bytes(b"generated open document")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: None,
+        file_render=render_file,
+    )
+    request = ConversionRequest(
+        source,
+        SourceFormat.PDF,
+        (ArtifactType.ODT, ArtifactType.MARKDOWN),
+        ConversionOptions(),
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert [item.artifact_type for item in result.artifacts] == [
+        ArtifactType.ODT,
+        ArtifactType.MARKDOWN,
+    ]
+    assert (tmp_path / "臺灣 文件.odt").is_file()
+    assert (tmp_path / "臺灣 文件.md").is_file()
+    assert extractions == 1
+    assert [item.code for item in result.warnings].count("LAYOUT_NOT_PRESERVED") == 1

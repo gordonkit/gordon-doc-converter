@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import IntEnum
 from importlib.metadata import version
 from pathlib import Path
@@ -21,6 +21,7 @@ from gordon_doc_converter.models import (
     ConversionOptions,
     ConversionRequest,
     ConversionResult,
+    ConversionWarning,
     DeploymentMode,
     EngineName,
     EngineProbeResult,
@@ -90,12 +91,29 @@ def _failure_payload(command: str, error: ConversionError) -> dict[str, JsonValu
     return {"command": command, "success": False, "error": error.to_dict()}
 
 
+def _render_warnings(warnings: Sequence[ConversionWarning]) -> list[str]:
+    """Summarize warnings one line per code, so a per-page code stays one line."""
+    counts: dict[str, int] = {}
+    messages: dict[str, str] = {}
+    for warning in warnings:
+        counts[warning.code] = counts.get(warning.code, 0) + 1
+        messages.setdefault(warning.code, warning.message)
+    return [
+        f"Warning [{code}]: {messages[code]}" + (f" (x{count})" if count > 1 else "")
+        for code, count in counts.items()
+    ]
+
+
 def _render_conversion(result: ConversionResult) -> str:
     if result.success:
         artifact = result.artifacts[0]
         if result.selected_engine is None:
-            return f"Converted without a rendering engine: {artifact.path}"
-        return f"Converted with {result.selected_engine.value}: {artifact.path}"
+            line = f"Converted without a rendering engine: {artifact.path}"
+        else:
+            line = f"Converted with {result.selected_engine.value}: {artifact.path}"
+        # Warnings decide whether the output is the one the caller expected, so text
+        # mode reports them instead of leaving them to --json alone.
+        return "\n".join([line, *_render_warnings(result.warnings)])
     message = result.error.message if result.error else "conversion failed"
     return f"Conversion failed: {message}"
 

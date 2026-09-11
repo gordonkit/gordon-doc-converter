@@ -17,17 +17,50 @@ Microsoft Word、LibreOffice、Pandoc、Gotenberg を利用します。
 
 ## 対応する変換フォーマット
 
+何を変換できるかは、どのインターフェースから呼び出すかではなく、その配備が備える
+エンジンで決まります。そのため表はインストール形態ごとに 2 つに分けています。すべての
+エンジンが揃ったローカルインストールと、LibreOffice のみを含む公式コンテナイメージです。
+
+### ローカルインストール（全エンジンあり）
+
 | 入力 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 画像 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
-| PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PDF | R | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
 | Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` ポリシーに基づくエンジン選択 · `✓` 標準対応 · `LO` LibreOffice · `P` Pandoc ·
-`W` wkhtmltopdf · `PDF` 中間 PDF 経由 · `—` 非対応 ·
-`×` 同一フォーマットのため変換しない
+`W` wkhtmltopdf · `PDF` 中間 PDF 経由 · `R` 抽出した内容からの再構成（元のレイアウトは
+保持しません） · `×` 同一フォーマットのため変換しない
+
+この表は、`PATH` 上に LibreOffice、Pandoc、wkhtmltopdf があり、ページ画像用に `images`
+extra が導入されていること、Word COM ポリシーについては Word を備えた対話的な Windows
+デスクトップであることを前提とします。
+
+### コンテナイメージ（LibreOffice のみ）
+
+イメージには `libreoffice-writer` と `api`、`gotenberg` の extra が入るため、wkhtmltopdf
+または Pandoc を優先する経路はすべて LibreOffice が代わりに組版し、置き換えたエンジンを
+示す `ENGINE_FALLBACK` warning を返します。
+
+| 入力 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 画像 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+
+`Auto` Compose の gateway profile が Gotenberg を提供する場合はそれを優先し、なければ
+LibreOffice · `LO!` 優先エンジンの代わりに LibreOffice が処理し、`ENGINE_FALLBACK`
+warning を返す · `R!` 抽出した内容から再構成し、代替の LibreOffice が組版する ·
+`—` このイメージでは利用できません。ページ画像には `images` extra が必要ですが、
+イメージには含まれません
+
+イメージが提供する HTTP API は DOCX から PDF への変換のみです。表のそれ以外の経路は、
+イメージ内の同じ CLI を実行する `cli` Compose profile から利用します。
 
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
 DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX / ODT /
@@ -39,6 +72,16 @@ DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML �
 ODT のセマンティック artifact は ODF パッケージから直接読み取るため、Markdown、HTML、
 YAML、JSON に外部エンジンは不要です。ODT のページ画像は先に PDF へ組版するため
 LibreOffice が必要です。
+
+PDF から DOCX、PDF から ODT への変換は、ファイルそのものを変換するのではなく、抽出した
+内容から文書を再構成します。PDF は編集可能なドキュメントモデルを持たないため、この経路は
+他の PDF artifact と同じセマンティック抽出を行い、本プロジェクトの印刷向け A4 中間ファイル
+を書き出し、それを DOCX なら Pandoc、ODT なら LibreOffice で組版します。1 回の変換で
+完結し、中間ファイルを自分で扱う必要はありません。見出し、段落、リストは残りますが、
+改ページ、段組み、フォント、表、インライン書式は失われ、結果には必ず
+`LAYOUT_NOT_PRESERVED` warning が付きます。ページの向きは Markdown と同じく
+`--orientation` に従い、テキストレイヤーを持たないスキャン PDF には抽出できる内容が
+ありません。
 
 DOCX から ODT、ODT から DOCX、ODT から PDF への変換には LibreOffice を使用します。DOCX の
 変換は次のエンジンポリシーに従います。
