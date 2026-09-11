@@ -17,17 +17,50 @@ Word, LibreOffice, Pandoc, or Gotenberg for rendering.
 
 ## Supported format conversions
 
+What a deployment can convert depends on the engines it carries, not on the interface it
+is driven through, so the matrix is split by installation: a local install with every
+engine present, and the published container image, which carries LibreOffice alone.
+
+### Local install, every engine present
+
 | Input | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | Images |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
-| PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PDF | R | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
 | Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` policy-based engine selection · `✓` built in · `LO` LibreOffice · `P` Pandoc ·
-`W` wkhtmltopdf · `PDF` via an intermediate PDF · `—` not supported ·
-`×` same format; not a conversion
+`W` wkhtmltopdf · `PDF` via an intermediate PDF · `R` rebuilt from extracted content,
+which does not preserve the source layout · `×` same format; not a conversion
+
+This matrix assumes LibreOffice, Pandoc, and wkhtmltopdf on `PATH`, the `images` extra
+installed for page images, and, for the Word COM policy, an interactive Windows desktop
+with Word.
+
+### Container image, LibreOffice only
+
+The image installs `libreoffice-writer` with the `api` and `gotenberg` extras, so every
+route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead and reports an
+`ENGINE_FALLBACK` warning naming the substituted engine.
+
+| Input | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | Images |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+
+`Auto` Gotenberg where the Compose gateway profile provides one, otherwise LibreOffice ·
+`LO!` LibreOffice substituted for the preferred engine, with an `ENGINE_FALLBACK` warning ·
+`R!` rebuilt from extracted content and rendered by the substituted LibreOffice ·
+`—` unavailable in this image: page images need the `images` extra, which it does not
+install
+
+The HTTP API the image serves converts DOCX to PDF only. The rest of this matrix is
+reached through the `cli` Compose profile, which runs the same CLI inside the image.
 
 Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
 output artifacts for DOCX, ODT, and PDF sources; Markdown and HTML are also accepted as input
@@ -39,6 +72,15 @@ extraction, and to PDF, DOCX, ODT, and page images through the rendering route.
 ODT semantic artifacts are read directly from the ODF package, so Markdown, HTML, YAML, and
 JSON need no external engine. ODT page images render the document to PDF first and therefore
 require LibreOffice.
+
+PDF-to-DOCX and PDF-to-ODT rebuild the document from its extracted content rather than
+converting the file. A PDF carries no editable document model, so the route runs the same
+semantic extraction the other PDF artifacts use, writes this project's print-ready A4
+intermediate, and renders that through Pandoc for DOCX or LibreOffice for ODT, in one
+conversion with no intermediate file to manage. Headings, paragraphs, and lists survive;
+pagination, columns, fonts, tables, and inline styles do not, and every such result
+reports a `LAYOUT_NOT_PRESERVED` warning. Page orientation follows `--orientation` as it
+does for Markdown, and a scanned PDF with no text layer has nothing to extract.
 
 DOCX-to-ODT, ODT-to-DOCX, and ODT-to-PDF conversion use LibreOffice. DOCX conversion follows
 these engine policies:

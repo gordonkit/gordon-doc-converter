@@ -17,17 +17,47 @@ LibreOffice、Pandoc 或 Gotenberg 進行排版轉換。
 
 ## 支援的格式轉換
 
+一個部署能轉換什麼，取決於它具備哪些引擎，而不是透過哪種介面呼叫，因此下表依安裝
+方式分為兩張：引擎齊備的本機安裝，以及僅內含 LibreOffice 的官方容器映像。
+
+### 本機安裝（引擎齊備）
+
 | 輸入格式 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 圖片 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
-| PDF | — | × | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PDF | R | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
 | HTML | P | W | LO | × | ✓ | ✓ | ✓ | PDF |
 | Markdown | P | W | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` 依政策自動選擇引擎 · `✓` 內建支援 · `LO` LibreOffice · `P` Pandoc ·
-`W` wkhtmltopdf · `PDF` 先轉為 PDF · `—` 不支援 ·
+`W` wkhtmltopdf · `PDF` 先轉為 PDF · `R` 由語意內容重建，不保留來源版面 ·
 `×` 相同格式，不執行轉換
+
+此表假設 `PATH` 上具備 LibreOffice、Pandoc 與 wkhtmltopdf，逐頁圖片已安裝 `images`
+extra；Word COM 政策則需要安裝 Word 的互動式 Windows 桌面環境。
+
+### 容器映像（僅含 LibreOffice）
+
+映像安裝的是 `libreoffice-writer` 與 `api`、`gotenberg` 兩個 extra，因此所有優先使用
+wkhtmltopdf 或 Pandoc 的路徑都改由 LibreOffice 排版，並回報指出替代引擎的
+`ENGINE_FALLBACK` warning。
+
+| 輸入格式 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 圖片 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+
+`Auto` Compose gateway profile 提供 Gotenberg 時優先使用，否則使用 LibreOffice ·
+`LO!` 由 LibreOffice 替代原本偏好的引擎，並回報 `ENGINE_FALLBACK` warning ·
+`R!` 由語意內容重建，並由替代的 LibreOffice 排版 ·
+`—` 此映像不支援：逐頁圖片需要 `images` extra，而映像並未安裝
+
+映像提供的 HTTP API 只負責 DOCX 轉 PDF；表中其餘路徑透過 `cli` Compose profile 執行，
+使用的是映像內同一套 CLI。
 
 逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、JSON
 及圖片；Markdown 與 HTML 也可轉換為 PDF、DOCX、ODT 與逐頁圖片。HTML 另可透過與
@@ -37,6 +67,13 @@ PDF、DOCX、ODT 與逐頁圖片。
 
 ODT 的語意 artifact 直接從 ODF 封裝讀取，因此 Markdown、HTML、YAML 與 JSON 不需要
 外部引擎；ODT 的逐頁圖片會先排版為 PDF，因此需要 LibreOffice。
+
+PDF 轉 DOCX 與 PDF 轉 ODT 是由語意內容重建文件，而非轉換檔案本身。PDF 不帶可編輯的
+文件模型，因此這條路徑會執行與其他 PDF artifact 相同的語意萃取，寫出本專案適合列印的
+A4 中介檔，再由 Pandoc（DOCX）或 LibreOffice（ODT）排版；整個過程在單次轉換內完成，
+不需要自行管理中介檔。標題、段落與清單會保留，分頁、分欄、字型、表格與行內樣式則不會，
+並且每次都會回報 `LAYOUT_NOT_PRESERVED` warning。頁面方向與 Markdown 一樣依
+`--orientation` 決定；沒有文字層的掃描 PDF 則沒有內容可萃取。
 
 DOCX 轉 ODT、ODT 轉 DOCX，以及 ODT 轉 PDF 均使用 LibreOffice。DOCX 轉換採用以下
 引擎政策：

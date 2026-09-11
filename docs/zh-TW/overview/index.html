@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。" />
     <title>GordonKit 文件轉換器 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-ByKhUdt7.js"></script>
+    <script type="module" crossorigin src="/assets/docs-hnuJAnRf.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-BUi4up0x.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/overview/" />
@@ -56,12 +56,20 @@
       <section><h3>CLI</h3><p>執行轉換、比較與引擎檢查，並輸出穩定 JSON 結果供 script 與 CI 流程使用。</p><code>gordon-doc convert report.docx --to pdf</code></section>
       <section><h3>HTTP API</h3><p>安裝 FastAPI extra，建立具認證 hooks、流量限制與有限並行能力的私有部署。</p><code>POST /conversions</code></section>
     </section><section id="format-support">
-      <h2>格式支援</h2>
-      <p>下表整理本專案的主要轉換能力；部分路徑需安裝選用引擎或輸出套件，條件標示於表格中。</p>
+      <h2>格式支援：本機安裝</h2>
+      <p>一個部署能轉換什麼，取決於它具備哪些引擎，而不是透過哪種介面呼叫。此表假設 PATH 上具備 LibreOffice、Pandoc 與 wkhtmltopdf，逐頁圖片已安裝 images extra；Word COM 政策則需要安裝 Word 的互動式 Windows 桌面環境。</p>
 
       <table><caption>支援的輸入與輸出格式</caption>
         <thead><tr><th>輸入</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>頁圖</th></tr></thead>
-        <tbody><tr><td>DOCX</td><td>不適用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>—</td><td>不適用</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>P</td><td>W</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>P</td><td>W</td><td>LO</td><td>✓</td><td>不適用</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+        <tbody><tr><td>DOCX</td><td>不適用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>R</td><td>不適用</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>P</td><td>W</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>P</td><td>W</td><td>LO</td><td>✓</td><td>不適用</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+      </table>
+    </section><section id="format-support-container">
+      <h2>格式支援：容器映像</h2>
+      <p>官方映像安裝的是 libreoffice-writer 與 api、gotenberg 兩個 extra，因此所有優先使用 wkhtmltopdf 或 Pandoc 的路徑都改由 LibreOffice 排版，並回報指出替代引擎的 ENGINE_FALLBACK warning。映像提供的 HTTP API 只負責 DOCX 轉 PDF；表中其餘路徑透過 cli Compose profile 執行。</p>
+
+      <table><caption>容器映像支援的轉換格式</caption>
+        <thead><tr><th>輸入</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>頁圖</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>不適用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>PDF</td><td>R!</td><td>不適用</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>HTML</td><td>LO!</td><td>LO!</td><td>LO</td><td>不適用</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Markdown</td><td>LO!</td><td>LO!</td><td>LO</td><td>✓</td><td>不適用</td><td>✓</td><td>✓</td><td>—</td></tr></tbody>
       </table>
     </section><section id="install">
       <h2>安裝</h2>

@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API." />
     <title>GordonKit Document Converter | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-ByKhUdt7.js"></script>
+    <script type="module" crossorigin src="/assets/docs-hnuJAnRf.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-BUi4up0x.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/overview/" />
@@ -56,12 +56,20 @@
       <section><h3>CLI</h3><p>Convert, compare, inspect engines, and emit stable JSON results for scripts and CI workflows.</p><code>gordon-doc convert report.docx --to pdf</code></section>
       <section><h3>HTTP API</h3><p>Install the FastAPI extra for private deployments with authentication hooks, rate limits, and bounded concurrency.</p><code>POST /conversions</code></section>
     </section><section id="format-support">
-      <h2>Format support</h2>
-      <p>Use this matrix to see the project&#39;s primary conversion capabilities. Some routes require an optional engine or output package as noted.</p>
+      <h2>Format support: local install</h2>
+      <p>What a deployment can convert depends on the engines it carries, not on the interface it is driven through. This matrix assumes LibreOffice, Pandoc, and wkhtmltopdf on PATH, the images extra installed for page images, and, for the Word COM policy, an interactive Windows desktop with Word.</p>
 
       <table><caption>Supported input and output formats</caption>
         <thead><tr><th>Input</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>Images</th></tr></thead>
-        <tbody><tr><td>DOCX</td><td>Not applicable</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>—</td><td>Not applicable</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>P</td><td>W</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>P</td><td>W</td><td>LO</td><td>✓</td><td>Not applicable</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+        <tbody><tr><td>DOCX</td><td>Not applicable</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>R</td><td>Not applicable</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>P</td><td>W</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>P</td><td>W</td><td>LO</td><td>✓</td><td>Not applicable</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+      </table>
+    </section><section id="format-support-container">
+      <h2>Format support: container image</h2>
+      <p>The published image installs libreoffice-writer with the api and gotenberg extras, so every route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead and reports an ENGINE_FALLBACK warning naming the substituted engine. The HTTP API the image serves converts DOCX to PDF only; the rest of this matrix is reached through the cli Compose profile.</p>
+
+      <table><caption>Formats the container image converts</caption>
+        <thead><tr><th>Input</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>Images</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>Not applicable</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>PDF</td><td>R!</td><td>Not applicable</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>HTML</td><td>LO!</td><td>LO!</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Markdown</td><td>LO!</td><td>LO!</td><td>LO</td><td>✓</td><td>Not applicable</td><td>✓</td><td>✓</td><td>—</td></tr></tbody>
       </table>
     </section><section id="install">
       <h2>Install</h2>
