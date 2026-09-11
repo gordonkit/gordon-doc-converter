@@ -22,6 +22,7 @@ from gordon_doc_converter.models import (
     ConversionFailure,
     ConversionRequest,
     ConversionResult,
+    ConversionWarning,
     EngineName,
     EngineProbeResult,
     SourceFormat,
@@ -267,6 +268,38 @@ def test_convert_without_rendering_engine_emits_clear_human_output(tmp_path: Pat
 
     assert result.exit_code == 0
     assert result.stdout == f"Converted without a rendering engine: {output}\n"
+
+
+def test_convert_reports_warnings_once_per_code_in_text_mode(tmp_path: Path) -> None:
+    source = tmp_path / "input.pdf"
+    output = tmp_path / "input.docx"
+    StubService.conversion_results = (
+        ConversionResult(
+            success=True,
+            source_format=SourceFormat.PDF,
+            artifacts=(
+                ArtifactResult(
+                    artifact_type=ArtifactType.DOCX,
+                    status=ArtifactStatus.SUCCESS,
+                    path=output,
+                ),
+            ),
+            warnings=(
+                ConversionWarning(code="PDF_READING_ORDER_INFERRED", message="page 1 inferred"),
+                ConversionWarning(code="PDF_READING_ORDER_INFERRED", message="page 2 inferred"),
+                ConversionWarning(code="LAYOUT_NOT_PRESERVED", message="rebuilt from content"),
+            ),
+        ),
+    )
+
+    result = runner.invoke(app, ["convert", str(source), "--to", "docx"])
+
+    assert result.exit_code == 0
+    assert result.stdout == (
+        f"Converted without a rendering engine: {output}\n"
+        "Warning [PDF_READING_ORDER_INFERRED]: page 1 inferred (x2)\n"
+        "Warning [LAYOUT_NOT_PRESERVED]: rebuilt from content\n"
+    )
 
 
 def test_convert_progress_is_emitted_to_stderr_without_polluting_json(tmp_path: Path) -> None:
