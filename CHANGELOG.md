@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- `--font` on `gordon-doc convert` and `ConversionOptions.font_family` to set the default
+  font of Markdown and HTML to DOCX output. The font applies to Latin, East Asian, and
+  complex-script text, and the theme font attributes that Word would otherwise prefer are removed.
+
+### Security
+
+- Upgrade `pypdf` to 6.21.1, which fixes eight advisories.
+- Upgrade `source-map-js` to 1.2.2 and move the documentation site to Tailwind CSS 4, which
+  removes the vulnerable `braces`, `micromatch`, `fast-glob`, `chokidar`, and
+  `postcss-selector-parser` dependencies from the build toolchain.
+
 ## [0.10.0] - 2026-09-11
 
 ### Added

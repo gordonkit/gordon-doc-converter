@@ -1,9 +1,21 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-ink: #17202e;
+  --color-signal: #c64b2b;
+  --color-mist: #f6f7f8;
+  --color-leaf: #19715b;
+  --font-sans: "Bahnschrift", "Noto Sans TC", "Noto Sans SC", "Noto Sans JP", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+}
 
 @layer base {
+  /* Tailwind 4 預設邊框色為 currentColor；維持 v3 的 gray-200。 */
+  *, ::after, ::before, ::backdrop, ::file-selector-button { border-color: var(--color-gray-200, currentColor); }
   html { scroll-behavior: smooth; }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
   body { @apply m-0 font-sans; letter-spacing: 0; }
   button, a { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal; }
 }
