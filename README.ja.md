@@ -118,6 +118,10 @@ wkhtmltopdf または Pandoc がない環境（コンテナイメージには Li
 出発点を作成し、`gordon-doc convert report.html --to pdf`、`--to docx`、`--to odt`、
 `--to images` で変換します。A4 横向きのレイアウトには `--orientation landscape` を使って
 ください。Markdown のひな形自体はページ設定を持たないため、向きは変換時に決まります。
+DOCX の既定フォントは `--font "Microsoft JhengHei"` で指定でき、すべての文字体系に適用されます。
+指定しない場合、ラテン文字には Segoe UI、東アジア文字には Microsoft JhengHei を使います。
+Markdown ソースの front matter にある `title` は DOCX のタイトルになり、指定がなければ文書の
+先頭にタイトル段落は追加されません。
 
 HTML から Markdown / YAML / JSON への変換はドキュメントを直接解析するため、エンジンは
 不要です。

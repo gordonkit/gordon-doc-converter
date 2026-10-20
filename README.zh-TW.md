@@ -105,7 +105,10 @@ LibreOffice 讀取同一份中介檔，會保留 A4 版面設定、表格框線�
 可先執行 `gordon-doc template 報告.html` 或 `gordon-doc template 筆記.md` 建立可編輯的
 起始檔，再執行 `gordon-doc convert 報告.html --to pdf`、`--to docx`、`--to odt` 或
 `--to images`。若要使用 A4 橫式版面，請加上 `--orientation landscape`；Markdown 範本
-本身不帶版面設定，方向於轉換時決定。
+本身不帶版面設定，方向於轉換時決定。若要設定 DOCX 的預設字型，請加上
+`--font "Microsoft JhengHei"`，會套用於所有文字腳本；未指定時，拉丁文字使用 Segoe UI，東亞文字
+使用 Microsoft JhengHei。Markdown 來源 front matter 的 `title` 會成為 DOCX 標題；未提供時，
+文件開頭不會加入標題段落。
 
 HTML 轉 Markdown／YAML／JSON 會直接解析文件，不需要任何引擎：
 

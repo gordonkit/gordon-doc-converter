@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 从终端转换 DOCX、PDF、ODT、HTML 与 Markdown，并了解引擎选择、批量转换、JSON 输出及 PDF 比较。" />
     <title>文档转换 CLI 命令参考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-oyl25wgn.js"></script>
+    <script type="module" crossorigin src="/assets/docs-NgFkv1H1.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-CMfpQJNY.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/cli/" />
@@ -78,7 +78,7 @@ gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>转换策略与输出选项</h2>
-      <p>--engine word-com、libreoffice 或 gotenberg 会要求使用指定的 DOCX 转 PDF 引擎；明确指定时绝不 fallback。DOCX 转 HTML 时，--engine word-com 通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。--mode 选择自动策略：desktop、server、container、strict-word 或 strict-libreoffice。修订模式可用 --revisions final、original 或 markup；注释模式可用 --comments omit、appendix 或 markup，但仍取决于引擎支持。--timeout 单位为秒。HTML 与 Markdown 可用 --orientation portrait 或 landscape 选择 A4 版式。--gotenberg-url 为本次调用提供 Gotenberg base URL。</p>
+      <p>--engine word-com、libreoffice 或 gotenberg 会要求使用指定的 DOCX 转 PDF 引擎；明确指定时绝不 fallback。DOCX 转 HTML 时，--engine word-com 通过 Word COM 排版；省略或改用 --mode server 则使用语义提取。--mode 选择自动策略：desktop、server、container、strict-word 或 strict-libreoffice。修订模式可用 --revisions final、original 或 markup；注释模式可用 --comments omit、appendix 或 markup，但仍取决于引擎支持。--timeout 单位为秒。HTML 与 Markdown Markdown 或 HTML 转 DOCX 时，--font 可设置所有文字脚本的默认字体。可用 --orientation portrait 或 landscape 选择 A4 版式。--gotenberg-url 为本次调用提供 Gotenberg base URL。</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape

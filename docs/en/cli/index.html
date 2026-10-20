@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison." />
     <title>Document conversion CLI reference | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-oyl25wgn.js"></script>
+    <script type="module" crossorigin src="/assets/docs-NgFkv1H1.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-CMfpQJNY.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/cli/" />
@@ -78,7 +78,7 @@ gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>Conversion policy and output options</h2>
-      <p>--engine word-com, libreoffice, or gotenberg requires that exact DOCX-to-PDF engine; explicit selection never falls back. For DOCX-to-HTML, --engine word-com renders through Word COM; omit it or use --mode server for semantic extraction. --mode selects automatic policy: desktop, server, container, strict-word, or strict-libreoffice. Tracked changes use --revisions final, original, or markup; comments use --comments omit, appendix, or markup, subject to engine support. --timeout is in seconds. For HTML and Markdown, --orientation portrait or landscape chooses A4 layout. --gotenberg-url supplies the Gotenberg base URL for this invocation.</p>
+      <p>--engine word-com, libreoffice, or gotenberg requires that exact DOCX-to-PDF engine; explicit selection never falls back. For DOCX-to-HTML, --engine word-com renders through Word COM; omit it or use --mode server for semantic extraction. --mode selects automatic policy: desktop, server, container, strict-word, or strict-libreoffice. Tracked changes use --revisions final, original, or markup; comments use --comments omit, appendix, or markup, subject to engine support. --timeout is in seconds. For HTML and Markdown, --orientation portrait or landscape chooses A4 layout. For Markdown or HTML to DOCX, --font sets the default font for every text script. --gotenberg-url supplies the Gotenberg base URL for this invocation.</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape

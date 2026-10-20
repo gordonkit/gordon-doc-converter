@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
     <title>ドキュメント変換 CLI リファレンス | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-oyl25wgn.js"></script>
+    <script type="module" crossorigin src="/assets/docs-NgFkv1H1.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-CMfpQJNY.css">
       <link rel="canonical" href="https://docs.gordonkit.com/ja/cli/" />
@@ -78,7 +78,7 @@ gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>変換ポリシーと出力オプション</h2>
-      <p>--engine word-com、libreoffice、gotenberg は、その DOCX から PDF エンジンの使用を要求します。明示指定した場合はフォールバックしません。DOCX から HTML では、--engine word-com が Word COM で組版し、省略または --mode server ではセマンティック抽出になります。--mode は自動ポリシーを選びます：desktop、server、container、strict-word、strict-libreoffice。変更履歴は --revisions final、original、markup、コメントは --comments omit、appendix、markup で指定しますが、いずれもエンジンの対応状況に依存します。--timeout の単位は秒です。HTML と Markdown では --orientation portrait または landscape で A4 レイアウトを選べます。--gotenberg-url はこの呼び出しで使う Gotenberg の base URL を指定します。</p>
+      <p>--engine word-com、libreoffice、gotenberg は、その DOCX から PDF エンジンの使用を要求します。明示指定した場合はフォールバックしません。DOCX から HTML では、--engine word-com が Word COM で組版し、省略または --mode server ではセマンティック抽出になります。--mode は自動ポリシーを選びます：desktop、server、container、strict-word、strict-libreoffice。変更履歴は --revisions final、original、markup、コメントは --comments omit、appendix、markup で指定しますが、いずれもエンジンの対応状況に依存します。--timeout の単位は秒です。HTML と Markdown では --orieMarkdown または HTML から DOCX への変換では、--font がすべての文字体系の既定フォントを指定します。ntation portrait または landscape で A4 レイアウトを選べます。--gotenberg-url はこの呼び出しで使う Gotenberg の base URL を指定します。</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape

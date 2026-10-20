@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="使用 gordon-doc CLI 從終端機轉換 DOCX、PDF、ODT、HTML 與 Markdown，並了解引擎選擇、批次轉換、JSON 輸出及 PDF 比較。" />
     <title>文件轉換 CLI 指令參考 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-oyl25wgn.js"></script>
+    <script type="module" crossorigin src="/assets/docs-NgFkv1H1.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CNwmrHH9.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-CMfpQJNY.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/cli/" />
@@ -78,7 +78,7 @@ gordon-doc convert report.odt --to markdown --to yaml --to json
 gordon-doc convert report.pdf --to images --dpi 144</code></pre>
     </section><section id="conversion-options">
       <h2>轉換政策與輸出選項</h2>
-      <p>--engine word-com、libreoffice 或 gotenberg 會要求使用指定的 DOCX 轉 PDF 引擎；明確指定時絕不 fallback。DOCX 轉 HTML 時，--engine word-com 透過 Word COM 排版；省略或改用 --mode server 則使用語意萃取。--mode 選擇自動政策：desktop、server、container、strict-word 或 strict-libreoffice。修訂模式可用 --revisions final、original 或 markup；註解模式可用 --comments omit、appendix 或 markup，但仍取決於引擎支援。--timeout 單位為秒。HTML 與 Markdown 可用 --orientation portrait 或 landscape 選擇 A4 版面。--gotenberg-url 為本次呼叫提供 Gotenberg base URL。</p>
+      <p>--engine word-com、libreoffice 或 gotenberg 會要求使用指定的 DOCX 轉 PDF 引擎；明確指定時絕不 fallback。DOCX 轉 HTML 時，--engine word-com 透過 Word COM 排版；省略或改用 --mode server 則使用語意萃取。--mode 選擇自動政策：desktop、server、container、strict-word 或 strict-libreoffice。修訂模式可用 --revisions final、original 或 markup；註解模式可用 --comments omit、appendix 或 markup，但仍取決於引擎支援。--timeout 單位為秒。HTML 與 Markdown 可用 --orientation portrait 或 landscape 選擇 A4 版面。Markdown 或 HTML 轉 DOCX 時，--font 可設定所有文字腳本的預設字型。--gotenberg-url 為本次呼叫提供 Gotenberg base URL。</p>
       <pre><code>gordon-doc convert contract.docx --engine word-com --revisions final --comments appendix
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.html --to pdf --orientation landscape

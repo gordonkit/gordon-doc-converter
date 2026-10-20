@@ -117,7 +117,8 @@ Create an editable starting point with `gordon-doc template report.html` or
 layout; a Markdown starter carries no page setup of its own, so its orientation is chosen at
 conversion time. Use `--font "Microsoft JhengHei"` to set the default DOCX font for every text
 script; without it, DOCX output uses Segoe UI for Latin text and Microsoft JhengHei for East Asian
-text.
+text. A Markdown source's front-matter `title` becomes the DOCX title; without one, the document
+opens without a title paragraph.
 
 HTML-to-Markdown/YAML/JSON conversion parses the document directly and requires no engine:
 
