@@ -11,6 +11,12 @@ All notable changes to this project will be documented in this file. The format 
   font of Markdown and HTML to DOCX output. The font applies to Latin, East Asian, and
   complex-script text, and the theme font attributes that Word would otherwise prefer are removed.
 
+### Fixed
+
+- A Markdown source with no `title` in its front matter no longer produces a DOCX that opens
+  with a placeholder "Document" title paragraph. PDF and HTML output now take their title from
+  the first level-one heading, and fall back to "Document" only when there is none.
+
 ### Security
 
 - Upgrade `pypdf` to 6.21.1, which fixes eight advisories.

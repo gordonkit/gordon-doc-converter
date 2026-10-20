@@ -6,12 +6,20 @@ from html import escape
 from pathlib import Path
 
 from gordon_doc_converter.content.html import document_language, render_body_html
-from gordon_doc_converter.content.models import NormalizedContent
+from gordon_doc_converter.content.models import BlockKind, NormalizedContent
 from gordon_doc_converter.models import PageOrientation
 from gordon_doc_converter.template import print_stylesheet
 
 ASSET_DIRECTORY_NAME = "assets"
 DOCUMENT_FILENAME = "document.html"
+
+
+def _first_heading_text(content: NormalizedContent) -> str | None:
+    """Return the text of the first level-one heading, if the document has one."""
+    for block in content.blocks:
+        if block.kind is BlockKind.HEADING and block.level == 1 and block.text.strip():
+            return block.text.strip()
+    return None
 
 
 def _bordered_tables(body: str) -> str:
@@ -38,14 +46,17 @@ def render_print_html(
     The result carries the same print CSS as the authoring template, so every
     markup source reaches the rendering engines with one consistent look. Set
     ``metadata_block`` to False for an engine that renders its own title block from
-    the head metadata, such as Pandoc's DOCX writer.
+    the head metadata, such as Pandoc's DOCX writer. That writer turns a head title
+    into a title paragraph, so a document that states no title gets none rather than
+    a placeholder; every other engine falls back to the first level-one heading.
     """
     metadata = content.metadata
-    title = metadata.title if metadata and metadata.title else "Document"
-    head = [
-        '<meta charset="utf-8">',
-        f"<title>{escape(title)}</title>",
-    ]
+    title = metadata.title if metadata and metadata.title else None
+    if title is None and metadata_block:
+        title = _first_heading_text(content) or "Document"
+    head = ['<meta charset="utf-8">']
+    if title is not None:
+        head.append(f"<title>{escape(title)}</title>")
     if metadata is not None:
         for name, value in (
             ("author", metadata.creator),

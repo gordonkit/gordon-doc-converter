@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from gordon_doc_converter.content.models import (
@@ -70,6 +71,29 @@ def test_print_html_defaults_to_portrait_and_a_placeholder_title() -> None:
     assert "size: A4 portrait" in html
     assert "<title>Document</title>" in html
     assert '<html lang="en">' in html
+
+
+def test_print_html_titles_an_untitled_document_after_its_first_heading() -> None:
+    content = replace(_content(), metadata=None)
+
+    html = render_print_html(content)
+
+    assert "<title>臺灣報告</title>" in html
+
+
+def test_print_html_for_docx_omits_the_title_a_document_does_not_state() -> None:
+    untitled = replace(_content(), metadata=None)
+
+    html = render_print_html(untitled, metadata_block=False)
+
+    assert "<title>" not in html
+    assert "Document" not in html
+
+
+def test_print_html_for_docx_keeps_an_explicit_title() -> None:
+    html = render_print_html(_content(), metadata_block=False)
+
+    assert "<title>臺灣報告</title>" in html
 
 
 def test_write_print_document_stages_assets_beside_the_document(tmp_path: Path) -> None:

@@ -636,8 +636,9 @@ def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
     assert "size: A4 portrait" in document
     assert "<strong>重點</strong>" in document
     # Pandoc renders its own title block from the head metadata, so the copy it reads
-    # must not carry a second one in the body.
-    assert "<title>" in document
+    # must not carry a second one in the body, nor a placeholder title for a document
+    # that states none.
+    assert "<title>" not in document
     assert "<header>" not in document
 
 
