@@ -155,6 +155,7 @@ def _make_options(
     image_pages: tuple[int, ...] | None = None,
     image_background: str = "#ffffff",
     page_orientation: PageOrientation = PageOrientation.PORTRAIT,
+    font_family: str | None = None,
 ) -> ConversionOptions:
     return ConversionOptions(
         output_path=output_path,
@@ -172,6 +173,7 @@ def _make_options(
         image_pages=image_pages,
         image_background=image_background,
         page_orientation=page_orientation,
+        font_family=font_family,
     )
 
 
@@ -313,6 +315,10 @@ def convert(
     page_orientation: Annotated[
         PageOrientation, typer.Option("--orientation", help="A4 page orientation.")
     ] = PageOrientation.PORTRAIT,
+    font_family: Annotated[
+        str | None,
+        typer.Option("--font", help="Default DOCX font for all text scripts."),
+    ] = None,
     gotenberg_url: Annotated[
         str | None, typer.Option("--gotenberg-url", help="Optional Gotenberg base URL.")
     ] = None,
@@ -345,6 +351,7 @@ def convert(
             image_pages=tuple(image_pages) if image_pages else None,
             image_background=image_background,
             page_orientation=page_orientation,
+            font_family=font_family,
         )
         artifacts = tuple(artifact_types) if artifact_types else None
         request = ConversionRequest.from_source(source, artifacts=artifacts, options=options)

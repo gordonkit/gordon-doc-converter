@@ -228,6 +228,8 @@ def test_convert_builds_request_and_emits_json(tmp_path: Path) -> None:
             "9",
             "--metadata",
             "layout",
+            "--font",
+            "Microsoft JhengHei",
             "--overwrite",
             "--json",
         ],
@@ -244,6 +246,7 @@ def test_convert_builds_request_and_emits_json(tmp_path: Path) -> None:
     assert request.options.engine is EngineName.LIBREOFFICE
     assert request.options.timeout_seconds == 9
     assert request.options.metadata_detail.value == "layout"
+    assert request.options.font_family == "Microsoft JhengHei"
     assert request.options.overwrite is True
 
 

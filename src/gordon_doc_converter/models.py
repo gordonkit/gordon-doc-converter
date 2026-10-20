@@ -209,6 +209,7 @@ class ConversionOptions(JsonModel):
     image_background: str = "#ffffff"
     page_size: str = "A4"
     page_orientation: PageOrientation = PageOrientation.PORTRAIT
+    font_family: str | None = None
 
     def __post_init__(self) -> None:
         if self.timeout_seconds <= 0:
@@ -217,6 +218,8 @@ class ConversionOptions(JsonModel):
             raise InvalidInputError("container_engine cannot be word-com")
         if self.page_size.casefold() != "a4":
             raise InvalidInputError("only A4 page size is currently supported")
+        if self.font_family is not None and not self.font_family.strip():
+            raise InvalidInputError("font_family cannot be blank")
         if not 1 <= self.image_dpi <= 600:
             raise InvalidInputError("image_dpi must be between 1 and 600")
         if not 1 <= self.image_quality <= 100:

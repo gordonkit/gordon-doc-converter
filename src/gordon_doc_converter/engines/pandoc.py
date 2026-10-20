@@ -25,6 +25,7 @@ _MARGIN_TWIPS = 1134
 _BODY_HALF_POINTS = "21"
 _LATIN_FONT = "Segoe UI"
 _EAST_ASIAN_FONT = "Microsoft JhengHei"
+_THEME_FONT_ATTRIBUTES = ("asciiTheme", "hAnsiTheme", "eastAsiaTheme", "cstheme")
 # GFM is the dialect our Markdown reader accepts, so Pandoc must read the same one.
 _MARKDOWN_DIALECT = "gfm"
 
@@ -59,18 +60,22 @@ def _set_docx_page_layout(path: Path, orientation: PageOrientation) -> None:
         replacement.replace(path)
 
 
-def _apply_fonts(rpr: ET.Element) -> None:
-    """Point one run-properties element at the Latin and CJK fonts we ship with."""
+def _apply_fonts(rpr: ET.Element, font_family: str | None) -> None:
+    """Point one run-properties element at the requested Latin and CJK fonts."""
     fonts = rpr.find("w:rFonts", _NS)
     if fonts is None:
         fonts = ET.Element(f"{{{_W}}}rFonts")
         rpr.insert(0, fonts)
+    for attribute in _THEME_FONT_ATTRIBUTES:
+        fonts.attrib.pop(f"{{{_W}}}{attribute}", None)
+    latin_font = font_family or _LATIN_FONT
+    east_asian_font = font_family or _EAST_ASIAN_FONT
     for attribute in ("ascii", "hAnsi", "cs"):
-        fonts.set(f"{{{_W}}}{attribute}", _LATIN_FONT)
-    fonts.set(f"{{{_W}}}eastAsia", _EAST_ASIAN_FONT)
+        fonts.set(f"{{{_W}}}{attribute}", latin_font)
+    fonts.set(f"{{{_W}}}eastAsia", east_asian_font)
 
 
-def _restyle_reference_docx(path: Path) -> None:
+def _restyle_reference_docx(path: Path, font_family: str | None) -> None:
     """Rewrite a reference document so headings and body text use CJK-capable fonts."""
     with tempfile.TemporaryDirectory(prefix="gordon-docx-reference-") as directory:
         replacement = Path(directory) / path.name
@@ -90,7 +95,7 @@ def _restyle_reference_docx(path: Path) -> None:
                             defaults = ET.SubElement(rpr_default, f"{{{_W}}}rPr")
                         else:
                             defaults = ET.SubElement(defaults, f"{{{_W}}}rPr")
-                    _apply_fonts(defaults)
+                    _apply_fonts(defaults, font_family)
                     size = defaults.find("w:sz", _NS)
                     if size is None:
                         size = ET.SubElement(defaults, f"{{{_W}}}sz")
@@ -102,7 +107,7 @@ def _restyle_reference_docx(path: Path) -> None:
                             run_properties is not None
                             and run_properties.find("w:rFonts", _NS) is not None
                         ):
-                            _apply_fonts(run_properties)
+                            _apply_fonts(run_properties, font_family)
                     data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
                 target.writestr(item, data)
         replacement.replace(path)
@@ -143,7 +148,9 @@ class PandocConverter:
             str(source_path.parent),
         ]
         with tempfile.TemporaryDirectory(prefix="gordon-pandoc-") as directory:
-            reference = self._reference_docx(Path(directory), options.timeout_seconds)
+            reference = self._reference_docx(
+                Path(directory), options.timeout_seconds, options.font_family
+            )
             if reference is not None:
                 arguments += ["--reference-doc", str(reference)]
             self._run(arguments, options.timeout_seconds)
@@ -151,7 +158,12 @@ class PandocConverter:
             raise EngineFailedError("Pandoc did not create the requested output", engine="pandoc")
         _set_docx_page_layout(output_path, options.page_orientation)
 
-    def _reference_docx(self, workspace: Path, timeout_seconds: float) -> Path | None:
+    def _reference_docx(
+        self,
+        workspace: Path,
+        timeout_seconds: float,
+        font_family: str | None,
+    ) -> Path | None:
         """Build a restyled copy of Pandoc's own reference document, or skip it on failure."""
         if self._executable is None:
             return None
@@ -173,7 +185,7 @@ class PandocConverter:
         if result.returncode != 0 or not reference.is_file():
             return None
         try:
-            _restyle_reference_docx(reference)
+            _restyle_reference_docx(reference, font_family)
         except (OSError, ET.ParseError, ValueError):
             return None
         return reference

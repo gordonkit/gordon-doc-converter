@@ -121,8 +121,8 @@ def test_docx_conversion_uses_a_restyled_reference_document(
     restyled: list[bytes] = []
     original = pandoc_module._restyle_reference_docx
 
-    def capture(path: Path) -> None:
-        original(path)
+    def capture(path: Path, font_family: str | None) -> None:
+        original(path, font_family)
         with ZipFile(path) as archive:
             restyled.append(archive.read("word/styles.xml"))
 
@@ -138,11 +138,49 @@ def test_docx_conversion_uses_a_restyled_reference_document(
     assert len(references) == 1
     styles = restyled[0].decode("utf-8")
     assert 'w:eastAsia="Microsoft JhengHei"' in styles
+    assert "eastAsiaTheme" not in styles
     assert "Cambria" not in styles
     assert 'w:val="21"' in styles
     with ZipFile(output) as archive:
         document = archive.read("word/document.xml").decode("utf-8")
     assert 'w:w="11906"' in document
+
+
+def test_docx_conversion_uses_the_requested_font_for_all_text_scripts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "out.docx"
+    restyled: list[bytes] = []
+
+    def fake_run(arguments: Sequence[str], timeout_seconds: float) -> ProcessResult:
+        del timeout_seconds
+        items = tuple(arguments)
+        target = Path(items[items.index("--output") + 1])
+        _write_docx(target)
+        return ProcessResult(0, "", "")
+
+    monkeypatch.setattr(pandoc_module, "run_process", fake_run)
+    original = pandoc_module._restyle_reference_docx
+
+    def capture(path: Path, font_family: str | None) -> None:
+        original(path, font_family)
+        with ZipFile(path) as archive:
+            restyled.append(archive.read("word/styles.xml"))
+
+    monkeypatch.setattr(pandoc_module, "_restyle_reference_docx", capture)
+
+    _converter(tmp_path).convert(
+        _source(tmp_path),
+        output,
+        source_format=SourceFormat.MARKDOWN,
+        options=ConversionOptions(font_family="Noto Sans TC"),
+    )
+
+    styles = restyled[0].decode("utf-8")
+    assert 'w:ascii="Noto Sans TC"' in styles
+    assert 'w:eastAsia="Noto Sans TC"' in styles
+    assert "eastAsiaTheme" not in styles
 
 
 def test_docx_conversion_continues_when_the_reference_build_fails(

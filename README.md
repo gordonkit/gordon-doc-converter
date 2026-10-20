@@ -115,7 +115,9 @@ Create an editable starting point with `gordon-doc template report.html` or
 `gordon-doc template notes.md`, then convert it with `gordon-doc convert report.html --to pdf`,
 `--to docx`, `--to odt`, or `--to images`. Use `--orientation landscape` for an A4 horizontal
 layout; a Markdown starter carries no page setup of its own, so its orientation is chosen at
-conversion time.
+conversion time. Use `--font "Microsoft JhengHei"` to set the default DOCX font for every text
+script; without it, DOCX output uses Segoe UI for Latin text and Microsoft JhengHei for East Asian
+text.
 
 HTML-to-Markdown/YAML/JSON conversion parses the document directly and requires no engine:
 
