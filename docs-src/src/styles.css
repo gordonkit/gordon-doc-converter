@@ -15,6 +15,10 @@
   /* Tailwind 4 預設邊框色為 currentColor；維持 v3 的 gray-200。 */
   *, ::after, ::before, ::backdrop, ::file-selector-button { border-color: var(--color-gray-200, currentColor); }
   html { scroll-behavior: smooth; }
+  /* 每個語言只用一套中日文字型：缺字時混入其他字型會造成粗細或字形不一。 */
+  html:lang(zh-TW) { --font-sans: "Bahnschrift", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Segoe UI", sans-serif; }
+  html:lang(zh-CN) { --font-sans: "Bahnschrift", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Segoe UI", sans-serif; }
+  html:lang(ja) { --font-sans: "Bahnschrift", "Yu Gothic UI", "Meiryo", "Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", "Segoe UI", sans-serif; }
   button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
   body { @apply m-0 font-sans; letter-spacing: 0; }
   button, a { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal; }
