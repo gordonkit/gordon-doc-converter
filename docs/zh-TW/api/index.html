@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="部署具認證的 FastAPI 私有 DOCX 轉 PDF 服務，搭配 LibreOffice 或 Gotenberg、健康檢查、流量限制與 OpenAPI 3.1 契約。" />
     <title>DOCX 轉 PDF HTTP API | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BZ2O3CTN.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/api/" />
@@ -50,7 +50,7 @@
 
       <table><caption>HTTP API 端點</caption>
         <thead><tr><th>端點</th><th>認證</th><th>用途</th></tr></thead>
-        <tbody><tr><td>POST /conversions</td><td>Bearer token</td><td>將上傳的 DOCX 位元組轉換為 PDF</td></tr><tr><td>GET /engines</td><td>Bearer token</td><td>列出已設定 renderer 的能力</td></tr><tr><td>GET /live</td><td>無</td><td>確認程序仍在運行</td></tr><tr><td>GET /ready</td><td>無</td><td>確認預設 renderer 是否就緒</td></tr><tr><td>GET /version</td><td>無</td><td>回傳套件版本</td></tr></tbody>
+        <tbody><tr><td>POST /v1/conversions</td><td>Bearer token</td><td>將上傳的 DOCX 位元組轉換為 PDF</td></tr><tr><td>GET /v1/engines</td><td>Bearer token</td><td>列出已設定 renderer 的能力</td></tr><tr><td>GET /live</td><td>無</td><td>確認程序仍在運行</td></tr><tr><td>GET /ready</td><td>無</td><td>確認預設 renderer 是否就緒</td></tr><tr><td>GET /v1/version</td><td>無</td><td>回傳套件版本</td></tr></tbody>
       </table>
     </section><section id="start-api">
       <h2>啟動 API</h2>
@@ -60,13 +60,13 @@ $env:GORDON_DOC_API_KEY = &quot;replace-me&quot;
 uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000</code></pre><aside>環境變數範例使用 PowerShell。此 API 應維持私有部署，且請勿提交 API key。</aside>
     </section><section id="api-convert">
       <h2>轉換文件</h2>
-      <p>POST /conversions 只接受 DOCX request body，並回傳 application/pdf。請在 X-Filename 傳送原始檔名、在 Content-Type 傳送 DOCX 的 OOXML MIME type；設定 API key 時另須 Bearer token。選用的 engine query parameter 接受 libreoffice 或 gotenberg；API 刻意不提供 Word COM。伺服器會將上傳暫存於臨時目錄、驗證 OOXML package 與限制、呼叫設定的惡意程式掃描 hook，並在回應前刪除暫存檔。</p>
+      <p>POST /v1/conversions 只接受 DOCX request body，並回傳 application/pdf。請在 X-Filename 傳送原始檔名、在 Content-Type 傳送 DOCX 的 OOXML MIME type；設定 API key 時另須 Bearer token。選用的 engine query parameter 接受 libreoffice 或 gotenberg；API 刻意不提供 Word COM。伺服器會將上傳暫存於臨時目錄、驗證 OOXML package 與限制、呼叫設定的惡意程式掃描 hook，並在回應前刪除暫存檔。</p>
       <pre><code>curl --fail-with-body \
   -H &quot;Authorization: Bearer replace-me&quot; \
   -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; \
   -H &quot;X-Filename: report.docx&quot; \
   --data-binary @report.docx \
-  &quot;http://127.0.0.1:8000/conversions?engine=libreoffice&quot; \
+  &quot;http://127.0.0.1:8000/v1/conversions?engine=libreoffice&quot; \
   --output report.pdf</code></pre><aside>HTTP adapter 刻意比函式庫與 CLI 窄：只提供經認證的 DOCX 轉 PDF。正式環境請將它放在私有網路控制與 TLS 後方。</aside>
     </section><section id="api-documentation">
       <h2>互動式 API 文件</h2>
@@ -76,13 +76,13 @@ uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.
       <h2>可用端點</h2>
       <p>規格包含文件轉換、引擎探索、存活檢查、就緒檢查與版本端點。受保護的 request 使用 Bearer token。</p>
       <pre><code># Protected: requires Authorization: Bearer &lt;api-key&gt;
-POST /conversions?engine=libreoffice|gotenberg
-GET  /engines
+POST /v1/conversions?engine=libreoffice|gotenberg
+GET  /v1/engines
 
 # Unprotected operational metadata
-GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
-GET  /ready    # 200 ready, 503 not-ready
-GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+GET  /live        # {&quot;status&quot;: &quot;ok&quot;}
+GET  /ready       # 200 ready, 503 not-ready
+GET  /v1/version  # {&quot;version&quot;: &quot;X.Y.Z&quot;}</code></pre>
     </section><section id="api-status-errors">
       <h2>狀態碼與作業限制</h2>
       <p>成功轉換會以 200 回傳 PDF attachment。無效引擎或輸入回傳 400；缺少或無效憑證回傳 401；來源超過大小限制回傳 413；renderer 失敗回傳 422；速率或並行容量耗盡回傳 429；內部暫存或服務錯誤回傳 500；認證或惡意程式掃描服務不可用回傳 503。/ready 會檢查設定的預設引擎，而非只確認程序仍存活。內建的固定視窗速率限制與並行限制只在單一 process 內有效，因此多副本的正式部署還須在 ingress 或 gateway 提供分散式限制。</p>

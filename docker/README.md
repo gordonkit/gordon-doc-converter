@@ -15,7 +15,7 @@ Tagged releases publish the same image to two registries:
 - GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter` (from the first release
   after 0.11.0)
 
-A release tag such as `v0.6.0` publishes the image tags `0.6.0`, `0.6`, and `latest` to both.
+A release tag `vX.Y.Z` publishes the image tags `X.Y.Z`, `X.Y`, and `latest` to both.
 Either name works in the commands below. The image currently targets `linux/amd64`.
 
 The image entrypoint runs the CLI by default. Pass `api` as the first argument to start the
@@ -68,7 +68,7 @@ Bash:
 ```bash
 set -a; . ./.env; set +a
 curl --fail http://127.0.0.1:8000/live
-curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=libreoffice" --output report-api.pdf
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/v1/conversions?engine=libreoffice" --output report-api.pdf
 ```
 
 PowerShell:
@@ -77,7 +77,7 @@ PowerShell:
 $env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
 Invoke-RestMethod -Uri 'http://127.0.0.1:8000/live'
 $headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
-Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/v1/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
 ```
 
 ### Gotenberg gateway API
@@ -94,7 +94,7 @@ Bash:
 
 ```bash
 set -a; . ./.env; set +a
-curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=gotenberg" --output report-gb.pdf
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/v1/conversions?engine=gotenberg" --output report-gb.pdf
 ```
 
 PowerShell:
@@ -102,7 +102,7 @@ PowerShell:
 ```powershell
 $env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
 $headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
-Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/v1/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
 ```
 
 When `GORDON_DOC_GOTENBERG_URL` is configured, the API explicitly defaults to Gotenberg.
@@ -150,8 +150,8 @@ LibreOffice and gateway-plus-Gotenberg Compose profiles. It then publishes the P
 distribution and pushes the image with Buildx, SBOM attestations, and build provenance:
 
 ```console
-git tag -s v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -s vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 The tag must match the version in `pyproject.toml`. PyPI and the container registries are

@@ -2,8 +2,22 @@
 
 ## Supported versions
 
-Until the first stable release, security fixes are made only on the latest development
-version.
+| Version | Security fixes |
+| --- | --- |
+| Latest `0.x` release | Yes, until `1.0.0` is released |
+| Earlier `0.x` releases | No; upgrade to the latest release |
+
+From `1.0.0` on, security fixes are released for the latest minor version of the current
+major version.
+
+Fixes ship as patch releases and are listed under `Security` in `CHANGELOG.md`. A fix that
+cannot keep a public contract may change it in a minor or patch release, as described in
+[COMPATIBILITY.md](COMPATIBILITY.md).
+
+The supported versions cover the Python package and the container image built from the same
+tag. The engines the project drives, such as LibreOffice, Microsoft Word, Pandoc,
+wkhtmltopdf, and Gotenberg, are maintained by their own projects; report vulnerabilities in
+them upstream.
 
 ## Reporting a vulnerability
 

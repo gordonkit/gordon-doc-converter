@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="透過 Docker Compose 與強化的 GordonKit 映像執行文件轉換，可使用內建 LibreOffice、具認證 API 或隔離的 Gotenberg renderer。" />
     <title>Docker 文件轉換 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BZ2O3CTN.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/containers/" />
@@ -67,13 +67,13 @@ docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up
       <h2>Bash API 請求</h2>
       <p>從 .env 載入部署者管理的金鑰，明確指定引擎並儲存 PDF 回應。</p>
       <pre><code>set -a; . ./.env; set +a
-curl --fail-with-body -H &quot;Authorization: Bearer $GORDON_DOC_API_KEY&quot; -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; -H &quot;X-Filename: report.docx&quot; --data-binary @report.docx &quot;http://127.0.0.1:8000/conversions?engine=gotenberg&quot; --output report-gb.pdf</code></pre>
+curl --fail-with-body -H &quot;Authorization: Bearer $GORDON_DOC_API_KEY&quot; -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; -H &quot;X-Filename: report.docx&quot; --data-binary @report.docx &quot;http://127.0.0.1:8000/v1/conversions?engine=gotenberg&quot; --output report-gb.pdf</code></pre>
     </section><section id="container-powershell">
       <h2>PowerShell API 請求</h2>
       <p>PowerShell 可讀取相同的 .env，並以 Invoke-WebRequest 儲存二進位回應；使用 standalone profile 時請改為 engine=libreoffice。</p>
       <pre><code>$env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match &#39;^GORDON_DOC_API_KEY=&#39; }) -replace &#39;^GORDON_DOC_API_KEY=&#39;, &#39;&#39;)
 $headers = @{ Authorization = &quot;Bearer $env:GORDON_DOC_API_KEY&quot;; &#39;X-Filename&#39; = &#39;report.docx&#39; }
-Invoke-WebRequest -Uri &#39;http://127.0.0.1:8000/conversions?engine=gotenberg&#39; -Method Post -Headers $headers -ContentType &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39; -InFile .\report.docx -OutFile .\report-gb.pdf</code></pre>
+Invoke-WebRequest -Uri &#39;http://127.0.0.1:8000/v1/conversions?engine=gotenberg&#39; -Method Post -Headers $headers -ContentType &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39; -InFile .\report.docx -OutFile .\report-gb.pdf</code></pre>
     </section><section id="container-stop">
       <h2>停止服務</h2>
       <p>本機測試後停止對應 profile；已產生的 PDF 會保留在主機。</p>
@@ -82,8 +82,8 @@ docker compose -f docker/compose.yaml --profile gateway-gotenberg down</code></p
     </section><section id="published-image">
       <h2>正式發布映像</h2>
       <p>正式版本會發布單一 linux/amd64 映像至 gordonkit/gordon-doc-converter。預設 entrypoint 執行 CLI；傳入 api 則啟動 HTTP service。需要可重現部署時，請使用明確版本 tag。</p>
-      <pre><code>docker run --rm gordonkit/gordon-doc-converter:0.6.0 version
-docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:0.6.0 api</code></pre>
+      <pre><code>docker run --rm gordonkit/gordon-doc-converter:X.Y.Z version
+docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:X.Y.Z api</code></pre>
     </section><section id="health">
       <h2>維運與安全</h2>
       <p>所有 profile 都以非 root 使用者、唯讀 root filesystem、有限 tmpfs 與 no-new-privileges 執行。API profile 必須使用高強度 key；正式環境 ingress 也應限制 request 大小並提供分散式 rate limit。</p>

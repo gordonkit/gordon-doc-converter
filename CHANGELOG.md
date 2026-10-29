@@ -10,14 +10,36 @@ All notable changes to this project will be documented in this file. The format 
 - Release tags also push the container image to GitHub Container Registry as
   `ghcr.io/gordonkit/gordon-doc-converter`, with the same tags as Docker Hub. The release
   rehearsal signs in to it as well, without pushing.
+- A draft `COMPATIBILITY.md` defining which library, CLI, schema, API, and container surfaces
+  become public contracts at `1.0.0`, and the deprecation process for changing them.
 
 ### Changed
 
+- CI runs the quality job on Linux, Windows, and macOS against Python 3.12, 3.13, and 3.14,
+  and the package classifiers list 3.13 and 3.14. It previously tested Python 3.12 on Linux
+  and Windows alone. The byte-exact CJK fixture check is skipped on interpreters that bundle
+  zlib-ng, as the Windows and macOS builds of 3.14 do, since it compresses to different bytes
+  than the reference zlib the committed fixtures came from.
+- The HTTP API serves its routes under `/v1/`: `POST /v1/conversions`, `GET /v1/engines`, and
+  `GET /v1/version`. A later breaking change can then ship under a new prefix alongside the
+  old one. The `/live` and `/ready` probes stay unversioned, so container health checks are
+  unaffected. The smoke client, the READMEs, and the documentation site use the new paths.
+- The package description and the CLI help describe document conversion in general, no longer
+  DOCX-to-PDF alone. Container and documentation examples use `X.Y.Z` in place of the stale
+  `0.6.0` version.
 - `tool.uv.required-version` accepts uv 0.13 as well as 0.12, and CI uses uv 0.13. Dependabot
   runs uv 0.13 and could not update `uv.lock` while 0.13 was rejected.
 
+### Deprecated
+
+- The unprefixed `/conversions`, `/engines`, and `/version` routes. They still answer as
+  before and are marked `deprecated` in the OpenAPI contract, and will be removed in `1.0.0`.
+  Move clients to the `/v1/` paths.
+
 ### Security
 
+- `SECURITY.md` states which versions receive security fixes before and after `1.0.0`, and
+  that vulnerabilities in the engines the project drives belong upstream.
 - The `images` extra requires Pillow 13 (`pillow>=13,<14`), which fixes the advisories open
   against Pillow 12.3. Upgrade `pypdf` to 6.21.4 and `certifi` to 2026.10.23 in `uv.lock`.
 - Upgrade the documentation site's `vite` to 8.3.5, which fixes three development-server

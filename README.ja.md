@@ -245,7 +245,7 @@ API を起動したら、元のファイル名と bearer token を添えて DOCX
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: example.docx" --data-binary @example.docx \
-    http://localhost:8000/conversions --output example.pdf
+    http://localhost:8000/v1/conversions --output example.pdf
 ```
 
 PowerShell では `Invoke-WebRequest -InFile ... -OutFile ...` を使います。LibreOffice と
@@ -351,6 +351,9 @@ anchor を使ってください。バイトオフセットは将来、権威を�
 Microsoft Word と LibreOffice は同じドキュメントを異なる形で組版することがあります。本
 プロジェクトは選択したエンジンとフォールバックの理由を報告しますが、同一の出力を保証したり、
 明示的に選択されたエンジンを暗黙に切り替えたりすることはありません。
+
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+では、これらのインターフェースのうちどれが公開契約に当たり、リリース間でどう変わりうるかを説明しています（英語）。
 
 ## 開発環境の構築
 

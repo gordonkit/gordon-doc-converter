@@ -36,6 +36,9 @@ AuthHook = Callable[[str | None], bool]
 MalwareScanHook = Callable[[Path], bool]
 TelemetryHook = Callable[[str, Mapping[str, str | int | float | bool | None]], None]
 
+API_PREFIX = "/v1"
+"""Path prefix of the versioned HTTP API routes."""
+
 
 class ConversionService(Protocol):
     """Subset of the core application service consumed by the HTTP adapter."""
@@ -341,39 +344,52 @@ def create_app(
         return {"version": __version__}
 
     bearer_security: dict[str, Any] = {"security": [{"BearerAuth": []}]}
-    app.add_api_route(
-        "/conversions",
-        convert_document,
-        methods=["POST"],
-        response_class=Response,
-        responses={
-            200: {
-                "description": "Converted PDF document",
-                "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+    # Versioned routes live under API_PREFIX. The unprefixed aliases keep pre-0.12 clients
+    # working until 1.0.0 removes them; probes stay unversioned so orchestrators never move.
+    for prefix, deprecated in ((API_PREFIX, False), ("", True)):
+        app.add_api_route(
+            f"{prefix}/conversions",
+            convert_document,
+            methods=["POST"],
+            response_class=Response,
+            responses={
+                200: {
+                    "description": "Converted PDF document",
+                    "content": {
+                        "application/pdf": {"schema": {"type": "string", "format": "binary"}}
+                    },
+                },
+                400: {"description": "Invalid document or conversion options"},
+                401: {"description": "Authentication failed"},
+                413: {"description": "Source document exceeds the size limit"},
+                422: {"description": "Conversion failed"},
+                429: {"description": "Rate or concurrency limit exceeded"},
+                500: {"description": "Conversion service failed"},
+                503: {"description": "Authentication or malware scanning unavailable"},
             },
-            400: {"description": "Invalid document or conversion options"},
-            401: {"description": "Authentication failed"},
-            413: {"description": "Source document exceeds the size limit"},
-            422: {"description": "Conversion failed"},
-            429: {"description": "Rate or concurrency limit exceeded"},
-            500: {"description": "Conversion service failed"},
-            503: {"description": "Authentication or malware scanning unavailable"},
-        },
-        tags=["conversion"],
-        summary="Convert a DOCX document to PDF",
-        openapi_extra=bearer_security,
-    )
-    app.add_api_route(
-        "/engines",
-        engines_endpoint,
-        methods=["GET"],
-        tags=["engines"],
-        summary="List available conversion engines",
-        openapi_extra=bearer_security,
-    )
+            tags=["conversion"],
+            summary="Convert a DOCX document to PDF",
+            deprecated=deprecated,
+            openapi_extra=bearer_security,
+        )
+        app.add_api_route(
+            f"{prefix}/engines",
+            engines_endpoint,
+            methods=["GET"],
+            tags=["engines"],
+            summary="List available conversion engines",
+            deprecated=deprecated,
+            openapi_extra=bearer_security,
+        )
+        app.add_api_route(
+            f"{prefix}/version",
+            version,
+            methods=["GET"],
+            tags=["metadata"],
+            deprecated=deprecated,
+        )
     app.add_api_route("/live", live, methods=["GET"], tags=["health"])
     app.add_api_route("/ready", ready, methods=["GET"], tags=["health"])
-    app.add_api_route("/version", version, methods=["GET"], tags=["metadata"])
 
     default_openapi = app.openapi
 
@@ -388,4 +404,11 @@ def create_app(
     return cast("Any", app)
 
 
-__all__ = ["ApiSettings", "AuthHook", "MalwareScanHook", "TelemetryHook", "create_app"]
+__all__ = [
+    "API_PREFIX",
+    "ApiSettings",
+    "AuthHook",
+    "MalwareScanHook",
+    "TelemetryHook",
+    "create_app",
+]

@@ -109,9 +109,15 @@ jobs:
   quality:
     if: github.event_name != 'schedule'
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.os }}
+    # .python-version pins the development interpreter, and uv prefers it over the one
+    # setup-python installs, so each cell names its interpreter explicitly.
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
@@ -120,7 +126,7 @@ jobs:
           enable-cache: true
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
       - run: uv sync --dev --all-extras --locked
       - run: uv run ruff format --check .
       - run: uv run ruff check .

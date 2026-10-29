@@ -15,7 +15,7 @@ Compose ファイルには、明示的に選択する 3 つの profile があり
 - GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.11.0 の次の
   リリースから）
 
-`v0.6.0` のようなリリースタグは、両方に `0.6.0`、`0.6`、`latest` のイメージタグを公開します。
+リリースタグ `vX.Y.Z` は、両方に `X.Y.Z`、`X.Y`、`latest` のイメージタグを公開します。
 以下のコマンドではどちらの名前も使えます。現在の対象プラットフォームは `linux/amd64` です。
 
 イメージの entrypoint は既定で CLI を実行します。HTTP API を起動するには、最初の引数として
@@ -69,7 +69,7 @@ Bash:
 ```bash
 set -a; . ./.env; set +a
 curl --fail http://127.0.0.1:8000/live
-curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=libreoffice" --output report-api.pdf
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/v1/conversions?engine=libreoffice" --output report-api.pdf
 ```
 
 PowerShell:
@@ -78,7 +78,7 @@ PowerShell:
 $env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
 Invoke-RestMethod -Uri 'http://127.0.0.1:8000/live'
 $headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
-Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/v1/conversions?engine=libreoffice' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-api.pdf
 ```
 
 ### Gotenberg gateway API
@@ -94,7 +94,7 @@ Bash:
 
 ```bash
 set -a; . ./.env; set +a
-curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/conversions?engine=gotenberg" --output report-gb.pdf
+curl --fail-with-body -H "Authorization: Bearer $GORDON_DOC_API_KEY" -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Filename: report.docx" --data-binary @report.docx "http://127.0.0.1:8000/v1/conversions?engine=gotenberg" --output report-gb.pdf
 ```
 
 PowerShell:
@@ -102,7 +102,7 @@ PowerShell:
 ```powershell
 $env:GORDON_DOC_API_KEY = ((Get-Content .env | Where-Object { $_ -match '^GORDON_DOC_API_KEY=' }) -replace '^GORDON_DOC_API_KEY=', '')
 $headers = @{ Authorization = "Bearer $env:GORDON_DOC_API_KEY"; 'X-Filename' = 'report.docx' }
-Invoke-WebRequest -Uri 'http://127.0.0.1:8000/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
+Invoke-WebRequest -Uri 'http://127.0.0.1:8000/v1/conversions?engine=gotenberg' -Method Post -Headers $headers -ContentType 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -InFile .\report.docx -OutFile .\report-gb.pdf
 ```
 
 `GORDON_DOC_GOTENBERG_URL` を設定すると、API は明示的に Gotenberg を既定エンジンにします。
@@ -152,8 +152,8 @@ workflow は CLI を実行し、standalone LibreOffice と gateway + Gotenberg �
 attestation、build provenance を付けてイメージを push します。
 
 ```console
-git tag -s v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -s vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 タグは `pyproject.toml` のバージョンと一致している必要があります。PyPI とコンテナーレジストリは

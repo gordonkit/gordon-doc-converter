@@ -20,7 +20,7 @@ def test_export_openapi_writes_and_checks_deterministic_contract(tmp_path: Path)
 
     assert schema["openapi"].startswith("3.1.")
     assert schema["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
-    assert "/conversions" in schema["paths"]
+    assert "/v1/conversions" in schema["paths"]
     export_openapi(output, check=True)
 
 

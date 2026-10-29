@@ -220,7 +220,7 @@ API 启动后，请传送 DOCX 内容、原始文件名与 Bearer Token：
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: 示例.docx" --data-binary @示例.docx \
-    http://localhost:8000/conversions --output 示例.pdf
+    http://localhost:8000/v1/conversions --output 示例.pdf
 ```
 
 PowerShell 请使用 `Invoke-WebRequest -InFile ... -OutFile ...`。LibreOffice 与 Gotenberg
@@ -316,6 +316,9 @@ root_blocks: [{
 
 Microsoft Word 与 LibreOffice 对同一文档可能产生不同版式。本项目会披露实际引擎及
 备援原因；明确指定引擎时，不会在未告知的情况下切换引擎。
+
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+说明上述接口中哪些属于公开契约，以及版本之间可以如何变动（英文）。
 
 ## 开发环境
 

@@ -103,14 +103,14 @@ def _client(
     return TestClient(create_app(settings=settings, service=service))
 
 
-def _convert(client: TestClient, **headers: str) -> Any:
+def _convert(client: TestClient, path: str = "/v1/conversions", **headers: str) -> Any:
     request_headers = {
         "Authorization": "Bearer secret",
         "X-Filename": "%E7%B9%81%E4%B8%AD%20%E6%96%87%E4%BB%B6.docx",
         "Content-Type": DOCX_MIME,
     }
     request_headers.update(headers)
-    return client.post("/conversions", content=FIXTURE.read_bytes(), headers=request_headers)
+    return client.post(path, content=FIXTURE.read_bytes(), headers=request_headers)
 
 
 def test_health_and_version_do_not_require_document_access() -> None:
@@ -119,7 +119,36 @@ def test_health_and_version_do_not_require_document_access() -> None:
 
     assert client.get("/live").json() == {"status": "ok"}
     assert client.get("/ready").status_code == 200
-    assert "version" in client.get("/version").json()
+    assert "version" in client.get("/v1/version").json()
+
+
+def test_unversioned_aliases_still_serve_and_are_marked_deprecated() -> None:
+    client = _client(StubService())
+
+    conversion = _convert(client, "/conversions")
+    engines = client.get("/engines", headers={"Authorization": "Bearer secret"})
+    version = client.get("/version")
+    paths = client.get("/openapi.json").json()["paths"]
+
+    assert conversion.status_code == 200
+    assert conversion.content.startswith(b"%PDF")
+    assert engines.status_code == 200
+    assert version.json() == client.get("/v1/version").json()
+    assert paths["/conversions"]["post"]["deprecated"] is True
+    assert paths["/engines"]["get"]["deprecated"] is True
+    assert paths["/version"]["get"]["deprecated"] is True
+    assert "deprecated" not in paths["/v1/conversions"]["post"]
+    assert "deprecated" not in paths["/live"]["get"]
+
+
+def test_versioned_and_aliased_routes_share_one_rate_limit() -> None:
+    client = _client(StubService(), rate_limit_requests=1)
+
+    first = client.get("/v1/engines", headers={"Authorization": "Bearer secret"})
+    second = client.get("/engines", headers={"Authorization": "Bearer secret"})
+
+    assert first.status_code == 200
+    assert second.status_code == 429
 
 
 def test_openapi_contract_and_interactive_documentation_are_published() -> None:
@@ -136,7 +165,7 @@ def test_openapi_contract_and_interactive_documentation_are_published() -> None:
         "type": "http",
         "scheme": "bearer",
     }
-    conversion = schema["paths"]["/conversions"]["post"]
+    conversion = schema["paths"]["/v1/conversions"]["post"]
     assert conversion["security"] == [{"BearerAuth": []}]
     assert "application/pdf" in conversion["responses"]["200"]["content"]
     assert all(
@@ -192,12 +221,12 @@ def test_authentication_and_engine_allowlist_are_enforced() -> None:
     client = _client(service)
 
     unauthorized = client.post(
-        "/conversions",
+        "/v1/conversions",
         content=FIXTURE.read_bytes(),
         headers={"X-Filename": "sample.docx", "Content-Type": DOCX_MIME},
     )
     word = client.post(
-        "/conversions?engine=word-com",
+        "/v1/conversions?engine=word-com",
         content=FIXTURE.read_bytes(),
         headers={
             "Authorization": "Bearer secret",
@@ -219,7 +248,7 @@ def test_mime_size_malware_and_rate_limits_are_enforced() -> None:
     oversized = _convert(size_client)
 
     wrong_mime = _client(StubService()).post(
-        "/conversions",
+        "/v1/conversions",
         content=FIXTURE.read_bytes(),
         headers={
             "Authorization": "Bearer secret",
@@ -242,8 +271,8 @@ def test_mime_size_malware_and_rate_limits_are_enforced() -> None:
     malware = _convert(TestClient(malware_app), **{"X-Client-ID": "malware"})
 
     rate_client = _client(StubService(), rate_limit_requests=1)
-    first = rate_client.get("/engines", headers={"Authorization": "Bearer secret"})
-    second = rate_client.get("/engines", headers={"Authorization": "Bearer secret"})
+    first = rate_client.get("/v1/engines", headers={"Authorization": "Bearer secret"})
+    second = rate_client.get("/v1/engines", headers={"Authorization": "Bearer secret"})
 
     assert oversized.status_code == 413
     assert wrong_mime.status_code == 400
@@ -254,7 +283,7 @@ def test_mime_size_malware_and_rate_limits_are_enforced() -> None:
 
 
 def test_engines_never_advertise_word_com() -> None:
-    response = _client(StubService()).get("/engines", headers={"Authorization": "Bearer secret"})
+    response = _client(StubService()).get("/v1/engines", headers={"Authorization": "Bearer secret"})
 
     assert response.status_code == 200
     assert [item["engine"] for item in response.json()] == ["libreoffice"]
@@ -277,7 +306,7 @@ def test_injected_auth_and_scanner_failures_are_mapped_safely() -> None:
             service=service,
             auth_hook=unavailable_auth_hook,
         )
-    ).get("/engines")
+    ).get("/v1/engines")
 
     def unavailable_scanner(_path: Path) -> bool:
         raise RuntimeError("sensitive scanner detail")

@@ -26,11 +26,11 @@ def main() -> int:
     base_url = str(args.base_url).rstrip("/")
     if _get_json(f"{base_url}/live") != {"status": "ok"}:
         raise RuntimeError("liveness check failed")
-    _get_json(f"{base_url}/engines", token=str(args.token))
+    _get_json(f"{base_url}/v1/engines", token=str(args.token))
     if args.docx is not None:
         source = args.docx
         request = Request(
-            f"{base_url}/conversions",
+            f"{base_url}/v1/conversions",
             data=source.read_bytes(),
             headers={
                 "Authorization": f"Bearer {args.token}",

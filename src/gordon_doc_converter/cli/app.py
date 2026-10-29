@@ -49,7 +49,7 @@ class ExitCode(IntEnum):
 
 
 app = typer.Typer(
-    help="Diagnosable multi-engine DOCX-to-PDF conversion.",
+    help="Diagnosable multi-engine document conversion.",
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )

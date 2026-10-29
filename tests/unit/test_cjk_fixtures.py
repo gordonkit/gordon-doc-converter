@@ -5,14 +5,24 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 from xml.etree import ElementTree
 from zipfile import ZipFile
+
+import pytest
 
 FIXTURE_DIRECTORY = Path(__file__).parents[1] / "fixtures" / "docx" / "cjk"
 ZIP_TIMESTAMP = (2020, 1, 1, 0, 0, 0)
 
 
+# The committed packages are the reference zlib's DEFLATE output. zlib-ng, which the
+# Windows and macOS builds of CPython 3.14 bundle, compresses the same input to different
+# bytes, so only a reference-zlib interpreter can reproduce them exactly.
+@pytest.mark.skipif(
+    "zlib-ng" in zlib.ZLIB_VERSION,
+    reason="fixture bytes are defined by the reference zlib, not zlib-ng",
+)
 def test_committed_fixtures_are_reproducible() -> None:
     """The committed OOXML packages must exactly match the generator."""
     subprocess.run(

@@ -242,7 +242,7 @@ Once the API is running, submit the DOCX bytes with the original filename and be
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: example.docx" --data-binary @example.docx \
-    http://localhost:8000/conversions --output example.pdf
+    http://localhost:8000/v1/conversions --output example.pdf
 ```
 
 On PowerShell, use `Invoke-WebRequest -InFile ... -OutFile ...`. Complete Bash and PowerShell
@@ -347,6 +347,9 @@ and `5` for PDF validation failure.
 Microsoft Word and LibreOffice can render the same document differently. The project will
 report the selected engine and fallback reason; it will never promise identical output or
 silently switch an explicitly selected engine.
+
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+lists which of these interfaces are public contracts and how they may change between releases.
 
 ## Development setup
 
