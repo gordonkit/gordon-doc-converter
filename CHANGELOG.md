@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Release tags also push the container image to GitHub Container Registry as
+  `ghcr.io/gordonkit/gordon-doc-converter`, with the same tags as Docker Hub. The release
+  rehearsal signs in to it as well, without pushing.
+
 ## [0.11.0] - 2026-10-20
 
 ### Added

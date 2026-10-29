@@ -13,14 +13,17 @@ def test_runtime_image_upgrade_base_packages_before_install() -> None:
     assert runtime_stage.index("apt-get upgrade -y") < runtime_stage.index("apt-get install")
 
 
-def test_release_publishes_single_container_image_to_docker_hub() -> None:
+def test_release_publishes_one_container_image_to_docker_hub_and_ghcr() -> None:
     content = (_ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert "needs: container-smoke" in content
     assert "profile: [standalone-lo, gateway-gotenberg]" in content
     assert "--docx tests/fixtures/docx/cjk/a4-portrait.docx" in content
     assert "gordon-doc-converter-${{ matrix.profile }}" not in content
-    assert "images: ${{ vars.DOCKERHUB_NAMESPACE }}/gordon-doc-converter" in content
+    assert "${{ vars.DOCKERHUB_NAMESPACE }}/gordon-doc-converter\n" in content
+    assert "ghcr.io/${{ github.repository }}\n" in content
+    assert "registry: ghcr.io" in content
+    assert "packages: write" in content
     assert "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}" in content
     assert "DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}" in content
     assert "uses: docker/build-push-action@v" in content

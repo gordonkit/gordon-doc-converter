@@ -208,7 +208,8 @@ docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up
 共用 Docker network 连接 Gotenberg。设置 `GORDON_DOC_GOTENBERG_URL` 后，API 会明确以
 Gotenberg 为默认引擎；Gotenberg 请求失败时不会静默改用 LibreOffice。容器执行模式、
 安全性说明与基本检查请参阅[简中容器文档](docker/README.zh-CN.md)。正式版本 tag 会将
-`gordonkit/gordon-doc-converter` 单一镜像发布至 Docker Hub；所需 repository 变量、
+`gordonkit/gordon-doc-converter` 镜像发布至 Docker Hub，并同步发布至 GitHub Container
+Registry 的 `ghcr.io/gordonkit/gordon-doc-converter`；所需 repository 变量、
 secrets 与发行步骤也记录于该文档。
 
 ### HTTP API

@@ -9,12 +9,14 @@ Compose ファイルには、明示的に選択する 3 つの profile があり
 - `gateway-gotenberg`: 同じ HTTP API イメージと、別立ての Gotenberg renderer。
 - `cli`: 同梱の LibreOffice を使い、`/work` をドキュメント用ボリュームとするコマンドラインモード。
 
-タグ付きリリースでは、1 つの Docker Hub リポジトリを公開します。
+タグ付きリリースでは、同じイメージを 2 つのレジストリに公開します。
 
-- `<namespace>/gordon-doc-converter`
+- Docker Hub: `<namespace>/gordon-doc-converter`
+- GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.11.0 の次の
+  リリースから）
 
-`v0.6.0` のようなリリースタグは、そのリポジトリに `0.6.0`、`0.6`、`latest` のイメージタグを
-公開します。現在の対象プラットフォームは `linux/amd64` です。
+`v0.6.0` のようなリリースタグは、両方に `0.6.0`、`0.6`、`latest` のイメージタグを公開します。
+以下のコマンドではどちらの名前も使えます。現在の対象プラットフォームは `linux/amd64` です。
 
 イメージの entrypoint は既定で CLI を実行します。HTTP API を起動するには、最初の引数として
 `api` を渡してください。
@@ -27,7 +29,7 @@ docker run --rm --publish 8000:8000 \
 ```
 
 Compose ファイルは、現在のソースツリーから `gordonkit/gordon-doc-converter:local` をビルド
-します。開発と検証にはこれを使い、再現性が必要な配備にはバージョン付きの Docker Hub タグを
+します。開発と検証にはこれを使い、再現性が必要な配備にはレジストリのバージョン付きタグを
 使ってください。
 
 ## CLI profile
@@ -127,7 +129,7 @@ CycloneDX SBOM も公開します。
 起動後、`python docker/smoke.py --token replace-me --docx sample.docx` を実行すると、ヘルス、
 認証付きのエンジン一覧、および任意でエンドツーエンドの変換を確認できます。
 
-## Docker Hub リリースの設定
+## レジストリへのリリースの設定
 
 上記のリポジトリを、対象の Docker Hub ユーザーまたは組織に作成してください。読み取りと書き込み
 権限を持つ Docker Hub のアクセストークンを作成し、GitHub リポジトリの
@@ -139,6 +141,11 @@ CycloneDX SBOM も公開します。
 | Secret | `DOCKERHUB_USERNAME` | 該当 namespace に push できる Docker Hub ユーザー |
 | Secret | `DOCKERHUB_TOKEN` | Docker Hub のアクセストークン。アカウントのパスワードは使わない |
 
+GitHub Container Registry には secret は不要です。ジョブは workflow の `GITHUB_TOKEN` と
+`packages: write` 権限でサインインします。最初の push で package は private として作成される
+ため、package の **Package settings** で一度 public に変更してください。事前に organization の
+**Settings > Packages** で public package を許可しておく必要があります。
+
 対応するリリースタグを push すると `.github/workflows/release.yml` が実行されます。公開前に、
 workflow は CLI を実行し、standalone LibreOffice と gateway + Gotenberg の両 Compose profile で
 実際の DOCX から PDF への変換を行います。その後、Python の配布物を公開し、Buildx、SBOM の
@@ -149,7 +156,7 @@ git tag -s v0.6.0 -m "Release v0.6.0"
 git push origin v0.6.0
 ```
 
-タグは `pyproject.toml` のバージョンと一致している必要があります。PyPI と Docker Hub は独立した
-レジストリのため、Python の配布物を公開した後に Docker Hub 側で失敗することがあります。
+タグは `pyproject.toml` のバージョンと一致している必要があります。PyPI とコンテナーレジストリは
+独立しているため、Python の配布物を公開した後にコンテナーの push が失敗することがあります。
 リリースを告知する前に、すべてのリリースジョブを確認してください。失敗した Docker ジョブを同じ
 ソースタグで再実行すると、Docker のタグは同じ内容に更新されます。

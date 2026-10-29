@@ -107,7 +107,8 @@ Library / CLI / future API
 - A release is triggered by pushing a tag matching `v[0-9]+.[0-9]+.[0-9]+`, and by nothing
   else. Merging a release pull request publishes nothing. Existing tags are annotated; keep
   that convention.
-- The tag publishes to PyPI, Docker Hub, and GitHub Releases at once. None of it can be
+- The tag publishes to PyPI, Docker Hub, GitHub Container Registry, and GitHub Releases at
+  once. None of it can be
   undone: a PyPI version number can never be reused, so a broken `0.9.0` must be abandoned
   in favour of `0.9.1`.
 - Rehearse first with `gh workflow run test-release.yml --ref main -f target=all`, which

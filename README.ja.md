@@ -234,8 +234,8 @@ docker compose -f docker/compose.yaml --env-file .env --profile standalone-lo up
 API の明示的な既定エンジンになり、Gotenberg のリクエストが失敗しても暗黙に LibreOffice へ
 フォールバックすることはありません。コンテナー profile、セキュリティ上の注意、smoke check は
 [コンテナードキュメント](https://github.com/gordonkit/gordon-doc-converter/blob/main/docker/README.md)
-に記載しています。タグ付きリリースでは `gordonkit/gordon-doc-converter` を Docker Hub に公開
-します。必要なリポジトリ変数、secret、リリース手順もそこに記載しています。
+に記載しています。タグ付きリリースでは `gordonkit/gordon-doc-converter` を Docker Hub に、
+`ghcr.io/gordonkit/gordon-doc-converter` を GitHub Container Registry に公開します。必要なリポジトリ変数、secret、リリース手順もそこに記載しています。
 
 ### HTTP API
 
