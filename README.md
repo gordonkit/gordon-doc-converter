@@ -230,7 +230,8 @@ on a shared Docker network. Setting `GORDON_DOC_GOTENBERG_URL` makes Gotenberg t
 explicit default; a failed Gotenberg request does not silently fall back to LibreOffice.
 Container profiles, security notes, and smoke checks are documented in
 [container documentation](https://github.com/gordonkit/gordon-doc-converter/blob/main/docker/README.md).
-Tagged releases publish `gordonkit/gordon-doc-converter` to Docker Hub. The required repository
+Tagged releases publish `gordonkit/gordon-doc-converter` to Docker Hub and
+`ghcr.io/gordonkit/gordon-doc-converter` to GitHub Container Registry. The required repository
 variables, secrets, and release steps are documented there.
 
 ### HTTP API

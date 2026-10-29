@@ -9,12 +9,14 @@
 - `gateway-gotenberg`：相同的 HTTP API 镜像搭配独立 Gotenberg renderer。
 - `cli`：命令行模式使用内置 LibreOffice，并以 `/work` 作为文档 volume。
 
-正式版本会发布至单一 Docker Hub repository：
+正式版本会把同一个镜像发布至两个 registry：
 
-- `<namespace>/gordon-doc-converter`
+- Docker Hub：`<namespace>/gordon-doc-converter`
+- GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.11.0 之后的
+  第一个版本起）
 
-例如 `v0.6.0` 会发布 `0.6.0`、`0.6` 与 `latest` 三个 image tag。当前镜像目标平台为
-`linux/amd64`。
+例如 `v0.6.0` 会在两边都发布 `0.6.0`、`0.6` 与 `latest` 三个 image tag，下列命令使用任一
+名称均可。当前镜像目标平台为 `linux/amd64`。
 
 镜像 entrypoint 默认执行 CLI；第一个参数传入 `api` 则会启动 HTTP API：
 
@@ -26,7 +28,7 @@ docker run --rm --publish 8000:8000 \
 ```
 
 Compose 文件会从当前 source tree 构建 `gordonkit/gordon-doc-converter:local`，适合开发与
-验证。需要可重现部署时，请使用 Docker Hub 的明确版本 tag。
+验证。需要可重现部署时，请使用 registry 上的明确版本 tag。
 
 ## CLI Profile
 
@@ -122,7 +124,7 @@ Noto CJK 字体。Project license 与第三方声明安装于
 python docker/smoke.py --token replace-me --docx sample.docx
 ```
 
-## Docker Hub 发布设置
+## Registry 发布设置
 
 先在预定的 Docker Hub user 或 organization 创建 `<namespace>/gordon-doc-converter`，再创建
 具备 read/write 权限的 Docker Hub access token。到 GitHub repository 的
@@ -134,6 +136,11 @@ python docker/smoke.py --token replace-me --docx sample.docx
 | Secret | `DOCKERHUB_USERNAME` | 对 namespace 具推送权限的 Docker Hub user |
 | Secret | `DOCKERHUB_TOKEN` | Docker Hub access token；请勿使用账号密码 |
 
+GitHub Container Registry 不需要 secret：job 以 workflow 的 `GITHUB_TOKEN` 与
+`packages: write` 权限登录。第一次推送会创建 private package，请到该 package 的
+**Package settings** 改为 public 一次；organization 须先在 **Settings > Packages** 允许
+public package。
+
 推送符合格式的 release tag 会执行 `.github/workflows/release.yml`。发布前，workflow 会测试
 CLI，并通过 standalone LibreOffice 与 gateway + Gotenberg 两个 Compose profile 实际执行
 DOCX-to-PDF 转换。通过后才发布 Python distribution，并以 Buildx 推送具备 SBOM attestation
@@ -144,6 +151,6 @@ git tag -s v0.6.0 -m "Release v0.6.0"
 git push origin v0.6.0
 ```
 
-Tag 必须与 `pyproject.toml` 的版本一致。PyPI 与 Docker Hub 是独立 registry，因此 Python
-distribution 发布后，Docker Hub job 仍可能失败；公告发行前应确认每个 release job 均成功。
+Tag 必须与 `pyproject.toml` 的版本一致。PyPI 与容器 registry 彼此独立，因此 Python
+distribution 发布后，容器推送仍可能失败；公告发行前应确认每个 release job 均成功。
 若 Docker job 失败，可对相同 source tag 重新执行，Docker tags 会更新为相同内容。

@@ -9,12 +9,14 @@ file provides three explicitly selected profiles:
 - `gateway-gotenberg`: the same HTTP API image plus a separate Gotenberg renderer.
 - `cli`: command-line mode using included LibreOffice and `/work` as its document volume.
 
-Tagged releases publish one Docker Hub repository:
+Tagged releases publish the same image to two registries:
 
-- `<namespace>/gordon-doc-converter`
+- Docker Hub: `<namespace>/gordon-doc-converter`
+- GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter` (from the first release
+  after 0.11.0)
 
-A release tag such as `v0.6.0` publishes the image tags `0.6.0`, `0.6`, and `latest` for
-that repository. The image currently targets `linux/amd64`.
+A release tag such as `v0.6.0` publishes the image tags `0.6.0`, `0.6`, and `latest` to both.
+Either name works in the commands below. The image currently targets `linux/amd64`.
 
 The image entrypoint runs the CLI by default. Pass `api` as the first argument to start the
 HTTP API instead:
@@ -27,7 +29,7 @@ docker run --rm --publish 8000:8000 \
 ```
 
 The Compose file builds `gordonkit/gordon-doc-converter:local` from the current source tree.
-Use it for development and validation; use a versioned Docker Hub tag for deployments that
+Use it for development and validation; use a versioned registry tag for deployments that
 must be reproducible.
 
 ## CLI profile
@@ -125,7 +127,7 @@ Project license and third-party notice files are installed under
 After startup, `python docker/smoke.py --token replace-me --docx sample.docx` checks the
 health, authenticated engine inventory, and an optional end-to-end conversion.
 
-## Docker Hub release setup
+## Registry release setup
 
 Create the repository listed above in the intended Docker Hub user or organization.
 Create a Docker Hub access token with read and write permission, then configure these GitHub
@@ -137,6 +139,11 @@ repository settings under **Settings > Secrets and variables > Actions**:
 | Secret | `DOCKERHUB_USERNAME` | Docker Hub user that can push to the namespace |
 | Secret | `DOCKERHUB_TOKEN` | Docker Hub access token; do not use the account password |
 
+GitHub Container Registry needs no secret: the job signs in with the workflow's
+`GITHUB_TOKEN` and the `packages: write` permission. The first push creates the package as
+private. Make it public once under the package's **Package settings**; the organization must
+allow public packages under **Settings > Packages**.
+
 Pushing a matching release tag runs `.github/workflows/release.yml`. Before publishing, the
 workflow runs the CLI and performs real DOCX-to-PDF conversions through both the standalone
 LibreOffice and gateway-plus-Gotenberg Compose profiles. It then publishes the Python
@@ -147,7 +154,8 @@ git tag -s v0.6.0 -m "Release v0.6.0"
 git push origin v0.6.0
 ```
 
-The tag must match the version in `pyproject.toml`. PyPI and Docker Hub are independent
-registries, so a late Docker Hub failure can occur after the Python distribution is published.
+The tag must match the version in `pyproject.toml`. PyPI and the container registries are
+independent, so a late container push failure can occur after the Python distribution is
+published.
 Inspect every release job before announcing the release. Re-running a failed Docker job for the
 same source tag updates the Docker tags to the same content.

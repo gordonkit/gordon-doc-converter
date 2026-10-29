@@ -99,7 +99,7 @@ Library / CLI / future API
 
 - 發版只由推送符合 `v[0-9]+.[0-9]+.[0-9]+` 的 tag 觸發，別無其他途徑；合併發版 pull request
   本身不會發布任何東西。既有 tag 皆為 annotated，請延續此慣例。
-- 打 tag 會同時發布到 PyPI、Docker Hub 與 GitHub Releases，且全部無法撤回：PyPI 的版本號
+- 打 tag 會同時發布到 PyPI、Docker Hub、GitHub Container Registry 與 GitHub Releases，且全部無法撤回：PyPI 的版本號
   永不可重用，發壞的 `0.9.0` 只能作廢改發 `0.9.1`。
 - 先演練：`gh workflow run test-release.yml --ref main -f target=all`，它會發布到 TestPyPI、
   再把 wheel 下載回來驗證，並建置容器映像但不推送。`target=containers` 只演練 Docker 路徑，
