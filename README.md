@@ -348,6 +348,9 @@ Microsoft Word and LibreOffice can render the same document differently. The pro
 report the selected engine and fallback reason; it will never promise identical output or
 silently switch an explicitly selected engine.
 
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+lists which of these interfaces are public contracts and how they may change between releases.
+
 ## Development setup
 
 ```console

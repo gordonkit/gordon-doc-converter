@@ -3,9 +3,10 @@
 ## Purpose and Current Scope
 
 GordonKit Document Converter is a Python 3.12+ orchestration library for converting
-DOCX files to PDF through external rendering engines. It does not implement a document
-renderer. The v0.1 deliverables are the core Python library and CLI; API and container
-work belong to later phases unless a task explicitly changes the roadmap.
+DOCX, ODT, PDF, HTML, and Markdown documents through external rendering engines and its
+own semantic extraction. It does not implement a document renderer. The core Python
+library, CLI, HTTP API, and container image are all shipped; `COMPATIBILITY.md` defines
+which of their surfaces are public contracts.
 
 The package name is `gordon-doc-converter`, the import package is
 `gordon_doc_converter`, and the CLI command is `gordon-doc`.

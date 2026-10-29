@@ -318,6 +318,9 @@ root_blocks: [{
 Microsoft Word 與 LibreOffice 對同一文件可能產生不同版面。本專案會揭露實際引擎及
 備援原因；明確指定引擎時，不會在未告知的情況下切換引擎。
 
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+說明上述介面中哪些屬於公開契約，以及版本之間可以如何變動（英文）。
+
 ## 開發環境
 
 ```console

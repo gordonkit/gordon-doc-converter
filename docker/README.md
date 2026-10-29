@@ -15,7 +15,7 @@ Tagged releases publish the same image to two registries:
 - GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter` (from the first release
   after 0.11.0)
 
-A release tag such as `v0.6.0` publishes the image tags `0.6.0`, `0.6`, and `latest` to both.
+A release tag `vX.Y.Z` publishes the image tags `X.Y.Z`, `X.Y`, and `latest` to both.
 Either name works in the commands below. The image currently targets `linux/amd64`.
 
 The image entrypoint runs the CLI by default. Pass `api` as the first argument to start the
@@ -150,8 +150,8 @@ LibreOffice and gateway-plus-Gotenberg Compose profiles. It then publishes the P
 distribution and pushes the image with Buildx, SBOM attestations, and build provenance:
 
 ```console
-git tag -s v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -s vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 The tag must match the version in `pyproject.toml`. PyPI and the container registries are

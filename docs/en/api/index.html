@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract." />
     <title>DOCX to PDF HTTP API | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BZ2O3CTN.js"></script>
+    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/api/" />
@@ -82,7 +82,7 @@ GET  /engines
 # Unprotected operational metadata
 GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
 GET  /ready    # 200 ready, 503 not-ready
-GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+GET  /version  # {&quot;version&quot;: &quot;X.Y.Z&quot;}</code></pre>
     </section><section id="api-status-errors">
       <h2>Status codes and operational limits</h2>
       <p>A successful conversion returns 200 with a PDF attachment. Invalid engine choices or input return 400; missing or invalid credentials return 401; an oversized source returns 413; renderer failures return 422; exhausted rate or concurrency capacity returns 429; internal staging or service faults return 500; and unavailable authentication or malware scanning returns 503. /ready checks the configured default engine rather than merely reporting that the process is alive. The built-in fixed-window rate limit and concurrency limit are process-local, so production deployments with multiple replicas must enforce distributed limits at the ingress or gateway too.</p>

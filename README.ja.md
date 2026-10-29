@@ -352,6 +352,9 @@ Microsoft Word と LibreOffice は同じドキュメントを異なる形で組�
 プロジェクトは選択したエンジンとフォールバックの理由を報告しますが、同一の出力を保証したり、
 明示的に選択されたエンジンを暗黙に切り替えたりすることはありません。
 
+[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
+では、これらのインターフェースのうちどれが公開契約に当たり、リリース間でどう変わりうるかを説明しています（英語）。
+
 ## 開発環境の構築
 
 ```console

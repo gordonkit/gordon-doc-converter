@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="強化された GordonKit イメージ、同梱の LibreOffice、認証付き API、分離した Gotenberg renderer を使って、Docker Compose でドキュメント変換を実行します。" />
     <title>Docker でのドキュメント変換 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BZ2O3CTN.js"></script>
+    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/ja/containers/" />
@@ -82,8 +82,8 @@ docker compose -f docker/compose.yaml --profile gateway-gotenberg down</code></p
     </section><section id="published-image">
       <h2>公開イメージ</h2>
       <p>タグ付きリリースでは、gordonkit/gordon-doc-converter に linux/amd64 のイメージを 1 つ公開します。既定の entrypoint は CLI を実行し、api を渡すと HTTP service が起動します。再現性のある配備には明示的なバージョンタグを使ってください。</p>
-      <pre><code>docker run --rm gordonkit/gordon-doc-converter:0.6.0 version
-docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:0.6.0 api</code></pre>
+      <pre><code>docker run --rm gordonkit/gordon-doc-converter:X.Y.Z version
+docker run --rm -p 8000:8000 -e GORDON_DOC_API_KEY=replace-me gordonkit/gordon-doc-converter:X.Y.Z api</code></pre>
     </section><section id="health">
       <h2>運用とセキュリティ</h2>
       <p>すべての profile は非 root ユーザー、読み取り専用の root filesystem、上限付きの一時ファイルシステム、no-new-privileges で実行されます。API profile には強度の高い key が必要で、本番の ingress ではリクエストサイズ制限と分散型のレート制限も適用してください。</p>

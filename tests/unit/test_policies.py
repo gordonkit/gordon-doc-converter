@@ -1,4 +1,4 @@
-"""Tests for every v0.1 engine-selection policy branch."""
+"""Tests for every engine-selection policy branch."""
 
 import pytest
 

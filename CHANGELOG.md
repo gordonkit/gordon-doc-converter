@@ -10,9 +10,14 @@ All notable changes to this project will be documented in this file. The format 
 - Release tags also push the container image to GitHub Container Registry as
   `ghcr.io/gordonkit/gordon-doc-converter`, with the same tags as Docker Hub. The release
   rehearsal signs in to it as well, without pushing.
+- A draft `COMPATIBILITY.md` defining which library, CLI, schema, API, and container surfaces
+  become public contracts at `1.0.0`, and the deprecation process for changing them.
 
 ### Changed
 
+- The package description and the CLI help describe document conversion in general, no longer
+  DOCX-to-PDF alone. Container and documentation examples use `X.Y.Z` in place of the stale
+  `0.6.0` version.
 - `tool.uv.required-version` accepts uv 0.13 as well as 0.12, and CI uses uv 0.13. Dependabot
   runs uv 0.13 and could not update `uv.lock` while 0.13 was rejected.
 

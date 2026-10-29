@@ -15,7 +15,7 @@ Compose ファイルには、明示的に選択する 3 つの profile があり
 - GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.11.0 の次の
   リリースから）
 
-`v0.6.0` のようなリリースタグは、両方に `0.6.0`、`0.6`、`latest` のイメージタグを公開します。
+リリースタグ `vX.Y.Z` は、両方に `X.Y.Z`、`X.Y`、`latest` のイメージタグを公開します。
 以下のコマンドではどちらの名前も使えます。現在の対象プラットフォームは `linux/amd64` です。
 
 イメージの entrypoint は既定で CLI を実行します。HTTP API を起動するには、最初の引数として
@@ -152,8 +152,8 @@ workflow は CLI を実行し、standalone LibreOffice と gateway + Gotenberg �
 attestation、build provenance を付けてイメージを push します。
 
 ```console
-git tag -s v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -s vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 タグは `pyproject.toml` のバージョンと一致している必要があります。PyPI とコンテナーレジストリは

@@ -5,9 +5,10 @@
 
 ## 專案目的與目前範圍
 
-GordonKit Document Converter 是 Python 3.12+ 的 DOCX 轉 PDF 協調 Library，透過
-外部排版引擎完成轉換，本身不實作文件 renderer。v0.1 以核心 Python Library 與
-CLI 為交付範圍；除非任務明確調整 roadmap，API 與 Container 屬於後續階段。
+GordonKit Document Converter 是 Python 3.12+ 的文件轉換協調 Library，透過外部排版
+引擎與本身的語意擷取，轉換 DOCX、ODT、PDF、HTML 與 Markdown 文件，本身不實作文件
+renderer。核心 Python Library、CLI、HTTP API 與 Container image 都已發布；哪些介面
+屬於公開契約，由 `COMPATIBILITY.md` 定義。
 
 套件名稱為 `gordon-doc-converter`，Python import package 為
 `gordon_doc_converter`，CLI 指令為 `gordon-doc`。

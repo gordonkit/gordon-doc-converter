@@ -15,7 +15,7 @@
 - GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.11.0 之後的
   第一個版本起）
 
-例如 `v0.6.0` 會在兩邊都發布 `0.6.0`、`0.6` 與 `latest` 三個 image tag，下列指令使用任一
+Release tag `vX.Y.Z` 會在兩邊都發布 `X.Y.Z`、`X.Y` 與 `latest` 三個 image tag，下列指令使用任一
 名稱皆可。目前映像目標平台為 `linux/amd64`。
 
 映像 entrypoint 預設執行 CLI；第一個參數傳入 `api` 則會啟動 HTTP API：
@@ -147,8 +147,8 @@ DOCX-to-PDF 轉換。通過後才發布 Python distribution，並以 Buildx 推�
 與 build provenance 的映像：
 
 ```console
-git tag -s v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -s vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 Tag 必須與 `pyproject.toml` 的版本一致。PyPI 與容器 registry 彼此獨立，因此 Python

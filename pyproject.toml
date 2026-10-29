@@ -1,7 +1,7 @@
 [project]
 name = "gordon-doc-converter"
 version = "0.11.0"
-description = "Diagnosable multi-engine DOCX-to-PDF conversion orchestration."
+description = "Diagnosable multi-engine document conversion orchestration."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"

@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="部署具認證的 FastAPI 私有 DOCX 轉 PDF 服務，搭配 LibreOffice 或 Gotenberg、健康檢查、流量限制與 OpenAPI 3.1 契約。" />
     <title>DOCX 轉 PDF HTTP API | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-BZ2O3CTN.js"></script>
+    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/api/" />
@@ -82,7 +82,7 @@ GET  /engines
 # Unprotected operational metadata
 GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
 GET  /ready    # 200 ready, 503 not-ready
-GET  /version  # {&quot;version&quot;: &quot;0.6.0&quot;}</code></pre>
+GET  /version  # {&quot;version&quot;: &quot;X.Y.Z&quot;}</code></pre>
     </section><section id="api-status-errors">
       <h2>狀態碼與作業限制</h2>
       <p>成功轉換會以 200 回傳 PDF attachment。無效引擎或輸入回傳 400；缺少或無效憑證回傳 401；來源超過大小限制回傳 413；renderer 失敗回傳 422；速率或並行容量耗盡回傳 429；內部暫存或服務錯誤回傳 500；認證或惡意程式掃描服務不可用回傳 503。/ready 會檢查設定的預設引擎，而非只確認程序仍存活。內建的固定視窗速率限制與並行限制只在單一 process 內有效，因此多副本的正式部署還須在 ingress 或 gateway 提供分散式限制。</p>
