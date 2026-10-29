@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - The `images` extra requires Pillow 13 (`pillow>=13,<14`), which fixes the advisories open
   against Pillow 12.3. Upgrade `pypdf` to 6.21.4 and `certifi` to 2026.10.23 in `uv.lock`.
+- Upgrade the documentation site's `vite` to 8.3.5, which fixes three development-server
+  advisories, and rebuild the committed `docs/`.
 
 ## [0.11.0] - 2026-10-20
 
