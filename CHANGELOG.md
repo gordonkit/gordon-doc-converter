@@ -15,11 +15,21 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
+- The HTTP API serves its routes under `/v1/`: `POST /v1/conversions`, `GET /v1/engines`, and
+  `GET /v1/version`. A later breaking change can then ship under a new prefix alongside the
+  old one. The `/live` and `/ready` probes stay unversioned, so container health checks are
+  unaffected. The smoke client, the READMEs, and the documentation site use the new paths.
 - The package description and the CLI help describe document conversion in general, no longer
   DOCX-to-PDF alone. Container and documentation examples use `X.Y.Z` in place of the stale
   `0.6.0` version.
 - `tool.uv.required-version` accepts uv 0.13 as well as 0.12, and CI uses uv 0.13. Dependabot
   runs uv 0.13 and could not update `uv.lock` while 0.13 was rejected.
+
+### Deprecated
+
+- The unprefixed `/conversions`, `/engines`, and `/version` routes. They still answer as
+  before and are marked `deprecated` in the OpenAPI contract, and will be removed in `1.0.0`.
+  Move clients to the `/v1/` paths.
 
 ### Security
 

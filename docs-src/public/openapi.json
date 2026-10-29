@@ -70,6 +70,7 @@
   "paths": {
     "/conversions": {
       "post": {
+        "deprecated": true,
         "operationId": "convert_document_conversions_post",
         "parameters": [
           {
@@ -173,6 +174,7 @@
     },
     "/engines": {
       "get": {
+        "deprecated": true,
         "operationId": "engines_endpoint_engines_get",
         "responses": {
           "200": {
@@ -258,8 +260,178 @@
         ]
       }
     },
+    "/v1/conversions": {
+      "post": {
+        "operationId": "convert_document_v1_conversions_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "engine",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Engine"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Filename",
+            "required": true,
+            "schema": {
+              "title": "X-Filename",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Content-Type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Content-Type"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "contentMediaType": "application/octet-stream",
+                "title": "Body",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Converted PDF document"
+          },
+          "400": {
+            "description": "Invalid document or conversion options"
+          },
+          "401": {
+            "description": "Authentication failed"
+          },
+          "413": {
+            "description": "Source document exceeds the size limit"
+          },
+          "422": {
+            "description": "Conversion failed"
+          },
+          "429": {
+            "description": "Rate or concurrency limit exceeded"
+          },
+          "500": {
+            "description": "Conversion service failed"
+          },
+          "503": {
+            "description": "Authentication or malware scanning unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Convert a DOCX document to PDF",
+        "tags": [
+          "conversion"
+        ]
+      }
+    },
+    "/v1/engines": {
+      "get": {
+        "operationId": "engines_endpoint_v1_engines_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Engines Endpoint V1 Engines Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List available conversion engines",
+        "tags": [
+          "engines"
+        ]
+      }
+    },
+    "/v1/version": {
+      "get": {
+        "operationId": "version_v1_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Version V1 Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Version",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
     "/version": {
       "get": {
+        "deprecated": true,
         "operationId": "version_version_get",
         "responses": {
           "200": {

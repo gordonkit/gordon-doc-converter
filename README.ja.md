@@ -245,7 +245,7 @@ API を起動したら、元のファイル名と bearer token を添えて DOCX
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: example.docx" --data-binary @example.docx \
-    http://localhost:8000/conversions --output example.pdf
+    http://localhost:8000/v1/conversions --output example.pdf
 ```
 
 PowerShell では `Invoke-WebRequest -InFile ... -OutFile ...` を使います。LibreOffice と

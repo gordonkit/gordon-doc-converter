@@ -76,16 +76,18 @@ sidecar) are contracts.
 
 ### HTTP API
 
-**Open decision:** choose one before `1.0.0`.
+The versioned routes are `POST /v1/conversions`, `GET /v1/engines`, and `GET /v1/version`.
+The probes `GET /live` and `GET /ready` stay unversioned, so container health checks never
+need to move.
 
-1. Move every route under `/v1/` (keeping `/live` and `/ready` unversioned for probes) and
-   cover it by this policy, so a later breaking change can ship as `/v2/` alongside `/v1/`.
-2. Keep the current routes and declare the HTTP API experimental and outside this policy
-   until it reaches parity with the CLI.
-
-Either way, the request headers, status codes, and error body documented in the exported
-OpenAPI contract (`docs/openapi.json`) are what the policy covers, and `GORDON_DOC_API_KEY`
-and `GORDON_DOC_GOTENBERG_URL` are stable configuration names.
+- The paths, request headers, query parameters, status codes, and error body documented in
+  the exported OpenAPI contract (`docs/openapi.json`) are covered by this policy.
+- A breaking change ships under a new prefix, such as `/v2/`, served alongside `/v1/` for at
+  least one minor release before `/v1/` is removed in a major release.
+- `GORDON_DOC_API_KEY` and `GORDON_DOC_GOTENBERG_URL` are stable configuration names.
+- The unprefixed `/conversions`, `/engines`, and `/version` routes are deprecated aliases kept
+  for clients written before `0.12.0`. They are marked `deprecated` in the OpenAPI contract and
+  are removed in `1.0.0`.
 
 ### Container image
 

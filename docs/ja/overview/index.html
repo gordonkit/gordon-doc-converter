@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="DOCX をはじめとするドキュメント形式を、Python ライブラリ、CLI、HTTP API から PDF、HTML、Markdown、画像などへ変換します。" />
     <title>GordonKit ドキュメントコンバーター | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/ja/overview/" />
@@ -54,7 +54,7 @@
 
       <section><h3>Python ライブラリ</h3><p>型付きの公開契約を使って、単一変換、独立したバッチ処理、エンジン調査、service injection を実行します。</p><code>from gordon_doc_converter import convert</code></section>
       <section><h3>CLI</h3><p>変換、比較、エンジン確認を実行し、スクリプトや CI ワークフロー向けに安定した JSON 結果を出力します。</p><code>gordon-doc convert report.docx --to pdf</code></section>
-      <section><h3>HTTP API</h3><p>FastAPI extra をインストールし、認証 hook、レート制限、上限付き並行実行を備えたプライベート配備を構築します。</p><code>POST /conversions</code></section>
+      <section><h3>HTTP API</h3><p>FastAPI extra をインストールし、認証 hook、レート制限、上限付き並行実行を備えたプライベート配備を構築します。</p><code>POST /v1/conversions</code></section>
     </section><section id="format-support">
       <h2>対応フォーマット：ローカルインストール</h2>
       <p>何を変換できるかは、どのインターフェースから呼び出すかではなく、その配備が備えるエンジンで決まります。この表は、PATH 上に LibreOffice、Pandoc、wkhtmltopdf があり、ページ画像用に images extra が導入されていること、Word COM ポリシーについては Word を備えた対話的な Windows デスクトップであることを前提とします。</p>

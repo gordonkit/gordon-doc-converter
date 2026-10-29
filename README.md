@@ -242,7 +242,7 @@ Once the API is running, submit the DOCX bytes with the original filename and be
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: example.docx" --data-binary @example.docx \
-    http://localhost:8000/conversions --output example.pdf
+    http://localhost:8000/v1/conversions --output example.pdf
 ```
 
 On PowerShell, use `Invoke-WebRequest -InFile ... -OutFile ...`. Complete Bash and PowerShell

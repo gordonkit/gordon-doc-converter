@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="將 DOCX 與其他文件格式轉換為 PDF、HTML、Markdown、圖片等格式，並可透過 Python 函式庫、CLI 或 HTTP API 使用。" />
     <title>GordonKit 文件轉換器 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-TW/overview/" />
@@ -54,7 +54,7 @@
 
       <section><h3>Python 函式庫</h3><p>使用具型別的公開契約，執行單檔轉換、隔離式批次、引擎探測與 service injection。</p><code>from gordon_doc_converter import convert</code></section>
       <section><h3>CLI</h3><p>執行轉換、比較與引擎檢查，並輸出穩定 JSON 結果供 script 與 CI 流程使用。</p><code>gordon-doc convert report.docx --to pdf</code></section>
-      <section><h3>HTTP API</h3><p>安裝 FastAPI extra，建立具認證 hooks、流量限制與有限並行能力的私有部署。</p><code>POST /conversions</code></section>
+      <section><h3>HTTP API</h3><p>安裝 FastAPI extra，建立具認證 hooks、流量限制與有限並行能力的私有部署。</p><code>POST /v1/conversions</code></section>
     </section><section id="format-support">
       <h2>格式支援：本機安裝</h2>
       <p>一個部署能轉換什麼，取決於它具備哪些引擎，而不是透過哪種介面呼叫。此表假設 PATH 上具備 LibreOffice、Pandoc 與 wkhtmltopdf，逐頁圖片已安裝 images extra；Word COM 政策則需要安裝 Word 的互動式 Windows 桌面環境。</p>

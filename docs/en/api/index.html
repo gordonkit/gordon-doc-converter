@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract." />
     <title>DOCX to PDF HTTP API | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-YgAV7eVt.js"></script>
+    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/en/api/" />
@@ -50,7 +50,7 @@
 
       <table><caption>HTTP API endpoints</caption>
         <thead><tr><th>Endpoint</th><th>Authentication</th><th>Purpose</th></tr></thead>
-        <tbody><tr><td>POST /conversions</td><td>Bearer token</td><td>Convert uploaded DOCX bytes to a PDF</td></tr><tr><td>GET /engines</td><td>Bearer token</td><td>List configured renderer capabilities</td></tr><tr><td>GET /live</td><td>None</td><td>Confirm the process is alive</td></tr><tr><td>GET /ready</td><td>None</td><td>Check that the default renderer is ready</td></tr><tr><td>GET /version</td><td>None</td><td>Return the package version</td></tr></tbody>
+        <tbody><tr><td>POST /v1/conversions</td><td>Bearer token</td><td>Convert uploaded DOCX bytes to a PDF</td></tr><tr><td>GET /v1/engines</td><td>Bearer token</td><td>List configured renderer capabilities</td></tr><tr><td>GET /live</td><td>None</td><td>Confirm the process is alive</td></tr><tr><td>GET /ready</td><td>None</td><td>Check that the default renderer is ready</td></tr><tr><td>GET /v1/version</td><td>None</td><td>Return the package version</td></tr></tbody>
       </table>
     </section><section id="start-api">
       <h2>Start the API</h2>
@@ -60,13 +60,13 @@ $env:GORDON_DOC_API_KEY = &quot;replace-me&quot;
 uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.1 --port 8000</code></pre><aside>The environment-variable example uses PowerShell. Keep this API private and do not commit API keys.</aside>
     </section><section id="api-convert">
       <h2>Convert a document</h2>
-      <p>POST /conversions accepts only a DOCX request body and returns application/pdf. Send the original basename in X-Filename, the DOCX OOXML MIME type in Content-Type, and a Bearer token when an API key is configured. The optional engine query parameter accepts libreoffice or gotenberg; Word COM is deliberately unavailable through the API. The server stages the upload in a temporary directory, validates the OOXML package and limits, calls the configured malware-scan hook, and deletes temporary files before the response returns.</p>
+      <p>POST /v1/conversions accepts only a DOCX request body and returns application/pdf. Send the original basename in X-Filename, the DOCX OOXML MIME type in Content-Type, and a Bearer token when an API key is configured. The optional engine query parameter accepts libreoffice or gotenberg; Word COM is deliberately unavailable through the API. The server stages the upload in a temporary directory, validates the OOXML package and limits, calls the configured malware-scan hook, and deletes temporary files before the response returns.</p>
       <pre><code>curl --fail-with-body \
   -H &quot;Authorization: Bearer replace-me&quot; \
   -H &quot;Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot; \
   -H &quot;X-Filename: report.docx&quot; \
   --data-binary @report.docx \
-  &quot;http://127.0.0.1:8000/conversions?engine=libreoffice&quot; \
+  &quot;http://127.0.0.1:8000/v1/conversions?engine=libreoffice&quot; \
   --output report.pdf</code></pre><aside>The HTTP adapter is intentionally narrower than the library and CLI: it exposes authenticated DOCX-to-PDF conversion only. Keep it behind private network controls and TLS in production.</aside>
     </section><section id="api-documentation">
       <h2>Interactive API documentation</h2>
@@ -76,13 +76,13 @@ uv run uvicorn gordon_doc_converter.api.app:create_app --factory --host 127.0.0.
       <h2>Available endpoints</h2>
       <p>The specification describes document conversion, engine discovery, health, readiness, and version endpoints. Protected requests use a Bearer token.</p>
       <pre><code># Protected: requires Authorization: Bearer &lt;api-key&gt;
-POST /conversions?engine=libreoffice|gotenberg
-GET  /engines
+POST /v1/conversions?engine=libreoffice|gotenberg
+GET  /v1/engines
 
 # Unprotected operational metadata
-GET  /live     # {&quot;status&quot;: &quot;ok&quot;}
-GET  /ready    # 200 ready, 503 not-ready
-GET  /version  # {&quot;version&quot;: &quot;X.Y.Z&quot;}</code></pre>
+GET  /live        # {&quot;status&quot;: &quot;ok&quot;}
+GET  /ready       # 200 ready, 503 not-ready
+GET  /v1/version  # {&quot;version&quot;: &quot;X.Y.Z&quot;}</code></pre>
     </section><section id="api-status-errors">
       <h2>Status codes and operational limits</h2>
       <p>A successful conversion returns 200 with a PDF attachment. Invalid engine choices or input return 400; missing or invalid credentials return 401; an oversized source returns 413; renderer failures return 422; exhausted rate or concurrency capacity returns 429; internal staging or service faults return 500; and unavailable authentication or malware scanning returns 503. /ready checks the configured default engine rather than merely reporting that the process is alive. The built-in fixed-window rate limit and concurrency limit are process-local, so production deployments with multiple replicas must enforce distributed limits at the ingress or gateway too.</p>

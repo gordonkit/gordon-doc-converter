@@ -221,7 +221,7 @@ API 啟動後，請傳送 DOCX 內容、原始檔名與 Bearer Token：
 curl --fail -H "Authorization: Bearer replace-me" \
     -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
     -H "X-Filename: 範例.docx" --data-binary @範例.docx \
-    http://localhost:8000/conversions --output 範例.pdf
+    http://localhost:8000/v1/conversions --output 範例.pdf
 ```
 
 PowerShell 請使用 `Invoke-WebRequest -InFile ... -OutFile ...`。LibreOffice 與 Gotenberg
