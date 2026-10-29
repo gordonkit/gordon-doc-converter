@@ -99,11 +99,14 @@ need to move.
 
 ## Supported platforms
 
-**Open decision:** the list below must match the CI matrix before `1.0.0`.
+The `quality` job in `.github/workflows/ci.yml` runs the full unit suite on every
+combination below, and this list must stay in step with it.
 
-- Python: 3.12 is tested today. Each supported Python version is tested in CI. Support for
-  a Python version is dropped only in a minor release, and only after it reaches end of life.
-- Operating systems: Linux and Windows are tested today; macOS is not yet.
+- Python: 3.12, 3.13, and 3.14. Support for a Python version is dropped only in a minor
+  release, and only after that version reaches end of life.
+- Operating systems: Linux, Windows, and macOS. Microsoft Word COM is available on Windows
+  only, and the real engine integration tests run on Linux (LibreOffice) and a controlled
+  Windows host (Word).
 - Engines: support for an engine version is best effort. The project never promises identical
   rendering between Microsoft Word and LibreOffice.
 

@@ -15,6 +15,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
+- CI runs the quality job on Linux, Windows, and macOS against Python 3.12, 3.13, and 3.14,
+  and the package classifiers list 3.13 and 3.14. It previously tested Python 3.12 on Linux
+  and Windows alone. The byte-exact CJK fixture check is skipped on interpreters that bundle
+  zlib-ng, as the Windows and macOS builds of 3.14 do, since it compresses to different bytes
+  than the reference zlib the committed fixtures came from.
 - The HTTP API serves its routes under `/v1/`: `POST /v1/conversions`, `GET /v1/engines`, and
   `GET /v1/version`. A later breaking change can then ship under a new prefix alongside the
   old one. The `/live` and `/ready` probes stay unversioned, so container health checks are
