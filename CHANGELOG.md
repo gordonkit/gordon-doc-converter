@@ -11,6 +11,16 @@ All notable changes to this project will be documented in this file. The format 
   `ghcr.io/gordonkit/gordon-doc-converter`, with the same tags as Docker Hub. The release
   rehearsal signs in to it as well, without pushing.
 
+### Changed
+
+- `tool.uv.required-version` accepts uv 0.13 as well as 0.12, and CI uses uv 0.13. Dependabot
+  runs uv 0.13 and could not update `uv.lock` while 0.13 was rejected.
+
+### Security
+
+- The `images` extra requires Pillow 13 (`pillow>=13,<14`), which fixes the advisories open
+  against Pillow 12.3. Upgrade `pypdf` to 6.21.4 and `certifi` to 2026.10.23 in `uv.lock`.
+
 ## [0.11.0] - 2026-10-20
 
 ### Added

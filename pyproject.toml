@@ -35,7 +35,7 @@ word = ["pywin32>=308; sys_platform == 'win32'"]
 gotenberg = ["httpx>=0.27,<1"]
 api = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1"]
 images = [
-    "pillow>=12.3,<13",
+    "pillow>=13,<14",
     "pypdfium2>=5.12,<6",
 ]
 
@@ -53,7 +53,7 @@ dev = [
 ]
 
 [tool.uv]
-required-version = ">=0.12,<0.13"
+required-version = ">=0.12,<0.14"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gordon_doc_converter"]
