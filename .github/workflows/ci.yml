@@ -292,6 +292,18 @@ jobs:
           && test -r /usr/share/licenses/gordon-doc-converter/THIRD_PARTY_NOTICES.txt'
       - name: Smoke CLI entry point
         run: docker run --rm gordon-doc:${{ github.sha }} version
+      # The image runs as an unprivileged user, so the mounted directory must be writable
+      # by any user for the conversion to publish its artifacts.
+      - name: Render page images in the image
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/page-images"
+          mkdir -p "$work"
+          chmod 777 "$work"
+          cp tests/fixtures/docx/cjk/a4-portrait.docx "$work/"
+          docker run --rm --volume "$work:/work" gordon-doc:${{ github.sha }} \
+            convert /work/a4-portrait.docx --to pdf --to images
+          test -s "$work/a4-portrait.pages/0001.png"
       - name: Generate CycloneDX SBOM
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

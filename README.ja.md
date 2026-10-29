@@ -41,23 +41,22 @@ extra が導入されていること、Word COM ポリシーについては Word
 
 ### コンテナイメージ（LibreOffice のみ）
 
-イメージには `libreoffice-writer` と `api`、`gotenberg` の extra が入るため、wkhtmltopdf
-または Pandoc を優先する経路はすべて LibreOffice が代わりに組版し、置き換えたエンジンを
-示す `ENGINE_FALLBACK` warning を返します。
+イメージには `libreoffice-writer` と `api`、`gotenberg`、`images` の extra が入るため、
+wkhtmltopdf または Pandoc を優先する経路はすべて LibreOffice が代わりに組版し、置き換えた
+エンジンを示す `ENGINE_FALLBACK` warning を返します。
 
 | 入力 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 画像 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
-| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
-| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
-| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
-| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` Compose の gateway profile が Gotenberg を提供する場合はそれを優先し、なければ
 LibreOffice · `LO!` 優先エンジンの代わりに LibreOffice が処理し、`ENGINE_FALLBACK`
 warning を返す · `R!` 抽出した内容から再構成し、代替の LibreOffice が組版する ·
-`—` このイメージでは利用できません。ページ画像には `images` extra が必要ですが、
-イメージには含まれません
+`PDF` 中間 PDF 経由
 
 イメージが提供する HTTP API は DOCX から PDF への変換のみです。表のそれ以外の経路は、
 イメージ内の同じ CLI を実行する `cli` Compose profile から利用します。
@@ -352,8 +351,8 @@ Microsoft Word と LibreOffice は同じドキュメントを異なる形で組�
 プロジェクトは選択したエンジンとフォールバックの理由を報告しますが、同一の出力を保証したり、
 明示的に選択されたエンジンを暗黙に切り替えたりすることはありません。
 
-[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
-では、これらのインターフェースのうちどれが公開契約に当たり、リリース間でどう変わりうるかを説明しています（英語）。
+[互換性ポリシー](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.ja.md)
+では、これらのインターフェースのうちどれが公開契約に当たり、リリース間でどう変わりうるかを説明しています。
 
 ## 開発環境の構築
 

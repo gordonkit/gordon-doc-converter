@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="将 DOCX 与其他文档格式转换为 PDF、HTML、Markdown、图片等格式，并可通过 Python 库、CLI 或 HTTP API 使用。" />
     <title>GordonKit 文档转换器 | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-DmEnRzb6.js"></script>
+    <script type="module" crossorigin src="/assets/docs-CHn7zxo3.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-DOD5iSpl.css">
       <link rel="canonical" href="https://docs.gordonkit.com/zh-CN/overview/" />
@@ -65,11 +65,11 @@
       </table>
     </section><section id="format-support-container">
       <h2>格式支持：容器镜像</h2>
-      <p>官方镜像安装的是 libreoffice-writer 与 api、gotenberg 两个 extra，因此所有优先使用 wkhtmltopdf 或 Pandoc 的路径都改由 LibreOffice 排版，并报告指出替代引擎的 ENGINE_FALLBACK warning。镜像提供的 HTTP API 只负责 DOCX 转 PDF；表中其余路径通过 cli Compose profile 执行。</p>
+      <p>官方镜像安装的是 libreoffice-writer 与 api、gotenberg、images 三个 extra，因此所有优先使用 wkhtmltopdf 或 Pandoc 的路径都改由 LibreOffice 排版，并报告指出替代引擎的 ENGINE_FALLBACK warning。镜像提供的 HTTP API 只负责 DOCX 转 PDF；表中其余路径通过 cli Compose profile 执行。</p>
 
       <table><caption>容器镜像支持的转换格式</caption>
         <thead><tr><th>输入</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>页图</th></tr></thead>
-        <tbody><tr><td>DOCX</td><td>不适用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>PDF</td><td>R!</td><td>不适用</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不适用</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>HTML</td><td>LO!</td><td>LO!</td><td>LO</td><td>不适用</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Markdown</td><td>LO!</td><td>LO!</td><td>LO</td><td>✓</td><td>不适用</td><td>✓</td><td>✓</td><td>—</td></tr></tbody>
+        <tbody><tr><td>DOCX</td><td>不适用</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>R!</td><td>不适用</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>不适用</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>LO!</td><td>LO!</td><td>LO</td><td>不适用</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>LO!</td><td>LO!</td><td>LO</td><td>✓</td><td>不适用</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
       </table>
     </section><section id="install">
       <h2>安装</h2>

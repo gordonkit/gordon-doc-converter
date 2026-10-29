@@ -12,11 +12,10 @@
 正式版本會把同一個映像發布至兩個 registry：
 
 - Docker Hub：`<namespace>/gordon-doc-converter`
-- GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.11.0 之後的
-  第一個版本起）
+- GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.12.0 起）
 
 Release tag `vX.Y.Z` 會在兩邊都發布 `X.Y.Z`、`X.Y` 與 `latest` 三個 image tag，下列指令使用任一
-名稱皆可。目前映像目標平台為 `linux/amd64`。
+名稱皆可。映像同時發布 `linux/amd64` 與 `linux/arm64` 兩個平台。
 
 映像 entrypoint 預設執行 CLI；第一個參數傳入 `api` 則會啟動 HTTP API：
 

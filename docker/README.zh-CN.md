@@ -12,11 +12,10 @@
 正式版本会把同一个镜像发布至两个 registry：
 
 - Docker Hub：`<namespace>/gordon-doc-converter`
-- GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.11.0 之后的
-  第一个版本起）
+- GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.12.0 起）
 
 Release tag `vX.Y.Z` 会在两边都发布 `X.Y.Z`、`X.Y` 与 `latest` 三个 image tag，下列命令使用任一
-名称均可。当前镜像目标平台为 `linux/amd64`。
+名称均可。镜像同时发布 `linux/amd64` 与 `linux/arm64` 两个平台。
 
 镜像 entrypoint 默认执行 CLI；第一个参数传入 `api` 则会启动 HTTP API：
 

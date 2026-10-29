@@ -39,22 +39,21 @@ extra；Word COM 策略则需要安装 Word 的交互式 Windows 桌面环境。
 
 ### 容器镜像（仅含 LibreOffice）
 
-镜像安装的是 `libreoffice-writer` 与 `api`、`gotenberg` 两个 extra，因此所有优先使用
-wkhtmltopdf 或 Pandoc 的路径都改由 LibreOffice 排版，并报告指出替代引擎的
+镜像安装的是 `libreoffice-writer` 与 `api`、`gotenberg`、`images` 三个 extra，因此所有
+优先使用 wkhtmltopdf 或 Pandoc 的路径都改由 LibreOffice 排版，并报告指出替代引擎的
 `ENGINE_FALLBACK` warning。
 
 | 输入格式 | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | 图片 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
-| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
-| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
-| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
-| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` Compose gateway profile 提供 Gotenberg 时优先使用，否则使用 LibreOffice ·
 `LO!` 由 LibreOffice 替代原本偏好的引擎，并报告 `ENGINE_FALLBACK` warning ·
-`R!` 由语义内容重建，并由替代的 LibreOffice 排版 ·
-`—` 此镜像不支持：逐页图片需要 `images` extra，而镜像并未安装
+`R!` 由语义内容重建，并由替代的 LibreOffice 排版 · `PDF` 先转为 PDF
 
 镜像提供的 HTTP API 只负责 DOCX 转 PDF；表中其余路径通过 `cli` Compose profile 执行，
 使用的是镜像内同一套 CLI。
@@ -317,8 +316,8 @@ root_blocks: [{
 Microsoft Word 与 LibreOffice 对同一文档可能产生不同版式。本项目会披露实际引擎及
 备援原因；明确指定引擎时，不会在未告知的情况下切换引擎。
 
-[COMPATIBILITY.md](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.md)
-说明上述接口中哪些属于公开契约，以及版本之间可以如何变动（英文）。
+[兼容性政策](https://github.com/gordonkit/gordon-doc-converter/blob/main/COMPATIBILITY.zh-CN.md)
+说明上述接口中哪些属于公开契约，以及版本之间可以如何变动。
 
 ## 开发环境
 
