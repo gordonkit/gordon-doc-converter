@@ -1,8 +1,12 @@
 # Compatibility Policy
 
+[繁體中文](COMPATIBILITY.zh-TW.md) · [简体中文](COMPATIBILITY.zh-CN.md) ·
+[日本語](COMPATIBILITY.ja.md)
+
 > **Draft.** This policy takes effect with `1.0.0`. Until then, any `0.x` minor release may
 > still change the surfaces listed here, as Semantic Versioning permits, and every such change
-> is recorded in `CHANGELOG.md`. Items marked **Open decision** must be settled before `1.0.0`.
+> is recorded in `CHANGELOG.md`. This English text is authoritative; the translations follow
+> it.
 
 GordonKit Document Converter follows [Semantic Versioning](https://semver.org/). From `1.0.0`
 on, a release that breaks a public contract below increments the major version. Minor
@@ -91,8 +95,9 @@ need to move.
 
 ### Container image
 
-- Image names, the tag scheme (`X.Y.Z`, `X.Y`, `latest`), the default CLI entrypoint, the
-  `api` argument, and the Compose profile names are contracts.
+- Image names, the tag scheme (`X.Y.Z`, `X.Y`, `latest`), the published platforms
+  (`linux/amd64` and `linux/arm64`), the default CLI entrypoint, the `api` argument, and the
+  Compose profile names are contracts.
 - The installed engine set may grow in a minor release. Removing an engine, or a route that
   the image serves, is a breaking change.
 - The base image and the versions of LibreOffice and other system packages are not contracts.

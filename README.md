@@ -41,23 +41,22 @@ with Word.
 
 ### Container image, LibreOffice only
 
-The image installs `libreoffice-writer` with the `api` and `gotenberg` extras, so every
-route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead and reports an
+The image installs `libreoffice-writer` with the `api`, `gotenberg`, and `images` extras, so
+every route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead and reports an
 `ENGINE_FALLBACK` warning naming the substituted engine.
 
 | Input | DOCX | PDF | ODT | HTML | Markdown | YAML | JSON | Images |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | — |
-| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | — |
-| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | — |
-| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | — |
-| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | — |
+| DOCX | × | Auto | LO | ✓ | ✓ | ✓ | ✓ | PDF |
+| PDF | R! | × | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ODT | LO | LO | × | ✓ | ✓ | ✓ | ✓ | PDF |
+| HTML | LO! | LO! | LO | × | ✓ | ✓ | ✓ | PDF |
+| Markdown | LO! | LO! | LO | ✓ | × | ✓ | ✓ | PDF |
 
 `Auto` Gotenberg where the Compose gateway profile provides one, otherwise LibreOffice ·
 `LO!` LibreOffice substituted for the preferred engine, with an `ENGINE_FALLBACK` warning ·
 `R!` rebuilt from extracted content and rendered by the substituted LibreOffice ·
-`—` unavailable in this image: page images need the `images` extra, which it does not
-install
+`PDF` via an intermediate PDF
 
 The HTTP API the image serves converts DOCX to PDF only. The rest of this matrix is
 reached through the `cli` Compose profile, which runs the same CLI inside the image.

@@ -27,8 +27,16 @@ def test_release_publishes_one_container_image_to_docker_hub_and_ghcr() -> None:
     assert "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}" in content
     assert "DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}" in content
     assert "uses: docker/build-push-action@v" in content
-    assert "platforms: linux/amd64" in content
+    assert "uses: docker/setup-qemu-action@v" in content
+    assert "platforms: linux/amd64,linux/arm64" in content
     assert "push: true" in content
+
+
+def test_runtime_image_installs_the_page_image_extra() -> None:
+    content = (_ROOT / "docker/Dockerfile").read_text(encoding="utf-8")
+
+    # Without the images extra the container could not render a single page image.
+    assert '".[api,gotenberg,images]"' in content
 
 
 def test_compose_connects_gateway_and_gotenberg_on_shared_network() -> None:
@@ -74,10 +82,17 @@ def test_release_rehearsal_exercises_the_container_publish_path() -> None:
 
     # release.yml runs only on a tag, so without this job a bump to either Docker
     # action would first execute during a real release.
-    for action in ("docker/login-action@", "docker/build-push-action@", "docker/metadata-action@"):
+    for action in (
+        "docker/setup-qemu-action@",
+        "docker/login-action@",
+        "docker/build-push-action@",
+        "docker/metadata-action@",
+    ):
         assert action in content
         version = release.split(action, maxsplit=1)[1].splitlines()[0]
         assert f"{action}{version}" in content, f"{action} drifted from release.yml"
+    # The rehearsal builds every platform the release publishes.
+    assert "platforms: linux/amd64,linux/arm64" in content
     # The rehearsal must never publish an image.
     assert "push: false" in content
     assert "push: true" not in content

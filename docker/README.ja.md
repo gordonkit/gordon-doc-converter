@@ -12,11 +12,10 @@ Compose ファイルには、明示的に選択する 3 つの profile があり
 タグ付きリリースでは、同じイメージを 2 つのレジストリに公開します。
 
 - Docker Hub: `<namespace>/gordon-doc-converter`
-- GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.11.0 の次の
-  リリースから）
+- GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.12.0 から）
 
 リリースタグ `vX.Y.Z` は、両方に `X.Y.Z`、`X.Y`、`latest` のイメージタグを公開します。
-以下のコマンドではどちらの名前も使えます。現在の対象プラットフォームは `linux/amd64` です。
+以下のコマンドではどちらの名前も使えます。イメージは `linux/amd64` と `linux/arm64` の両方で公開されます。
 
 イメージの entrypoint は既定で CLI を実行します。HTTP API を起動するには、最初の引数として
 `api` を渡してください。

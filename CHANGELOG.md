@@ -5,13 +5,22 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-29
+
 ### Added
 
 - Release tags also push the container image to GitHub Container Registry as
   `ghcr.io/gordonkit/gordon-doc-converter`, with the same tags as Docker Hub. The release
   rehearsal signs in to it as well, without pushing.
 - A draft `COMPATIBILITY.md` defining which library, CLI, schema, API, and container surfaces
-  become public contracts at `1.0.0`, and the deprecation process for changing them.
+  become public contracts at `1.0.0`, and the deprecation process for changing them, with
+  Traditional Chinese, Simplified Chinese, and Japanese translations.
+- The container image installs the `images` extra, so page images are available inside it
+  for every source format, rendered through an intermediate PDF where the source is not one.
+  CI renders a page image in the built image to keep it that way.
+- The container image is published for `linux/arm64` as well as `linux/amd64`, as one
+  multi-platform image under the same tags. The release builds the arm64 half under QEMU,
+  and the release rehearsal builds both platforms.
 
 ### Changed
 
@@ -29,6 +38,10 @@ All notable changes to this project will be documented in this file. The format 
   `0.6.0` version.
 - `tool.uv.required-version` accepts uv 0.13 as well as 0.12, and CI uses uv 0.13. Dependabot
   runs uv 0.13 and could not update `uv.lock` while 0.13 was rejected.
+
+- The `dev` dependency group adds `httpx2`, which Starlette 1.4's test client prefers over
+  `httpx`. The API tests no longer raise a `StarletteDeprecationWarning`. Runtime installs are
+  unaffected: the `gotenberg` extra still uses `httpx`.
 
 ### Deprecated
 
