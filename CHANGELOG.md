@@ -37,6 +37,11 @@ testing this one.
 
 - `SECURITY.md` states that release candidates receive no security fixes of their own; a fix
   ships in the next candidate or in `1.0.0`.
+- `SECURITY.md` sets response targets for vulnerability reports: acknowledgement within 7
+  days, an initial assessment within 14 days, and a fix with a published advisory within 90
+  days. They are targets, not guarantees.
+- After a new major version is released, the latest minor version of the previous major
+  version receives security fixes for six more months.
 
 ## [0.12.0] - 2026-10-29
 

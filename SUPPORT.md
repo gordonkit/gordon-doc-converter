@@ -5,5 +5,5 @@ package version, Python version, operating system, deployment mode, selected eng
 diagnostic output. Never attach confidential documents, credentials, Office license data, or
 sensitive full paths.
 
-Security issues must follow [SECURITY.md](SECURITY.md). This pre-release project does not yet
-offer a production support SLA.
+Security issues must follow [SECURITY.md](SECURITY.md), which also states the response
+targets for vulnerability reports. The project offers no support SLA for other issues.
