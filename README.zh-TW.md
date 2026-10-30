@@ -3,7 +3,7 @@
 [![CI](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gordonkit/gordon-doc-converter/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![授權：Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![開發狀態：Pre-Alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)](https://pypi.org/classifiers/)
+[![開發狀態：Beta](https://img.shields.io/badge/status-beta-yellow.svg)](https://pypi.org/classifiers/)
 
 [English](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.md) ·
 [简体中文](https://github.com/gordonkit/gordon-doc-converter/blob/main/README.zh-CN.md) ·

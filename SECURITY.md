@@ -6,6 +6,7 @@
 | --- | --- |
 | Latest `0.x` release | Yes, until `1.0.0` is released |
 | Earlier `0.x` releases | No; upgrade to the latest release |
+| Release candidates (`1.0.0rcN`) | No; upgrade to the next candidate or to `1.0.0` |
 
 From `1.0.0` on, security fixes are released for the latest minor version of the current
 major version.

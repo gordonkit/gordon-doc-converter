@@ -98,8 +98,12 @@ Library / CLI / future API
 
 ## 發版流程
 
-- 發版只由推送符合 `v[0-9]+.[0-9]+.[0-9]+` 的 tag 觸發，別無其他途徑；合併發版 pull request
-  本身不會發布任何東西。既有 tag 皆為 annotated，請延續此慣例。
+- 發版只由推送符合 `v[0-9]+.[0-9]+.[0-9]+` 的 tag（release candidate 則為
+  `v[0-9]+.[0-9]+.[0-9]+rc[0-9]+`）觸發，別無其他途徑；合併發版 pull request 本身不會發布任何
+  東西。既有 tag 皆為 annotated，請延續此慣例。
+- Release candidate 依 PEP 440 拼寫：`pyproject.toml` 寫 `1.0.0rc1`、tag 為 `v1.0.0rc1`，不要用
+  `1.0.0-rc.1`。候選版會發布為 GitHub pre-release，容器只取得完整版號 tag；`X.Y` 與 `latest`
+  仍指向最後一個正式版。
 - 打 tag 會同時發布到 PyPI、Docker Hub、GitHub Container Registry 與 GitHub Releases，且全部無法撤回：PyPI 的版本號
   永不可重用，發壞的 `0.9.0` 只能作廢改發 `0.9.1`。
 - 先演練：`gh workflow run test-release.yml --ref main -f target=all`，它會發布到 TestPyPI、
@@ -115,7 +119,7 @@ Library / CLI / future API
 - `CHANGELOG.md` 保留空的 `## [Unreleased]` 標題，將帶日期的發版區段插入其下方。條目應在變更
   合併當下就寫好，而非等到發版前才補。
 - `release.yml` 只在 tag 觸發，且不符合 `ci.yml` 的任何 path filter，因此其中的相依套件升級
-  不會被一般 CI 執行到。演練涵蓋 login、metadata 與 build 步驟；`type=semver` 標籤樣板則只有
+  不會被一般 CI 執行到。演練涵蓋 login、metadata 與 build 步驟；`type=pep440` 標籤樣板則只有
   真正的 tag 才會跑到。
 
 ## 文件與變更紀律

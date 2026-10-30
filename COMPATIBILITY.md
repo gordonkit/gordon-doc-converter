@@ -3,10 +3,10 @@
 [繁體中文](COMPATIBILITY.zh-TW.md) · [简体中文](COMPATIBILITY.zh-CN.md) ·
 [日本語](COMPATIBILITY.ja.md)
 
-> **Draft.** This policy takes effect with `1.0.0`. Until then, any `0.x` minor release may
-> still change the surfaces listed here, as Semantic Versioning permits, and every such change
-> is recorded in `CHANGELOG.md`. This English text is authoritative; the translations follow
-> it.
+> **Release candidate.** This policy takes effect with `1.0.0`. The `1.0.0rcN` release
+> candidates already ship the surfaces listed here, but a later candidate may still change
+> them to fix a problem found during testing, and every such change is recorded in
+> `CHANGELOG.md`. This English text is authoritative; the translations follow it.
 
 GordonKit Document Converter follows [Semantic Versioning](https://semver.org/). From `1.0.0`
 on, a release that breaks a public contract below increments the major version. Minor
@@ -89,15 +89,16 @@ need to move.
 - A breaking change ships under a new prefix, such as `/v2/`, served alongside `/v1/` for at
   least one minor release before `/v1/` is removed in a major release.
 - `GORDON_DOC_API_KEY` and `GORDON_DOC_GOTENBERG_URL` are stable configuration names.
-- The unprefixed `/conversions`, `/engines`, and `/version` routes are deprecated aliases kept
-  for clients written before `0.12.0`. They are marked `deprecated` in the OpenAPI contract and
-  are removed in `1.0.0`.
+- The unprefixed `/conversions`, `/engines`, and `/version` aliases that `0.12.0` deprecated
+  are removed from `1.0.0rc1` on.
 
 ### Container image
 
 - Image names, the tag scheme (`X.Y.Z`, `X.Y`, `latest`), the published platforms
   (`linux/amd64` and `linux/arm64`), the default CLI entrypoint, the `api` argument, and the
   Compose profile names are contracts.
+- A release candidate such as `1.0.0rc1` is published under its exact tag only. `X.Y` and
+  `latest` keep pointing at the last final release.
 - The installed engine set may grow in a minor release. Removing an engine, or a route that
   the image serves, is a breaking change.
 - The base image and the versions of LibreOffice and other system packages are not contracts.

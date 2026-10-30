@@ -15,7 +15,8 @@
 - GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.12.0 起）
 
 Release tag `vX.Y.Z` 會在兩邊都發布 `X.Y.Z`、`X.Y` 與 `latest` 三個 image tag，下列指令使用任一
-名稱皆可。映像同時發布 `linux/amd64` 與 `linux/arm64` 兩個平台。
+名稱皆可。映像同時發布 `linux/amd64` 與 `linux/arm64` 兩個平台。`v1.0.0rc1` 這類候選版只發布
+完整版號 tag `1.0.0rc1`。
 
 映像 entrypoint 預設執行 CLI；第一個參數傳入 `api` 則會啟動 HTTP API：
 

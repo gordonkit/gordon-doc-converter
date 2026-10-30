@@ -73,4 +73,4 @@ __all__ = [
     "probe_engines",
 ]
 
-__version__ = "0.12.0"
+__version__ = "1.0.0rc1"
