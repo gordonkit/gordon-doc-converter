@@ -2,8 +2,8 @@
 
 [English](COMPATIBILITY.md) · [繁體中文](COMPATIBILITY.zh-TW.md) · [日本語](COMPATIBILITY.ja.md)
 
-> **草稿。** 本政策自 `1.0.0` 起生效。在此之前，依 Semantic Versioning 的规定，任何 `0.x`
-> minor 版本仍可能变动下列接口，每项变动都会记录在 `CHANGELOG.md`。本文为英文版
+> **候选版。** 本政策自 `1.0.0` 起生效。`1.0.0rcN` 候选版已经提供下列接口，但若测试中发现
+> 问题，后续的候选版仍可能变动它们，每项变动都会记录在 `CHANGELOG.md`。本文为英文版
 > `COMPATIBILITY.md` 的翻译，两者有出入时以英文版为准。
 
 GordonKit Document Converter 遵循 [Semantic Versioning](https://semver.org/)。自 `1.0.0`
@@ -77,13 +77,13 @@ PDF、DOCX、ODT、HTML、Markdown 与逐页图片输出不保证逐字节相同
 - 破坏性变更会在新的前缀（例如 `/v2/`）下发布，并与 `/v1/` 并存至少一个 minor 版本，
   之后才会在 major 版本中移除 `/v1/`。
 - `GORDON_DOC_API_KEY` 与 `GORDON_DOC_GOTENBERG_URL` 是稳定的配置名称。
-- 没有前缀的 `/conversions`、`/engines` 与 `/version` 是为 `0.12.0` 之前的客户端保留的
-  已弃用别名。它们在 OpenAPI 契约中标记为 `deprecated`，并会在 `1.0.0` 移除。
+- `0.12.0` 弃用的无前缀别名 `/conversions`、`/engines` 与 `/version` 自 `1.0.0rc1` 起移除。
 
 ### 容器镜像
 
 - 镜像名称、tag 规则（`X.Y.Z`、`X.Y`、`latest`）、发布平台（`linux/amd64` 与
   `linux/arm64`）、默认的 CLI entrypoint、`api` 参数与 Compose profile 名称都属于契约。
+- `1.0.0rc1` 这类候选版只以完整版本号 tag 发布，`X.Y` 与 `latest` 仍指向最后一个正式版。
 - Minor 版本可能增加镜像内的引擎。移除引擎或镜像提供的转换路径属于破坏性变更。
 - 基础镜像，以及 LibreOffice 与其他系统包的版本，不属于契约。
 

@@ -15,6 +15,7 @@ Compose ファイルには、明示的に選択する 3 つの profile があり
 - GitHub Container Registry: `ghcr.io/gordonkit/gordon-doc-converter`（0.12.0 から）
 
 リリースタグ `vX.Y.Z` は、両方に `X.Y.Z`、`X.Y`、`latest` のイメージタグを公開します。
+`v1.0.0rc1` のようなリリース候補は、完全なバージョンのタグ `1.0.0rc1` だけを公開します。
 以下のコマンドではどちらの名前も使えます。イメージは `linux/amd64` と `linux/arm64` の両方で公開されます。
 
 イメージの entrypoint は既定で CLI を実行します。HTTP API を起動するには、最初の引数として

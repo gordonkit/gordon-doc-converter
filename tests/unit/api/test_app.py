@@ -122,7 +122,7 @@ def test_health_and_version_do_not_require_document_access() -> None:
     assert "version" in client.get("/v1/version").json()
 
 
-def test_unversioned_aliases_still_serve_and_are_marked_deprecated() -> None:
+def test_unversioned_aliases_removed_in_1_0_are_gone() -> None:
     client = _client(StubService())
 
     conversion = _convert(client, "/conversions")
@@ -130,25 +130,13 @@ def test_unversioned_aliases_still_serve_and_are_marked_deprecated() -> None:
     version = client.get("/version")
     paths = client.get("/openapi.json").json()["paths"]
 
-    assert conversion.status_code == 200
-    assert conversion.content.startswith(b"%PDF")
-    assert engines.status_code == 200
-    assert version.json() == client.get("/v1/version").json()
-    assert paths["/conversions"]["post"]["deprecated"] is True
-    assert paths["/engines"]["get"]["deprecated"] is True
-    assert paths["/version"]["get"]["deprecated"] is True
-    assert "deprecated" not in paths["/v1/conversions"]["post"]
-    assert "deprecated" not in paths["/live"]["get"]
-
-
-def test_versioned_and_aliased_routes_share_one_rate_limit() -> None:
-    client = _client(StubService(), rate_limit_requests=1)
-
-    first = client.get("/v1/engines", headers={"Authorization": "Bearer secret"})
-    second = client.get("/engines", headers={"Authorization": "Bearer secret"})
-
-    assert first.status_code == 200
-    assert second.status_code == 429
+    assert conversion.status_code == 404
+    assert engines.status_code == 404
+    assert version.status_code == 404
+    assert set(paths) == {"/v1/conversions", "/v1/engines", "/v1/version", "/live", "/ready"}
+    assert not any(
+        operation.get("deprecated") for item in paths.values() for operation in item.values()
+    )
 
 
 def test_openapi_contract_and_interactive_documentation_are_published() -> None:

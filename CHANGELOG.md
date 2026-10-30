@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.0rc1] - 2026-10-30
+
+The first release candidate for `1.0.0`. It ships the public contracts that
+`COMPATIBILITY.md` defines; a later candidate changes them only to fix a problem found while
+testing this one.
+
+### Added
+
+- Release candidate tags such as `v1.0.0rc1` trigger the release workflow. A candidate is
+  published to PyPI as a pre-release, which `pip` installs only with `--pre` or an exact
+  version, and as a GitHub pre-release. Its container image receives only the exact tag
+  `1.0.0rc1`; `X.Y` and `latest` keep pointing at the last final release.
+
+### Changed
+
+- The package classifier and the README badges move from Pre-Alpha to Beta.
+- The container tags are generated with `type=pep440` in place of `type=semver`, which cannot
+  read a PEP 440 pre-release. Final releases receive the same `X.Y.Z`, `X.Y`, and `latest`
+  tags as before.
+- `COMPATIBILITY.md` is no longer a draft. It takes effect with `1.0.0`, and the release
+  candidates already follow it.
+
+### Removed
+
+- The unprefixed `/conversions`, `/engines`, and `/version` routes, deprecated in `0.12.0`.
+  They now answer `404`. Use `POST /v1/conversions`, `GET /v1/engines`, and
+  `GET /v1/version`. The `/live` and `/ready` probes are unchanged.
+
+### Security
+
+- `SECURITY.md` states that release candidates receive no security fixes of their own; a fix
+  ships in the next candidate or in `1.0.0`.
+- `SECURITY.md` sets response targets for vulnerability reports: acknowledgement within 7
+  days, an initial assessment within 14 days, and a fix with a published advisory within 90
+  days. They are targets, not guarantees.
+- After a new major version is released, the latest minor version of the previous major
+  version receives security fixes for six more months.
+
 ## [0.12.0] - 2026-10-29
 
 ### Added

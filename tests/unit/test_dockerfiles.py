@@ -32,6 +32,21 @@ def test_release_publishes_one_container_image_to_docker_hub_and_ghcr() -> None:
     assert "push: true" in content
 
 
+def test_release_candidates_publish_without_moving_stable_tags() -> None:
+    content = (_ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    # A PEP 440 candidate tag (v1.0.0rc1) must trigger the release at all.
+    assert '"v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"' in content
+    # type=semver cannot read 1.0.0rc1; pep440 publishes it as PyPI spells it.
+    assert "type=semver" not in content
+    assert "type=pep440,pattern={{version}}" in content
+    # The X.Y pattern skips pre-releases by itself, but latest has to be switched off.
+    assert "flavor: latest=false" in content
+    assert "type=raw,value=latest,enable=${{ !contains(github.ref_name, 'rc') }}" in content
+    assert "PRERELEASE: ${{ contains(github.ref_name, 'rc') }}" in content
+    assert "flags+=(--prerelease)" in content
+
+
 def test_runtime_image_installs_the_page_image_extra() -> None:
     content = (_ROOT / "docker/Dockerfile").read_text(encoding="utf-8")
 

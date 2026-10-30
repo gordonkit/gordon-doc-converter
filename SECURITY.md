@@ -6,9 +6,12 @@
 | --- | --- |
 | Latest `0.x` release | Yes, until `1.0.0` is released |
 | Earlier `0.x` releases | No; upgrade to the latest release |
+| Release candidates (`1.0.0rcN`) | No; upgrade to the next candidate or to `1.0.0` |
 
 From `1.0.0` on, security fixes are released for the latest minor version of the current
-major version.
+major version. When a new major version is released, the latest minor version of the
+previous major version keeps receiving security fixes, and no other changes, for six months
+from that release date.
 
 Fixes ship as patch releases and are listed under `Security` in `CHANGELOG.md`. A fix that
 cannot keep a public contract may change it in a minor or patch release, as described in
@@ -26,5 +29,15 @@ through the hosting provider's private security-advisory feature. Include the af
 version, reproducible steps, impact, and any suggested mitigation. Do not include customer
 documents, credentials, or personal data.
 
-Maintainers will acknowledge a report, investigate it, and coordinate disclosure. No
-response-time guarantee is made before a formal security response process is published.
+## Response targets
+
+Maintainers aim to:
+
+1. acknowledge a report within 7 days;
+2. complete an initial assessment, including whether it is a vulnerability and how severe it
+   is, within 14 days of the report;
+3. release a fix and publish an advisory within 90 days of the report.
+
+These are targets, not guarantees. If a fix needs longer, maintainers tell the reporter and
+agree on a new disclosure date with them. A fix that is ready earlier is released earlier.
+Please keep the report private until the advisory is published or the 90 days have passed.

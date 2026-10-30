@@ -105,9 +105,12 @@ Library / CLI / future API
 
 ## Release Process
 
-- A release is triggered by pushing a tag matching `v[0-9]+.[0-9]+.[0-9]+`, and by nothing
-  else. Merging a release pull request publishes nothing. Existing tags are annotated; keep
-  that convention.
+- A release is triggered by pushing a tag matching `v[0-9]+.[0-9]+.[0-9]+`, or
+  `v[0-9]+.[0-9]+.[0-9]+rc[0-9]+` for a release candidate, and by nothing else. Merging a
+  release pull request publishes nothing. Existing tags are annotated; keep that convention.
+- Spell release candidates the PEP 440 way, `1.0.0rc1` in `pyproject.toml` and `v1.0.0rc1` as
+  the tag, never `1.0.0-rc.1`. A candidate is published as a GitHub pre-release and receives
+  only its exact container tag; `X.Y` and `latest` stay on the last final release.
 - The tag publishes to PyPI, Docker Hub, GitHub Container Registry, and GitHub Releases at
   once. None of it can be
   undone: a PyPI version number can never be reused, so a broken `0.9.0` must be abandoned
@@ -129,7 +132,7 @@ Library / CLI / future API
   section directly below it. Write the entries when the change lands, not at release time.
 - `release.yml` runs only on a tag and matches no path filter in `ci.yml`, so a dependency
   bump inside it is unexercised by ordinary CI. The rehearsal covers the login, metadata,
-  and build steps; the `type=semver` tag templates are reached only by a real tag.
+  and build steps; the `type=pep440` tag templates are reached only by a real tag.
 
 ## Documentation and Change Discipline
 

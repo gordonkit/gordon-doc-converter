@@ -15,7 +15,8 @@
 - GitHub Container Registry：`ghcr.io/gordonkit/gordon-doc-converter`（自 0.12.0 起）
 
 Release tag `vX.Y.Z` 会在两边都发布 `X.Y.Z`、`X.Y` 与 `latest` 三个 image tag，下列命令使用任一
-名称均可。镜像同时发布 `linux/amd64` 与 `linux/arm64` 两个平台。
+名称均可。镜像同时发布 `linux/amd64` 与 `linux/arm64` 两个平台。`v1.0.0rc1` 这类候选版只发布
+完整版本号 tag `1.0.0rc1`。
 
 镜像 entrypoint 默认执行 CLI；第一个参数传入 `api` 则会启动 HTTP API：
 

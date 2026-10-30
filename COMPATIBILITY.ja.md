@@ -2,10 +2,10 @@
 
 [English](COMPATIBILITY.md) · [繁體中文](COMPATIBILITY.zh-TW.md) · [简体中文](COMPATIBILITY.zh-CN.md)
 
-> **草案。** このポリシーは `1.0.0` から有効になります。それまでは Semantic Versioning が
-> 認めるとおり、`0.x` の minor リリースでも以下のインターフェースが変わる可能性があり、
-> そうした変更はすべて `CHANGELOG.md` に記録されます。本書は英語版 `COMPATIBILITY.md` の
-> 翻訳であり、内容に食い違いがある場合は英語版が優先されます。
+> **リリース候補。** このポリシーは `1.0.0` から有効になります。`1.0.0rcN` のリリース候補は
+> すでに以下のインターフェースを提供していますが、テストで問題が見つかった場合は後続の候補で
+> 変わる可能性があり、そうした変更はすべて `CHANGELOG.md` に記録されます。本書は英語版
+> `COMPATIBILITY.md` の翻訳であり、内容に食い違いがある場合は英語版が優先されます。
 
 GordonKit Document Converter は [Semantic Versioning](https://semver.org/) に従います。
 `1.0.0` 以降、以下の公開契約を破るリリースでは major バージョンを上げます。Minor
@@ -88,14 +88,15 @@ PDF、DOCX、ODT、HTML、Markdown、ページ画像の出力は、バイト単�
 - 互換性を壊す変更は `/v2/` などの新しいプレフィックスで提供し、少なくとも 1 つの minor
   リリースの間は `/v1/` と並行して提供したうえで、major リリースで `/v1/` を削除します。
 - `GORDON_DOC_API_KEY` と `GORDON_DOC_GOTENBERG_URL` は安定した設定名です。
-- プレフィックスのない `/conversions`、`/engines`、`/version` は、`0.12.0` より前の
-  クライアントのために残している非推奨のエイリアスです。OpenAPI 契約では `deprecated` と
-  示され、`1.0.0` で削除されます。
+- `0.12.0` で非推奨になったプレフィックスなしのエイリアス `/conversions`、`/engines`、
+  `/version` は、`1.0.0rc1` から削除されています。
 
 ### コンテナイメージ
 
 - イメージ名、タグの規則（`X.Y.Z`、`X.Y`、`latest`）、公開プラットフォーム（`linux/amd64` と
   `linux/arm64`）、既定の CLI entrypoint、`api` 引数、Compose profile 名は契約に含まれます。
+- `1.0.0rc1` のようなリリース候補は完全なバージョンのタグだけで公開され、`X.Y` と `latest` は
+  最後の正式リリースを指したままです。
 - Minor リリースでイメージ内のエンジンが増えることがあります。エンジンや、イメージが提供する
   変換経路を削除することは、互換性を壊す変更です。
 - ベースイメージと、LibreOffice やその他のシステムパッケージのバージョンは契約に含まれません。
