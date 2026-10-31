@@ -364,3 +364,11 @@ canonical、语言 alternate、结构化数据、sitemap 与 robots 指示。网
 
 采用 Apache License 2.0，详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 与
 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。
+
+## GordonKit 的其他服务
+
+gordon-doc-converter 是 [GordonKit](https://gordonkit.com/zh-CN/) 的一部分，GordonKit 提供免费的在线工具与开源项目：
+
+- [SlideForge](https://slideforge.gordonkit.com/zh-CN/overview/)：以经过验证的 JSON 与模板制作风格一致的演示文稿，并导出文字与图形均可编辑的 PowerPoint。
+- [GordonKit Math](https://math.gordonkit.com/)：面向五到九年级的交互式数学学习，以可视化、循序渐进的单元带你理解概念。
+- [Math Background Studio](https://bg.gordonkit.com/)：用数学图案生成壁纸与演示文稿背景，并导出为 PNG 或 SVG。

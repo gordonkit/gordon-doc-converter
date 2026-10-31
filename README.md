@@ -402,3 +402,15 @@ user guide, compatibility notes, and development standards.
 Apache License 2.0. See [LICENSE](https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE),
 [NOTICE](https://github.com/gordonkit/gordon-doc-converter/blob/main/NOTICE), and
 [THIRD_PARTY_NOTICES.txt](https://github.com/gordonkit/gordon-doc-converter/blob/main/THIRD_PARTY_NOTICES.txt).
+
+## More from GordonKit
+
+gordon-doc-converter is part of [GordonKit](https://gordonkit.com/), a collection of free online tools
+and open-source projects:
+
+- [SlideForge](https://slideforge.gordonkit.com/) builds consistent presentations from validated JSON and
+  templates, then exports editable PowerPoint text and shapes.
+- [GordonKit Math](https://math.gordonkit.com/) offers interactive mathematics learning for grades 5–9,
+  with visual, step-by-step topics.
+- [Math Background Studio](https://bg.gordonkit.com/) generates wallpapers and slide backgrounds from
+  mathematical patterns and exports them as PNG or SVG.

@@ -365,3 +365,11 @@ canonical、語言 alternate、結構化資料、sitemap 與 robots 指示。網
 
 採用 Apache License 2.0，詳見 [LICENSE](LICENSE)、[NOTICE](NOTICE) 與
 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。
+
+## GordonKit 的其他服務
+
+gordon-doc-converter 是 [GordonKit](https://gordonkit.com/zh-TW/) 的一部分，GordonKit 提供免費的線上工具與開源專案：
+
+- [SlideForge](https://slideforge.gordonkit.com/zh-TW/overview/)：以驗證過的 JSON 與版型製作風格一致的簡報，並匯出可編輯文字與圖形的 PowerPoint。
+- [GordonKit Math](https://math.gordonkit.com/zh-tw/)：五到九年級的互動式數學學習，以視覺化、循序漸進的單元帶你理解概念。
+- [Math Background Studio](https://bg.gordonkit.com/zh-tw/)：用數學圖案生成桌布與簡報背景，並匯出為 PNG 或 SVG。

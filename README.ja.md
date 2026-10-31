@@ -404,3 +404,13 @@ npm run build
 
 Apache License 2.0 を採用しています。詳細は [LICENSE](LICENSE)、[NOTICE](NOTICE)、
 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) を参照してください。
+
+## GordonKit のほかのサービス
+
+gordon-doc-converter は、無料のオンラインツールとオープンソースプロジェクトを提供する
+[GordonKit](https://gordonkit.com/) の一部です。
+
+- [SlideForge](https://slideforge.gordonkit.com/ja/overview/)：検証済みの JSON とテンプレートから一貫したプレゼンテーションを作成し、
+  テキストと図形を編集できる PowerPoint として書き出します。
+- [GordonKit Math](https://math.gordonkit.com/)：5〜9 年生向けのインタラクティブな数学学習サイトです。視覚的で段階的な単元で概念を学べます。
+- [Math Background Studio](https://bg.gordonkit.com/)：数学的なパターンから壁紙やスライド背景を生成し、PNG または SVG で書き出します。
