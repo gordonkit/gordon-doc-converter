@@ -132,7 +132,7 @@ export function seoPagesPlugin(outputDirectory: string): Plugin {
       await writeFile(templatePath, renderPage(template, pages[0], "en"), "utf8");
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((page) => locales.map((locale) => `  <url><loc>${pageUrl(locale, page)}</loc>${locales.map((item) => `<xhtml:link rel="alternate" hreflang="${hreflang[item]}" href="${pageUrl(item, page)}"/>`).join("")}</url>`)).join("\n")}\n</urlset>\n`;
       await writeFile(join(outputDirectory, "sitemap.xml"), sitemap, "utf8");
-      await writeFile(join(outputDirectory, "robots.txt"), `User-agent: *\nContent-Signal: search=yes,ai-input=yes,ai-train=yes\nAllow: /\n\nSitemap:${siteUrl}/sitemap.xml\n`, "utf8");
+      await writeFile(join(outputDirectory, "robots.txt"), `User-agent: *\nContent-Signal: search=yes,ai-input=yes,ai-train=yes\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`, "utf8");
     },
   };
 }
