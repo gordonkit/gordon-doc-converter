@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -48,6 +50,55 @@ def test_generated_page_contains_indexable_localized_content(
     assert '<meta property="og:title"' in content
     assert '<script type="application/ld+json">' in content
     assert f"<h1>{expected_heading}</h1>" in content
+
+
+PARENT_ORGANIZATION_ID = "https://gordonkit.com/#organization"
+LD_JSON = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.DOTALL)
+
+
+@pytest.mark.parametrize(
+    ("locale", "parent_url"),
+    [
+        ("en", "https://gordonkit.com/en/"),
+        ("zh-TW", "https://gordonkit.com/zh-TW/"),
+        ("zh-CN", "https://gordonkit.com/zh-CN/"),
+        ("ja", "https://gordonkit.com/en/"),
+    ],
+)
+def test_generated_page_names_gordonkit_as_publisher(locale: str, parent_url: str) -> None:
+    content = (DOCS / locale / "overview" / "index.html").read_text(encoding="utf-8")
+    match = LD_JSON.search(content)
+    assert match is not None
+    graph = json.loads(match.group(1))["@graph"]
+
+    organization = next(node for node in graph if node["@type"] == "Organization")
+    website = next(node for node in graph if node["@type"] == "WebSite")
+    article = next(node for node in graph if node["@type"] == "TechArticle")
+    assert organization["@id"] == PARENT_ORGANIZATION_ID
+    assert website["@id"] == "https://docs.gordonkit.com/#website"
+    assert website["publisher"] == {"@id": PARENT_ORGANIZATION_ID}
+    assert article["publisher"] == {"@id": PARENT_ORGANIZATION_ID}
+    assert article["isPartOf"] == {"@id": website["@id"]}
+    # The publisher is backed by a link a crawler can follow without running the app.
+    footer = content.split("<footer>", 1)[1]
+    assert f'<a href="{parent_url}">gordonkit.com</a>' in footer
+
+
+def test_unknown_address_has_a_noindex_not_found_page() -> None:
+    content = (DOCS / "404.html").read_text(encoding="utf-8")
+
+    assert '<meta name="robots" content="noindex" />' in content
+    assert '<script type="module"' not in content
+    for locale in ("en", "zh-TW", "zh-CN", "ja"):
+        assert f'href="/{locale}/overview/"' in content
+
+
+def test_locale_roots_redirect_to_the_overview() -> None:
+    redirects = (DOCS / "_redirects").read_text(encoding="utf-8").splitlines()
+
+    for locale in ("en", "zh-TW", "zh-CN", "ja"):
+        assert f"/{locale} /{locale}/overview/ 301" in redirects
+        assert f"/{locale}/ /{locale}/overview/ 301" in redirects
 
 
 def test_sitemap_contains_every_localized_documentation_page() -> None:

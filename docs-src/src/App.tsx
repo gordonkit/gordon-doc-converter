@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import { categories, type Locale, pages } from "./content";
+import { parentSiteLabel, parentSiteUrl } from "./parent";
 
 const labels: Record<Locale, Record<string, string>> = {
   en: { search: "Search documentation", close: "Close search", onPage: "On this page", menu: "Open navigation", copy: "Copy code", copied: "Copied", previous: "Previous", next: "Next", results: "Search results", noResults: "No matching documentation", license: "Apache-2.0 License", notices: "Third-party notices", language: "Change language", sameFormat: "Same input and output format" },
@@ -196,6 +197,10 @@ function App() {
         <footer className="mx-auto flex max-w-4xl flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 px-6 py-6 text-xs text-slate-500 sm:px-10 dark:border-slate-800 dark:text-slate-400">
           <a href="https://github.com/gordonkit/gordon-doc-converter/blob/main/LICENSE" target="_blank" rel="noreferrer" className="hover:text-ink dark:hover:text-white">{t.license}</a>
           <a href="/THIRD_PARTY_NOTICES.txt" className="hover:text-ink dark:hover:text-white">{t.notices}</a>
+          <span className="inline-flex gap-1">
+            {parentSiteLabel[locale]}
+            <a href={parentSiteUrl(locale)} target="_blank" rel="noreferrer" className="hover:text-ink dark:hover:text-white">gordonkit.com</a>
+          </span>
         </footer>
       </main>
 
