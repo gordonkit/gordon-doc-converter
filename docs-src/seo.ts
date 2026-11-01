@@ -134,6 +134,7 @@ function renderPage(template: string, page: Page, locale: Locale): string {
 }
 
 const localeNames: Record<Locale, string> = { en: "English", "zh-TW": "繁體中文", "zh-CN": "简体中文", ja: "日本語" };
+const englishLocaleNames: Record<Locale, string> = { en: "English", "zh-TW": "Traditional Chinese", "zh-CN": "Simplified Chinese", ja: "Japanese" };
 
 /**
  * A top-level 404.html turns off the single-page fallback of Cloudflare Pages, so an address that
@@ -166,6 +167,39 @@ function renderNotFound(): string {
 `;
 }
 
+/**
+ * `/llms.txt` in the llmstxt.org format: one Markdown file that tells a language model what this
+ * site documents and where each page is. It is written in English, with the other languages named
+ * at the end, and every line reuses the page's own heading and summary, so it cannot describe a
+ * page differently from the page. The opening links to the GordonKit list, so a model that only
+ * reaches this site still learns who publishes it and what else they publish.
+ */
+function renderLlmsText(): string {
+  const overview = pages[0];
+  const item = (page: Page) => `- [${page.heading?.en ?? page.title.en}](${pageUrl("en", page)}): ${page.summary.en}`;
+  const sections = categories.flatMap((category) => {
+    const members = pages.filter((page) => page.category === category.id);
+    return members.length === 0 ? [] : [`## ${category.label.en}`, "", ...members.map(item), ""];
+  });
+  const otherLocales = locales
+    .filter((locale) => locale !== "en")
+    .map((locale) => `- [${localeNames[locale]}](${pageUrl(locale, overview)}): The same documentation in ${englishLocaleNames[locale]}, under /${locale}/.`);
+  return [
+    "# GordonKit Document Converter",
+    "",
+    `> ${overview.summary.en}`,
+    "",
+    `This is the documentation of gordon-doc-converter, an open-source project published by ${parentOrganization.name}. The [source code](https://github.com/gordonkit/gordon-doc-converter) is on GitHub. ${parentOrganization.name} lists all of its sites in [gordonkit.com/llms.txt](${parentOrganization.url}llms.txt).`,
+    "",
+    ...sections,
+    "## Optional",
+    "",
+    ...otherLocales,
+    `- [${parentOrganization.name}](${parentOrganization.url}llms.txt): Every site ${parentOrganization.name} publishes.`,
+    "",
+  ].join("\n");
+}
+
 export function seoPagesPlugin(outputDirectory: string): Plugin {
   return {
     name: "gordonkit-seo-pages",
@@ -185,6 +219,7 @@ export function seoPagesPlugin(outputDirectory: string): Plugin {
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((page) => locales.map((locale) => `  <url><loc>${pageUrl(locale, page)}</loc>${locales.map((item) => `<xhtml:link rel="alternate" hreflang="${hreflang[item]}" href="${pageUrl(item, page)}"/>`).join("")}</url>`)).join("\n")}\n</urlset>\n`;
       await writeFile(join(outputDirectory, "sitemap.xml"), sitemap, "utf8");
       await writeFile(join(outputDirectory, "404.html"), renderNotFound(), "utf8");
+      await writeFile(join(outputDirectory, "llms.txt"), renderLlmsText(), "utf8");
       // A locale root names no page of its own. It used to reach the overview only through the
       // single-page fallback that 404.html turns off, so it is redirected there explicitly.
       const redirects = locales.flatMap((locale) => [`/${locale} /${locale}/overview/ 301`, `/${locale}/ /${locale}/overview/ 301`]);

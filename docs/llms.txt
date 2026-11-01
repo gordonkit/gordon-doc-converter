@@ -1,0 +1,34 @@
+# GordonKit Document Converter
+
+> Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API.
+
+This is the documentation of gordon-doc-converter, an open-source project published by GordonKit. The [source code](https://github.com/gordonkit/gordon-doc-converter) is on GitHub. GordonKit lists all of its sites in [gordonkit.com/llms.txt](https://gordonkit.com/llms.txt).
+
+## Getting Started
+
+- [GordonKit Document Converter](https://docs.gordonkit.com/en/overview/): Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API.
+- [Document conversion CLI reference](https://docs.gordonkit.com/en/cli/): Convert DOCX, PDF, ODT, HTML, and Markdown from the terminal with the gordon-doc CLI. Learn engine selection, batch conversion, JSON output, and PDF comparison.
+- [Python document conversion library](https://docs.gordonkit.com/en/library/): Add typed DOCX, PDF, HTML, Markdown, YAML, JSON, and image conversion to Python applications with engine-neutral requests, results, batches, and diagnostics.
+- [DOCX to PDF HTTP API](https://docs.gordonkit.com/en/api/): Deploy an authenticated FastAPI service for private DOCX-to-PDF conversion with LibreOffice or Gotenberg, health endpoints, limits, and an OpenAPI 3.1 contract.
+
+## Development
+
+- [Document converter architecture](https://docs.gordonkit.com/en/architecture/): Understand GordonKit's portable document conversion architecture, including the application service, engine protocol, policy orchestration, adapters, and PDF validation.
+- [Contribute to GordonKit](https://docs.gordonkit.com/en/contributing/): Set up the GordonKit Document Converter development environment with uv, then format, lint, type-check, and test Python contributions before opening a pull request.
+
+## Operations
+
+- [Document conversion deployment modes](https://docs.gordonkit.com/en/deployment/): Choose Word COM, LibreOffice, or Gotenberg conversion policies for interactive Windows desktops, servers, and containers without silent engine fallback.
+- [Docker document conversion](https://docs.gordonkit.com/en/containers/): Run document conversion in Docker Compose with a hardened GordonKit image, bundled LibreOffice, an authenticated API, or an isolated Gotenberg renderer.
+
+## Project
+
+- [GordonKit project roadmap](https://docs.gordonkit.com/en/roadmap/): Review the GordonKit Document Converter roadmap, current Python library, CLI, API, container, semantic artifact, and document comparison capabilities.
+- [Secure document conversion](https://docs.gordonkit.com/en/security/): Secure untrusted document conversion with extension, MIME, OOXML, file-size, and decompression validation, isolated execution, and private vulnerability reporting.
+
+## Optional
+
+- [繁體中文](https://docs.gordonkit.com/zh-TW/overview/): The same documentation in Traditional Chinese, under /zh-TW/.
+- [简体中文](https://docs.gordonkit.com/zh-CN/overview/): The same documentation in Simplified Chinese, under /zh-CN/.
+- [日本語](https://docs.gordonkit.com/ja/overview/): The same documentation in Japanese, under /ja/.
+- [GordonKit](https://gordonkit.com/llms.txt): Every site GordonKit publishes.

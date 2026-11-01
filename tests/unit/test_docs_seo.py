@@ -101,6 +101,24 @@ def test_locale_roots_redirect_to_the_overview() -> None:
         assert f"/{locale}/ /{locale}/overview/ 301" in redirects
 
 
+def test_llms_txt_lists_every_english_page_and_links_to_gordonkit() -> None:
+    text = (DOCS / "llms.txt").read_text(encoding="utf-8")
+    lines = text.splitlines()
+
+    assert lines[0] == "# GordonKit Document Converter"
+    assert lines[2].startswith("> Convert DOCX")
+    assert "(https://gordonkit.com/llms.txt)" in text
+    links = set(re.findall(r"\]\((https://docs\.gordonkit\.com/[^)]+)\)", text))
+    english = {f"https://docs.gordonkit.com/en/{page_id}/" for page_id in PAGE_IDS}
+    assert english <= links
+    assert links - english == {
+        f"https://docs.gordonkit.com/{locale}/overview/" for locale in ("zh-TW", "zh-CN", "ja")
+    }
+    for line in lines:
+        if line.startswith("- "):
+            assert re.match(r"^- \[[^\]]+\]\(https://[^)]+\): \S", line), line
+
+
 def test_sitemap_contains_every_localized_documentation_page() -> None:
     sitemap = ElementTree.parse(DOCS / "sitemap.xml")
     namespace = {"sitemap": "http://www.sitemaps.org/schemas/sitemap/0.9"}
