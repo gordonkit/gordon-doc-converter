@@ -442,11 +442,26 @@ jobs:
     permissions:
       contents: read
       deployments: write
+    env:
+      # IndexNow key. Public by design: it is served as /<key>.txt (docs-src/public), and the same
+      # key is used on every GordonKit host.
+      INDEXNOW_KEY: da3af665c0c1192dbb4aad92b7ef3c9f
     steps:
+      # Only the IndexNow script is needed from the repository. docs/ is left out so the deployed
+      # site is exactly the artifact built by the documentation job.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@v4
         with:
           name: documentation-site
           path: docs
+      # Before the deploy, so the live site still holds the previous fingerprints to compare with.
+      - name: Plan IndexNow notification
+        run: >-
+          node .github/scripts/indexnow.mjs plan
+          --host docs.gordonkit.com --dist docs
+          --key "$INDEXNOW_KEY" --out "$RUNNER_TEMP/indexnow-plan.json"
       - name: Deploy documentation to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
@@ -457,3 +472,5 @@ jobs:
             --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }}
             --branch=main
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notify IndexNow
+        run: node .github/scripts/indexnow.mjs submit --plan "$RUNNER_TEMP/indexnow-plan.json"
