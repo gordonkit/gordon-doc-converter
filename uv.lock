@@ -163,7 +163,7 @@ wheels = [
 
 [[package]]
 name = "gordon-doc-converter"
-version = "1.0.0rc1"
+version = "1.0.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "markdown-it-py" },

@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.0rc2] - 2026-11-07
+
 ### Added
 
 - HTML to DOCX through Pandoc: `<meta name="gordon-header" content="...">` and
