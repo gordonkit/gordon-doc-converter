@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- HTML to DOCX through Pandoc: `<meta name="gordon-header" content="...">` and
+  `<meta name="gordon-footer" content="...">` add a page header and footer. In either, `{page}`
+  and `{pages}` become live PAGE and NUMPAGES fields, for example `Page {page} of {pages}`.
+- HTML to DOCX through Pandoc: `<div class="toc" data-depth="3" data-title="Contents"></div>`
+  inserts a table-of-contents field. Word fills it when the file is opened or exported;
+  LibreOffice shows placeholder text until the field is updated.
+
+### Fixed
+
+- HTML to DOCX through Pandoc: `<meta name="author">` and date meta tags no longer print an
+  Author or Date paragraph at the top of the document; they remain document properties.
+- HTML to DOCX through Pandoc: the document `<title>` is no longer echoed as a Title
+  paragraph above a body that already starts with its own Heading 1.
+- HTML to DOCX through Pandoc: `break-before: page` (and `break-before: always` or
+  `page-break-before: always`) on a heading or `div` now produces a real Word page break.
+- HTML to DOCX through Pandoc: code and inline code use a monospace font (they were forced
+  to the body font), and code blocks get a light background.
+- HTML to DOCX through Pandoc: tables get grid borders, cell padding, and a bold shaded
+  header row instead of rendering borderless.
+
 ## [1.0.0rc1] - 2026-10-30
 
 The first release candidate for `1.0.0`. It ships the public contracts that
