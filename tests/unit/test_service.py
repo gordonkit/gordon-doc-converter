@@ -616,7 +616,11 @@ def test_markdown_rendering_routes_through_the_print_ready_html_intermediate(
 
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr(pandoc_module, "run_process", fake_run)
-    monkeypatch.setattr(pandoc_module, "_set_docx_page_layout", lambda path, orientation: None)
+    monkeypatch.setattr(
+        pandoc_module,
+        "_set_docx_page_layout",
+        lambda path, orientation, header=None, footer=None, **_: None,
+    )
     monkeypatch.setattr(pandoc_module.PandocConverter, "_reference_docx", lambda *_: None)
     request = ConversionRequest(
         source,
