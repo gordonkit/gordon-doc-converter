@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-12
+
+The first stable release. The library, CLI, HTTP API and container image are the same as in
+`1.0.0rc2`; the sections for `1.0.0rc1` and `1.0.0rc2` below list everything that changed
+since `0.12.0`.
+
+### Changed
+
+- `COMPATIBILITY.md` is in effect: from this release on, a change that breaks a public
+  contract increments the major version.
+- The package classifier and the README badges move from Beta to Production/Stable.
+- The container tags `1.0` and `latest` now point at this release.
+
+### Security
+
+- `SECURITY.md` lists the latest `1.x` minor release as the supported version. `0.x` releases
+  and the release candidates no longer receive security fixes.
+
 ## [1.0.0rc2] - 2026-11-07
 
 ### Added

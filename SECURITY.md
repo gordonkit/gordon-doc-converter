@@ -4,11 +4,12 @@
 
 | Version | Security fixes |
 | --- | --- |
-| Latest `0.x` release | Yes, until `1.0.0` is released |
-| Earlier `0.x` releases | No; upgrade to the latest release |
-| Release candidates (`1.0.0rcN`) | No; upgrade to the next candidate or to `1.0.0` |
+| Latest `1.x` minor release | Yes |
+| Earlier `1.x` minor releases | No; upgrade to the latest release |
+| `0.x` releases | No; upgrade to `1.0.0` or later |
+| Release candidates (`1.0.0rcN`) | No; upgrade to `1.0.0` or later |
 
-From `1.0.0` on, security fixes are released for the latest minor version of the current
+Security fixes are released for the latest minor version of the current
 major version. When a new major version is released, the latest minor version of the
 previous major version keeps receiving security fixes, and no other changes, for six months
 from that release date.

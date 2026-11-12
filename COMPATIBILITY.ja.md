@@ -2,10 +2,8 @@
 
 [English](COMPATIBILITY.md) · [繁體中文](COMPATIBILITY.zh-TW.md) · [简体中文](COMPATIBILITY.zh-CN.md)
 
-> **リリース候補。** このポリシーは `1.0.0` から有効になります。`1.0.0rcN` のリリース候補は
-> すでに以下のインターフェースを提供していますが、テストで問題が見つかった場合は後続の候補で
-> 変わる可能性があり、そうした変更はすべて `CHANGELOG.md` に記録されます。本書は英語版
-> `COMPATIBILITY.md` の翻訳であり、内容に食い違いがある場合は英語版が優先されます。
+> このポリシーは `1.0.0` から有効です。本書は英語版 `COMPATIBILITY.md` の翻訳であり、内容に
+> 食い違いがある場合は英語版が優先されます。
 
 GordonKit Document Converter は [Semantic Versioning](https://semver.org/) に従います。
 `1.0.0` 以降、以下の公開契約を破るリリースでは major バージョンを上げます。Minor

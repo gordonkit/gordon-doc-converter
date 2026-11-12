@@ -3,10 +3,8 @@
 [繁體中文](COMPATIBILITY.zh-TW.md) · [简体中文](COMPATIBILITY.zh-CN.md) ·
 [日本語](COMPATIBILITY.ja.md)
 
-> **Release candidate.** This policy takes effect with `1.0.0`. The `1.0.0rcN` release
-> candidates already ship the surfaces listed here, but a later candidate may still change
-> them to fix a problem found during testing, and every such change is recorded in
-> `CHANGELOG.md`. This English text is authoritative; the translations follow it.
+> This policy is in effect from `1.0.0`. This English text is authoritative; the
+> translations follow it.
 
 GordonKit Document Converter follows [Semantic Versioning](https://semver.org/). From `1.0.0`
 on, a release that breaks a public contract below increments the major version. Minor
