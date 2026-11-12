@@ -410,6 +410,8 @@ and open-source projects:
 
 - [SlideForge](https://slideforge.gordonkit.com/) builds consistent presentations from validated JSON and
   templates, then exports editable PowerPoint text and shapes.
+- [DocForge](https://docforge.gordonkit.com/) builds Word documents from validated JSON and templates,
+  then exports editable DOCX with real headings, lists and a table of contents.
 - [GordonKit Math](https://math.gordonkit.com/) offers interactive mathematics learning for grades 5–9,
   with visual, step-by-step topics.
 - [Math Background Studio](https://bg.gordonkit.com/) generates wallpapers and slide backgrounds from
