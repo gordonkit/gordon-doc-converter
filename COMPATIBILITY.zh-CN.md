@@ -2,9 +2,8 @@
 
 [English](COMPATIBILITY.md) · [繁體中文](COMPATIBILITY.zh-TW.md) · [日本語](COMPATIBILITY.ja.md)
 
-> **候选版。** 本政策自 `1.0.0` 起生效。`1.0.0rcN` 候选版已经提供下列接口，但若测试中发现
-> 问题，后续的候选版仍可能变动它们，每项变动都会记录在 `CHANGELOG.md`。本文为英文版
-> `COMPATIBILITY.md` 的翻译，两者有出入时以英文版为准。
+> 本政策自 `1.0.0` 起生效。本文为英文版 `COMPATIBILITY.md` 的翻译，两者有出入时以英文版
+> 为准。
 
 GordonKit Document Converter 遵循 [Semantic Versioning](https://semver.org/)。自 `1.0.0`
 起，破坏下列公开契约的版本会提升 major 版本号。Minor 版本只新增行为而不破坏兼容性；
