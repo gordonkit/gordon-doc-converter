@@ -1,55 +1,57 @@
-export type Locale = "en" | "zh-TW" | "zh-CN" | "ja";
+/** The languages written out by hand. en-AU is derived from en at load time (see the end of this file). */
+export type BaseLocale = "en" | "zh-TW" | "zh-CN" | "ja";
+export type Locale = BaseLocale | "en-AU";
 
-export type Section = {
+export type Section<L extends string = Locale> = {
   id: string;
-  title: Record<Locale, string>;
-  body: Record<Locale, string>;
+  title: Record<L, string>;
+  body: Record<L, string>;
   bodyLink?: {
-    label: Record<Locale, string>;
+    label: Record<L, string>;
     href: string;
   };
   code?: string;
-  bullets?: Record<Locale, string[]>;
-  note?: Record<Locale, string>;
+  bullets?: Record<L, string[]>;
+  note?: Record<L, string>;
   links?: Array<{
-    label: Record<Locale, string>;
+    label: Record<L, string>;
     href: string;
     download?: boolean;
   }>;
   interfaces?: Array<{
-    title: Record<Locale, string>;
-    label: Record<Locale, string>;
-    body: Record<Locale, string>;
+    title: Record<L, string>;
+    label: Record<L, string>;
+    body: Record<L, string>;
     example: string;
   }>;
   table?: {
-    caption: Record<Locale, string>;
-    headers: Record<Locale, string[]>;
-    rows: Record<Locale, string[][]>;
-    legend: Record<Locale, string[]>;
+    caption: Record<L, string>;
+    headers: Record<L, string[]>;
+    rows: Record<L, string[][]>;
+    legend: Record<L, string[]>;
     alignLeft?: boolean;
     firstColumnWidth?: "standard" | "wide" | "w48" | "w50";
     secondColumnWidth?: "standard" | "w40" | "w48" | "w50";
   };
 };
 
-export type Page = {
+export type Page<L extends string = Locale> = {
   id: string;
   category: "getting-started" | "development" | "operations" | "project";
-  title: Record<Locale, string>;
-  heading?: Record<Locale, string>;
-  summary: Record<Locale, string>;
-  sections: Section[];
+  title: Record<L, string>;
+  heading?: Record<L, string>;
+  summary: Record<L, string>;
+  sections: Section<L>[];
 };
 
-export const categories = [
+const rawCategories = [
   { id: "getting-started", label: { en: "Getting Started", "zh-TW": "快速開始", "zh-CN": "快速开始", ja: "はじめに" } },
   { id: "development", label: { en: "Development", "zh-TW": "開發指南", "zh-CN": "开发指南", ja: "開発" } },
   { id: "operations", label: { en: "Operations", "zh-TW": "維運部署", "zh-CN": "运维部署", ja: "運用" } },
   { id: "project", label: { en: "Project", "zh-TW": "專案資訊", "zh-CN": "项目信息", ja: "プロジェクト" } },
 ] as const;
 
-export const pages: Page[] = [
+const rawPages: Page<BaseLocale>[] = [
   {
     id: "overview",
     category: "getting-started",
@@ -504,3 +506,38 @@ export const pages: Page[] = [
     ],
   },
 ];
+
+// Australian English is the English text with a few Australian spellings, so it is derived instead of
+// being a fifth copy of every string. Only words that are never code are listed: option names, header
+// names and file formats stay as they are, which is why the rules are lowercase and refuse a word that
+// touches a dot, slash, hyphen, underscore or equals sign.
+const AUSTRALIAN_SPELLING: Array<[RegExp, string]> = [
+  [/(?<![\w./=:-])authorization(?![\w./=:-])/g, "authorisation"],
+  [/(?<![\w./=:-])normalized(?![\w./=:-])/g, "normalised"],
+  [/(?<![\w./=:-])optimization(?![\w./=:-])/g, "optimisation"],
+  [/(?<![\w./=:-])rasterize(?![\w./=:-])/g, "rasterise"],
+  [/(?<![\w./=:-])serialize(?![\w./=:-])/g, "serialise"],
+];
+
+function australian(value: unknown): unknown {
+  if (typeof value === "string") return AUSTRALIAN_SPELLING.reduce((text, [pattern, word]) => text.replace(pattern, word), value);
+  if (Array.isArray(value)) return value.map(australian);
+  return value;
+}
+
+/** Adds an "en-AU" entry next to every "en" entry in the content tree, without touching the original. */
+function withAustralianSpelling<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(withAustralianSpelling) as T;
+  if (value === null || typeof value !== "object") return value;
+  const entries = Object.entries(value as Record<string, unknown>).map(([key, child]) => [key, withAustralianSpelling(child)] as const);
+  const copy = Object.fromEntries(entries) as Record<string, unknown>;
+  if ("en" in copy && !("en-AU" in copy)) copy["en-AU"] = australian(copy.en);
+  return copy as T;
+}
+
+export const categories = withAustralianSpelling(rawCategories) as unknown as ReadonlyArray<{
+  id: Page["category"];
+  label: Record<Locale, string>;
+}>;
+
+export const pages: Page[] = withAustralianSpelling(rawPages) as unknown as Page[];

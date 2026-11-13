@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- The documentation site is also available in Australian English (`/en-AU/`), matching
+  gordonkit.com. It is the English text with a few Australian spellings, derived when the site
+  is built, so there is no second copy of the content to keep in step.
+
+### Changed
+
+- The Japanese documentation pages now link to the Japanese edition of gordonkit.com.
+
 ## [1.0.0] - 2026-11-12
 
 The first stable release. The library, CLI, HTTP API and container image are the same as in

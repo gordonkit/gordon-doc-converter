@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3Y5D55ZRZQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-3Y5D55ZRZQ');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API." />
+    <title>GordonKit Document Converter | GordonKit Docs</title>
+    <script type="module" crossorigin src="/assets/docs-Cs6OeV6n.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
+    <link rel="stylesheet" crossorigin href="/assets/docs-zGAF-Rqb.css">
+      <link rel="canonical" href="https://docs.gordonkit.com/en-AU/overview/" />
+    <link rel="alternate" hreflang="en" href="https://docs.gordonkit.com/en/overview/" />
+    <link rel="alternate" hreflang="en-AU" href="https://docs.gordonkit.com/en-AU/overview/" />
+    <link rel="alternate" hreflang="zh-Hant-TW" href="https://docs.gordonkit.com/zh-TW/overview/" />
+    <link rel="alternate" hreflang="zh-Hans-CN" href="https://docs.gordonkit.com/zh-CN/overview/" />
+    <link rel="alternate" hreflang="ja" href="https://docs.gordonkit.com/ja/overview/" />
+    <link rel="alternate" hreflang="x-default" href="https://docs.gordonkit.com/en/overview/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="GordonKit Docs" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_TW" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="GordonKit Document Converter | GordonKit Docs" />
+    <meta property="og:description" content="Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API." />
+    <meta property="og:url" content="https://docs.gordonkit.com/en-AU/overview/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="GordonKit Document Converter | GordonKit Docs" />
+    <meta name="twitter:description" content="Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API." />
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://gordonkit.com/#organization","name":"GordonKit","url":"https://gordonkit.com/"},{"@type":"WebSite","@id":"https://docs.gordonkit.com/#website","name":"GordonKit Document Converter Documentation","url":"https://docs.gordonkit.com/","publisher":{"@id":"https://gordonkit.com/#organization"}},{"@type":"TechArticle","headline":"GordonKit Document Converter","description":"Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API.","inLanguage":"en-AU","url":"https://docs.gordonkit.com/en-AU/overview/","isPartOf":{"@id":"https://docs.gordonkit.com/#website"},"publisher":{"@id":"https://gordonkit.com/#organization"},"about":{"@type":["SoftwareApplication","SoftwareSourceCode"],"name":"GordonKit Document Converter","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, Linux, macOS","codeRepository":"https://github.com/gordonkit/gordon-doc-converter","publisher":{"@id":"https://gordonkit.com/#organization"}}}]}</script>
+  </head>
+  <body>
+    <div id="root"><header><a href="/en-AU/overview/">GordonKit Document Converter</a><nav aria-label="Documentation"><a href="/en-AU/overview/">Overview</a> <a href="/en-AU/cli/">CLI reference</a> <a href="/en-AU/library/">Python library</a> <a href="/en-AU/api/">HTTP API</a> <a href="/en-AU/architecture/">Architecture</a> <a href="/en-AU/contributing/">Contributing</a> <a href="/en-AU/deployment/">Deployment modes</a> <a href="/en-AU/containers/">Containers</a> <a href="/en-AU/roadmap/">Roadmap</a> <a href="/en-AU/security/">Security</a></nav></header>
+    <main><article>
+      <p>Getting Started</p>
+      <h1>GordonKit Document Converter</h1>
+      <p>Convert DOCX and other document formats to PDF, HTML, Markdown, images, and more through a Python library, CLI, or HTTP API.</p>
+      <section id="about-project">
+      <h2>About this project</h2>
+      <p>This open-source GordonKit project orchestrates Microsoft Word, LibreOffice, Gotenberg, or Pandoc for document rendering. It keeps engine selection, validation, fallback reporting, and conversion results explicit and diagnosable.</p>
+
+    </section><section id="interfaces">
+      <h2>Ways to use it</h2>
+      <p>Choose the interface that fits your workflow. Every interface enters through the same application service and preserves structured results, engine policy, and diagnostics.</p>
+
+      <section><h3>Python Library</h3><p>Use typed public contracts for single conversions, isolated batches, engine probes, and service injection.</p><code>from gordon_doc_converter import convert</code></section>
+      <section><h3>CLI</h3><p>Convert, compare, inspect engines, and emit stable JSON results for scripts and CI workflows.</p><code>gordon-doc convert report.docx --to pdf</code></section>
+      <section><h3>HTTP API</h3><p>Install the FastAPI extra for private deployments with authentication hooks, rate limits, and bounded concurrency.</p><code>POST /v1/conversions</code></section>
+    </section><section id="format-support">
+      <h2>Format support: local install</h2>
+      <p>What a deployment can convert depends on the engines it carries, not on the interface it is driven through. This matrix assumes LibreOffice, Pandoc, and wkhtmltopdf on PATH, the images extra installed for page images, and, for the Word COM policy, an interactive Windows desktop with Word.</p>
+
+      <table><caption>Supported input and output formats</caption>
+        <thead><tr><th>Input</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>Images</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>Not applicable</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>R</td><td>Not applicable</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>P</td><td>W</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>P</td><td>W</td><td>LO</td><td>✓</td><td>Not applicable</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+      </table>
+    </section><section id="format-support-container">
+      <h2>Format support: container image</h2>
+      <p>The published image installs libreoffice-writer with the api, gotenberg, and images extras, so every route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead and reports an ENGINE_FALLBACK warning naming the substituted engine. The HTTP API the image serves converts DOCX to PDF only; the rest of this matrix is reached through the cli Compose profile.</p>
+
+      <table><caption>Formats the container image converts</caption>
+        <thead><tr><th>Input</th><th>DOCX</th><th>PDF</th><th>ODT</th><th>HTML</th><th>Markdown</th><th>YAML</th><th>JSON</th><th>Images</th></tr></thead>
+        <tbody><tr><td>DOCX</td><td>Not applicable</td><td>Auto</td><td>LO</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>PDF</td><td>R!</td><td>Not applicable</td><td>R</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>ODT</td><td>LO</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>HTML</td><td>LO!</td><td>LO!</td><td>LO</td><td>Not applicable</td><td>✓</td><td>✓</td><td>✓</td><td>PDF</td></tr><tr><td>Markdown</td><td>LO!</td><td>LO!</td><td>LO</td><td>✓</td><td>Not applicable</td><td>✓</td><td>✓</td><td>PDF</td></tr></tbody>
+      </table>
+    </section><section id="install">
+      <h2>Install</h2>
+      <p>Install the core package, then add only the optional capabilities required by your deployment.</p>
+      <pre><code>uv add gordon-doc-converter
+uv add &#39;gordon-doc-converter[images,gotenberg]&#39;</code></pre>
+    </section><section id="first-conversion">
+      <h2>First conversion</h2>
+      <p>Create a request from a source path. The service selects an allowed engine, validates staged output, and publishes only after validation succeeds.</p>
+      <pre><code>from pathlib import Path
+from gordon_doc_converter import ConversionRequest, convert
+
+request = ConversionRequest.from_source(Path(&quot;report.docx&quot;))
+result = convert(request)
+print(result.artifacts[0].path)</code></pre><aside>Explicit engine selection is strict and never silently falls back.</aside>
+    </section>
+    </article></main>
+    <footer><a href="https://github.com/gordonkit/gordon-doc-converter">GitHub</a> <span>A GordonKit project:<a href="https://gordonkit.com/en-AU/">gordonkit.com</a></span></footer></div>
+  </body>
+</html>

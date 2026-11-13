@@ -7,11 +7,12 @@ import { parentOrganization, parentSiteLabel, parentSiteUrl } from "./src/parent
 const siteUrl = "https://docs.gordonkit.com";
 /** The same `@id` gordonkit.com uses for this site in its own JSON-LD. */
 const websiteId = `${siteUrl}/#website`;
-const locales: Locale[] = ["en", "zh-TW", "zh-CN", "ja"];
-const hreflang: Record<Locale, string> = { en: "en", "zh-TW": "zh-Hant-TW", "zh-CN": "zh-Hans-CN", ja: "ja" };
-const openGraphLocale: Record<Locale, string> = { en: "en_US", "zh-TW": "zh_TW", "zh-CN": "zh_CN", ja: "ja_JP" };
+const locales: Locale[] = ["en", "en-AU", "zh-TW", "zh-CN", "ja"];
+const hreflang: Record<Locale, string> = { en: "en", "en-AU": "en-AU", "zh-TW": "zh-Hant-TW", "zh-CN": "zh-Hans-CN", ja: "ja" };
+const openGraphLocale: Record<Locale, string> = { en: "en_US", "en-AU": "en_AU", "zh-TW": "zh_TW", "zh-CN": "zh_CN", ja: "ja_JP" };
 const notApplicableLabel: Record<Locale, string> = {
   en: "Not applicable",
+  "en-AU": "Not applicable",
   "zh-TW": "不適用",
   "zh-CN": "不适用",
   ja: "該当なし",
@@ -135,8 +136,8 @@ function renderPage(template: string, page: Page, locale: Locale): string {
     .replace(/[ \t]+(?=\r?$)/gm, "");
 }
 
-const localeNames: Record<Locale, string> = { en: "English", "zh-TW": "繁體中文", "zh-CN": "简体中文", ja: "日本語" };
-const englishLocaleNames: Record<Locale, string> = { en: "English", "zh-TW": "Traditional Chinese", "zh-CN": "Simplified Chinese", ja: "Japanese" };
+const localeNames: Record<Locale, string> = { en: "English", "en-AU": "English (Australia)", "zh-TW": "繁體中文", "zh-CN": "简体中文", ja: "日本語" };
+const englishLocaleNames: Record<Locale, string> = { en: "English", "en-AU": "Australian English", "zh-TW": "Traditional Chinese", "zh-CN": "Simplified Chinese", ja: "Japanese" };
 
 /**
  * A top-level 404.html turns off the single-page fallback of Cloudflare Pages, so an address that

@@ -11,8 +11,8 @@ export const parentOrganization = {
   url: "https://gordonkit.com/",
 } as const;
 
-/** gordonkit.com has no Japanese edition yet, so Japanese pages link to the English one. */
-const parentLocalePath: Record<Locale, string> = { en: "en", "zh-TW": "zh-TW", "zh-CN": "zh-CN", ja: "en" };
+/** gordonkit.com has the same five languages as this site. */
+const parentLocalePath: Record<Locale, string> = { en: "en", "en-AU": "en-AU", "zh-TW": "zh-TW", "zh-CN": "zh-CN", ja: "ja" };
 
 export function parentSiteUrl(locale: Locale): string {
   return `${parentOrganization.url}${parentLocalePath[locale]}/`;
@@ -21,6 +21,7 @@ export function parentSiteUrl(locale: Locale): string {
 /** The footer text before the gordonkit.com link. */
 export const parentSiteLabel: Record<Locale, string> = {
   en: "A GordonKit project:",
+  "en-AU": "A GordonKit project:",
   "zh-TW": "GordonKit 旗下網站：",
   "zh-CN": "GordonKit 旗下网站：",
   ja: "GordonKit のプロジェクト：",

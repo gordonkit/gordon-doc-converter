@@ -47,6 +47,7 @@ def test_generated_page_contains_indexable_localized_content(
     assert '<link rel="alternate" hreflang="zh-Hant-TW"' in content
     assert '<link rel="alternate" hreflang="zh-Hans-CN"' in content
     assert '<link rel="alternate" hreflang="ja"' in content
+    assert '<link rel="alternate" hreflang="en-AU"' in content
     assert '<meta property="og:title"' in content
     assert '<script type="application/ld+json">' in content
     assert f"<h1>{expected_heading}</h1>" in content
@@ -60,9 +61,10 @@ LD_JSON = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.D
     ("locale", "parent_url"),
     [
         ("en", "https://gordonkit.com/en/"),
+        ("en-AU", "https://gordonkit.com/en-AU/"),
         ("zh-TW", "https://gordonkit.com/zh-TW/"),
         ("zh-CN", "https://gordonkit.com/zh-CN/"),
-        ("ja", "https://gordonkit.com/en/"),
+        ("ja", "https://gordonkit.com/ja/"),
     ],
 )
 def test_generated_page_names_gordonkit_as_publisher(locale: str, parent_url: str) -> None:
@@ -89,14 +91,14 @@ def test_unknown_address_has_a_noindex_not_found_page() -> None:
 
     assert '<meta name="robots" content="noindex" />' in content
     assert '<script type="module"' not in content
-    for locale in ("en", "zh-TW", "zh-CN", "ja"):
+    for locale in ("en", "en-AU", "zh-TW", "zh-CN", "ja"):
         assert f'href="/{locale}/overview/"' in content
 
 
 def test_locale_roots_redirect_to_the_overview() -> None:
     redirects = (DOCS / "_redirects").read_text(encoding="utf-8").splitlines()
 
-    for locale in ("en", "zh-TW", "zh-CN", "ja"):
+    for locale in ("en", "en-AU", "zh-TW", "zh-CN", "ja"):
         assert f"/{locale} /{locale}/overview/ 301" in redirects
         assert f"/{locale}/ /{locale}/overview/ 301" in redirects
 
@@ -112,7 +114,7 @@ def test_llms_txt_lists_every_english_page_and_links_to_gordonkit() -> None:
     english = {f"https://docs.gordonkit.com/en/{page_id}/" for page_id in PAGE_IDS}
     assert english <= links
     assert links - english == {
-        f"https://docs.gordonkit.com/{locale}/overview/" for locale in ("zh-TW", "zh-CN", "ja")
+        f"https://docs.gordonkit.com/{locale}/overview/" for locale in ("en-AU", "zh-TW", "zh-CN", "ja")
     }
     for line in lines:
         if line.startswith("- "):
@@ -125,7 +127,7 @@ def test_sitemap_contains_every_localized_documentation_page() -> None:
     locations = {element.text for element in sitemap.findall("sitemap:url/sitemap:loc", namespace)}
     expected = {
         f"https://docs.gordonkit.com/{locale}/{page_id}/"
-        for locale in ("en", "zh-TW", "zh-CN", "ja")
+        for locale in ("en", "en-AU", "zh-TW", "zh-CN", "ja")
         for page_id in PAGE_IDS
     }
 

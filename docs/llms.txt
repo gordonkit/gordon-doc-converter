@@ -28,6 +28,7 @@ This is the documentation of gordon-doc-converter, an open-source project publis
 
 ## Optional
 
+- [English (Australia)](https://docs.gordonkit.com/en-AU/overview/): The same documentation in Australian English, under /en-AU/.
 - [繁體中文](https://docs.gordonkit.com/zh-TW/overview/): The same documentation in Traditional Chinese, under /zh-TW/.
 - [简体中文](https://docs.gordonkit.com/zh-CN/overview/): The same documentation in Simplified Chinese, under /zh-CN/.
 - [日本語](https://docs.gordonkit.com/ja/overview/): The same documentation in Japanese, under /ja/.
