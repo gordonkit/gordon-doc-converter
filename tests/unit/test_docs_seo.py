@@ -114,7 +114,8 @@ def test_llms_txt_lists_every_english_page_and_links_to_gordonkit() -> None:
     english = {f"https://docs.gordonkit.com/en/{page_id}/" for page_id in PAGE_IDS}
     assert english <= links
     assert links - english == {
-        f"https://docs.gordonkit.com/{locale}/overview/" for locale in ("en-AU", "zh-TW", "zh-CN", "ja")
+        f"https://docs.gordonkit.com/{locale}/overview/"
+        for locale in ("en-AU", "zh-TW", "zh-CN", "ja")
     }
     for line in lines:
         if line.startswith("- "):
