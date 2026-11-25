@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-25
+
 ### Added
 
 - Legacy `.doc` input. LibreOffice upgrades it to a temporary DOCX, which then follows the DOCX

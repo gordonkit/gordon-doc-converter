@@ -1,6 +1,6 @@
 [project]
 name = "gordon-doc-converter"
-version = "1.0.0"
+version = "1.1.0"
 description = "Diagnosable multi-engine document conversion orchestration."
 readme = "README.md"
 requires-python = ">=3.12"

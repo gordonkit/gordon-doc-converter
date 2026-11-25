@@ -3,7 +3,7 @@
 ## Purpose and Current Scope
 
 GordonKit Document Converter is a Python 3.12+ orchestration library for converting
-DOCX, ODT, PDF, HTML, and Markdown documents through external rendering engines and its
+legacy DOC, DOCX, ODT, PDF, HTML, and Markdown documents through external rendering engines and its
 own semantic extraction. It does not implement a document renderer. The core Python
 library, CLI, HTTP API, and container image are all shipped; `COMPATIBILITY.md` defines
 which of their surfaces are public contracts.

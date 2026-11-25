@@ -267,7 +267,7 @@ def template(
 def convert(
     source: Annotated[
         Path,
-        typer.Argument(help="Source DOCX, ODT, PDF, HTML, or Markdown file."),
+        typer.Argument(help="Source DOC, DOCX, ODT, PDF, HTML, or Markdown file."),
     ],
     output: Annotated[
         Path | None, typer.Option("--output", "-o", help="Artifact destination.")

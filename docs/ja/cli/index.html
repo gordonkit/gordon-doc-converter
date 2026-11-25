@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="gordon-doc CLI を使ってターミナルから DOCX、PDF、ODT、HTML、Markdown を変換し、エンジン選択、バッチ変換、JSON 出力、PDF 比較を学べます。" />
     <title>ドキュメント変換 CLI リファレンス | GordonKit Docs</title>
-    <script type="module" crossorigin src="/assets/docs-Cs6OeV6n.js"></script>
+    <script type="module" crossorigin src="/assets/docs-fZ86KSdb.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bd5hT8vm.js">
     <link rel="stylesheet" crossorigin href="/assets/docs-zGAF-Rqb.css">
       <link rel="canonical" href="https://docs.gordonkit.com/ja/cli/" />
@@ -68,8 +68,9 @@ gordon-doc engines --json
 gordon-doc version --json</code></pre>
     </section><section id="convert">
       <h2>単一ドキュメントの変換</h2>
-      <p>convert は DOCX、ODT、PDF、HTML、Markdown の入力を受け付けます。--to を指定しない場合、DOCX、ODT、HTML、Markdown は PDF を生成します。PDF 入力では常に --to が必要です。ODT、HTML、Markdown はセマンティック抽出により Markdown、HTML、YAML、JSON へも変換でき、エンジンは不要です。ODT のページ画像は先に LibreOffice で組版します。--to を繰り返すと複数の artifact を要求できます。--output は単一ファイルの artifact に適しています。省略した場合、サービスはソースと同じ場所に安全な出力名を導出し、--overwrite がない限り既存ファイルを置き換えません。DOCX から HTML では、--engine word-com が Windows 上の Word COM で組版します。省略するか --mode server を使うとセマンティック抽出になります。</p>
+      <p>convert は DOC、DOCX、ODT、PDF、HTML、Markdown の入力を受け付けます。旧形式の DOC はまず LibreOffice で一時的な DOCX に変換し、DOCX と同じ経路を通ります。--to を指定しない場合、DOC、DOCX、ODT、HTML、Markdown は PDF を生成します。PDF 入力では常に --to が必要です。ODT、HTML、Markdown はセマンティック抽出により Markdown、HTML、YAML、JSON へも変換でき、エンジンは不要です。ODT のページ画像は先に LibreOffice で組版します。--to を繰り返すと複数の artifact を要求できます。--output は単一ファイルの artifact に適しています。省略した場合、サービスはソースと同じ場所に安全な出力名を導出し、--overwrite がない限り既存ファイルを置き換えません。DOCX から HTML では、--engine word-com が Windows 上の Word COM で組版します。省略するか --mode server を使うとセマンティック抽出になります。</p>
       <pre><code>gordon-doc convert report.docx --output report.pdf
+gordon-doc convert legacy.doc --to pdf --to markdown
 gordon-doc convert report.docx --to markdown --to html --to yaml --to json
 gordon-doc convert report.docx --to html --engine word-com
 gordon-doc convert report.pdf --to yaml --to json
