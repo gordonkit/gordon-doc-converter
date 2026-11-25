@@ -58,6 +58,9 @@ extra；Word COM 策略则需要安装 Word 的交互式 Windows 桌面环境。
 镜像提供的 HTTP API 只负责 DOCX 转 PDF；表中其余路径通过 `cli` Compose profile 执行，
 使用的是镜像内同一套 CLI。
 
+亦支持旧版 `.doc` 输入：先由 LibreOffice 升级为临时 DOCX，再走 DOCX 的流程，因此需要
+LibreOffice，且不提供于 HTTP API。
+
 逐页图片可输出为 PNG 或 JPEG。DOCX、ODT 与 PDF 可产生 Markdown、HTML、YAML、JSON
 及图片；Markdown 与 HTML 也可转换为 PDF、DOCX、ODT 与逐页图片。HTML 另可通过与
 DOCX、ODT、PDF 相同的语义提取转换为 Markdown、YAML 与 JSON，且不需要外部引擎。

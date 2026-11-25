@@ -58,6 +58,7 @@ from gordon_doc_converter.models import (
 from gordon_doc_converter.policies import EngineRejection, engine_order, select_engines
 from gordon_doc_converter.progress import ProgressCallback, ProgressEvent, ProgressState
 from gordon_doc_converter.raster import ImageFormat, PdfRasterizer, RasterOptions
+from gordon_doc_converter.security import validate_source_document
 from gordon_doc_converter.validation import validate_pdf
 
 
@@ -360,6 +361,8 @@ class ConversionPipeline:
     ) -> ConversionResult:
         """Convert one supported request without exposing adapter-specific failures."""
         self._report(progress_callback, "validation", "Validating conversion request")
+        if request.source_format is SourceFormat.DOC:
+            return self._convert_legacy_doc(request, progress_callback)
         if request.source_format in {SourceFormat.HTML, SourceFormat.MARKDOWN}:
             result = self._convert_markup(request, progress_callback)
         elif (
@@ -381,6 +384,46 @@ class ConversionPipeline:
             state=ProgressState.COMPLETED if result.success else ProgressState.FAILED,
         )
         return result
+
+    def _convert_legacy_doc(
+        self,
+        request: ConversionRequest,
+        progress_callback: ProgressCallback | None,
+    ) -> ConversionResult:
+        """Upgrade a legacy DOC to a temporary DOCX, then run the normal DOCX pipeline."""
+        started = perf_counter()
+        options = request.options
+        try:
+            validate_source_document(request.source_path, SourceFormat.DOC)
+            engine = self._markup_file_engine()
+            with TemporaryDirectory(prefix="gordon-doc-legacy-") as temporary:
+                upgraded = Path(temporary) / f"{request.source_path.stem}.docx"
+                self._report(progress_callback, "conversion", "Upgrading DOC to DOCX")
+                engine.convert_file(
+                    request.source_path,
+                    upgraded,
+                    source_format=SourceFormat.DOC,
+                    artifact_type=ArtifactType.DOCX,
+                    timeout_seconds=options.timeout_seconds,
+                )
+                # Outputs must land beside the original source, not in the temporary folder.
+                # The PDF-only route takes a file path; every other route takes a stem.
+                default_output = request.source_path.with_suffix("")
+                if request.artifacts == (ArtifactType.PDF,):
+                    default_output = default_output.with_name(f"{default_output.name}.pdf")
+                docx_request = replace(
+                    request,
+                    source_path=upgraded,
+                    source_format=SourceFormat.DOCX,
+                    options=replace(
+                        options,
+                        output_path=options.output_path or default_output,
+                    ),
+                )
+                result = self.convert(docx_request, progress_callback=progress_callback)
+        except ConversionError as error:
+            return self._failure_result(request, error, output_path=None, started=started)
+        return replace(result, source_format=SourceFormat.DOC)
 
     def _convert_pdf(
         self,

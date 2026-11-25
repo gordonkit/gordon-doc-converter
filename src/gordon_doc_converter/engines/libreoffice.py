@@ -41,6 +41,7 @@ _ENGINE = EngineName.LIBREOFFICE
 _DEFAULT_PROBE_TIMEOUT_SECONDS = 10.0
 _EXECUTABLE_NAMES = ("soffice", "libreoffice")
 _SOURCE_SUFFIXES = {
+    SourceFormat.DOC: frozenset({".doc"}),
     SourceFormat.DOCX: frozenset({".docx"}),
     SourceFormat.ODT: frozenset({".odt"}),
     SourceFormat.HTML: frozenset({".html", ".htm"}),
@@ -287,12 +288,17 @@ class LibreOfficeEngine:
         artifact_type: ArtifactType,
         timeout_seconds: float,
     ) -> EngineExecutionResult:
-        """Convert a DOCX, ODT, or HTML source to a PDF, DOCX, or ODT file."""
-        supported_sources = {SourceFormat.DOCX, SourceFormat.ODT, SourceFormat.HTML}
+        """Convert a DOC, DOCX, ODT, or HTML source to a PDF, DOCX, or ODT file."""
+        supported_sources = {
+            SourceFormat.DOC,
+            SourceFormat.DOCX,
+            SourceFormat.ODT,
+            SourceFormat.HTML,
+        }
         supported_artifacts = {ArtifactType.PDF, ArtifactType.DOCX, ArtifactType.ODT}
         if source_format not in supported_sources:
             raise InvalidInputError(
-                "LibreOffice file conversion requires a DOCX, ODT, or HTML source"
+                "LibreOffice file conversion requires a DOC, DOCX, ODT, or HTML source"
             )
         if artifact_type not in supported_artifacts:
             raise InvalidInputError("LibreOffice file conversion supports PDF, DOCX, and ODT")

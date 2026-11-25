@@ -14,6 +14,7 @@ from gordon_doc_converter.models_types import JsonValue
 class SourceFormat(StrEnum):
     """Supported source document formats across the public roadmap."""
 
+    DOC = "doc"
     DOCX = "docx"
     ODT = "odt"
     PDF = "pdf"
@@ -262,7 +263,7 @@ class ConversionRequest(JsonModel):
             source_format = SourceFormat(suffix)
         except ValueError as exc:
             raise InvalidInputError(
-                "source must have a .docx, .odt, .pdf, .html, or .md extension"
+                "source must have a .doc, .docx, .odt, .pdf, .html, or .md extension"
             ) from exc
         if artifacts is None:
             if source_format is SourceFormat.PDF:

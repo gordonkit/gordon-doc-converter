@@ -58,6 +58,9 @@ extra；Word COM 政策則需要安裝 Word 的互動式 Windows 桌面環境。
 映像提供的 HTTP API 只負責 DOCX 轉 PDF；表中其餘路徑透過 `cli` Compose profile 執行，
 使用的是映像內同一套 CLI。
 
+亦支援舊版 `.doc` 輸入：先由 LibreOffice 升級為暫存 DOCX，再走 DOCX 的流程，因此需要
+LibreOffice，且不提供於 HTTP API。
+
 逐頁圖片可輸出為 PNG 或 JPEG。DOCX、ODT 與 PDF 可產生 Markdown、HTML、YAML、JSON
 及圖片；Markdown 與 HTML 也可轉換為 PDF、DOCX、ODT 與逐頁圖片。HTML 另可透過與
 DOCX、ODT、PDF 相同的語意萃取轉換為 Markdown、YAML 與 JSON，且不需要外部引擎。

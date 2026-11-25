@@ -61,6 +61,9 @@ every route that prefers wkhtmltopdf or Pandoc is served by LibreOffice instead 
 The HTTP API the image serves converts DOCX to PDF only. The rest of this matrix is
 reached through the `cli` Compose profile, which runs the same CLI inside the image.
 
+Legacy `.doc` input is also accepted. LibreOffice first upgrades it to a temporary DOCX, which
+then follows the DOCX route, so it needs LibreOffice and is not available through the HTTP API.
+
 Page-image output is available as PNG or JPEG. Markdown, HTML, YAML, JSON, and image files are
 output artifacts for DOCX, ODT, and PDF sources; Markdown and HTML are also accepted as input
 for PDF, DOCX, ODT, and page-image conversion. HTML input additionally converts to Markdown,

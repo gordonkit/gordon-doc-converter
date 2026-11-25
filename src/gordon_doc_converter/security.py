@@ -11,6 +11,8 @@ from gordon_doc_converter.exceptions import InvalidInputError
 from gordon_doc_converter.models import SourceFormat
 from gordon_doc_converter.validation import validate_pdf
 
+_DOC_MIME = "application/msword"
+_OLE_SIGNATURE = bytes.fromhex("d0cf11e0a1b11ae1")
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 _ODT_MIME = "application/vnd.oasis.opendocument.text"
 _PDF_MIME = "application/pdf"
@@ -118,6 +120,14 @@ def _validate_odt(path: Path, limits: InputValidationLimits) -> None:
         raise InvalidInputError("ODT input is not a valid ODF ZIP package") from exc
 
 
+def _validate_doc(path: Path) -> None:
+    """Check the OLE compound-file signature of a legacy Word binary document."""
+    with path.open("rb") as stream:
+        header = stream.read(len(_OLE_SIGNATURE))
+    if header != _OLE_SIGNATURE:
+        raise InvalidInputError("DOC source is not an OLE compound document")
+
+
 def _validate_pdf(path: Path, limits: InputValidationLimits) -> None:
     result = validate_pdf(path)
     if not result.valid:
@@ -142,6 +152,7 @@ def validate_source_document(
     if path.stat().st_size > limits.max_file_size:
         raise InvalidInputError("source document exceeds the configured file-size limit")
     expected_mime = {
+        SourceFormat.DOC: _DOC_MIME,
         SourceFormat.DOCX: _DOCX_MIME,
         SourceFormat.ODT: _ODT_MIME,
         SourceFormat.PDF: _PDF_MIME,
@@ -154,7 +165,9 @@ def validate_source_document(
         normalized_mime = declared_mime_type.partition(";")[0].strip().casefold()
         if normalized_mime != expected_mime:
             raise InvalidInputError("declared MIME type does not match the source format")
-    if source_format is SourceFormat.DOCX:
+    if source_format is SourceFormat.DOC:
+        _validate_doc(path)
+    elif source_format is SourceFormat.DOCX:
         _validate_docx(path, limits)
     elif source_format is SourceFormat.ODT:
         _validate_odt(path, limits)

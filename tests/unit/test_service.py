@@ -207,6 +207,55 @@ def test_odt_source_uses_libreoffice_file_conversion_route(tmp_path: Path) -> No
     assert result.artifacts[0].path == source.with_suffix(".pdf")
 
 
+def test_legacy_doc_is_upgraded_to_docx_and_outputs_land_beside_source(tmp_path: Path) -> None:
+    source = tmp_path / "臺灣 文件.doc"
+    source.write_bytes(bytes.fromhex("d0cf11e0a1b11ae1") + b"0" * 64)
+    upgraded: list[Path] = []
+
+    def render_file(
+        source_path: Path,
+        output_path: Path,
+        artifact_type: ArtifactType,
+    ) -> None:
+        assert source_path == source
+        assert artifact_type is ArtifactType.DOCX
+        upgraded.append(output_path)
+        output_path.write_bytes(b"upgraded docx")
+
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: _write_pdf(output_path),
+        file_render=render_file,
+    )
+    request = ConversionRequest.from_source(source)
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(request)
+
+    assert result.success is True
+    assert result.source_format is SourceFormat.DOC
+    assert result.artifacts[0].path == source.with_suffix(".pdf")
+    assert engine.file_calls == [(source, SourceFormat.DOC, ArtifactType.DOCX)]
+    assert upgraded[0].suffix == ".docx" and not upgraded[0].exists()
+
+
+def test_legacy_doc_with_wrong_content_fails_without_running_engine(tmp_path: Path) -> None:
+    source = _source(tmp_path, "壞檔.doc")
+    engine = StubEngine(
+        EngineName.LIBREOFFICE,
+        _probe(EngineName.LIBREOFFICE),
+        lambda source_path, output_path: _write_pdf(output_path),
+        file_render=_write_office_document,
+    )
+
+    result = DocumentConversionService((engine,), LINUX_DESKTOP).convert(
+        ConversionRequest.from_source(source)
+    )
+
+    assert result.success is False
+    assert engine.file_calls == []
+
+
 def test_service_passes_timeout_and_annotation_modes_to_selected_engine(tmp_path: Path) -> None:
     source = _source(tmp_path)
     engine = StubEngine(

@@ -61,6 +61,9 @@ warning を返す · `R!` 抽出した内容から再構成し、代替の Libre
 イメージが提供する HTTP API は DOCX から PDF への変換のみです。表のそれ以外の経路は、
 イメージ内の同じ CLI を実行する `cli` Compose profile から利用します。
 
+旧形式の `.doc` も入力できます。LibreOffice が一時的な DOCX に変換し、以後は DOCX と同じ経路を
+通るため LibreOffice が必要で、HTTP API では利用できません。
+
 ページ画像は PNG または JPEG で出力できます。Markdown、HTML、YAML、JSON、画像ファイルは
 DOCX / ODT / PDF ソースからの出力 artifact です。Markdown と HTML は PDF / DOCX / ODT /
 ページ画像への変換の入力としても受け付けます。HTML はさらに、DOCX、ODT、PDF と同じ

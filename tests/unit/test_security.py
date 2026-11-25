@@ -61,6 +61,17 @@ def test_valid_docx_accepts_matching_mime_and_traditional_chinese_path(tmp_path:
     )
 
 
+def test_doc_accepts_ole_signature_and_rejects_other_content(tmp_path: Path) -> None:
+    path = tmp_path / "臺灣 文件.doc"
+    path.write_bytes(bytes.fromhex("d0cf11e0a1b11ae1") + b"0" * 64)
+    validate_source_document(path, SourceFormat.DOC, declared_mime_type="application/msword")
+
+    fake = tmp_path / "fake.doc"
+    fake.write_bytes(b"not an OLE document")
+    with pytest.raises(InvalidInputError, match="OLE"):
+        validate_source_document(fake, SourceFormat.DOC)
+
+
 def test_valid_odt_accepts_matching_mime_and_traditional_chinese_path(tmp_path: Path) -> None:
     path = tmp_path / "臺灣 文件.odt"
     _write_odt(path)

@@ -43,10 +43,17 @@ def test_pdf_request_requires_explicit_target() -> None:
         ConversionRequest.from_source(Path("input.pdf"))
 
 
-@pytest.mark.parametrize("source", [Path("input.txt"), Path("input"), Path("input.doc")])
+@pytest.mark.parametrize("source", [Path("input.txt"), Path("input"), Path("input.rtf")])
 def test_request_rejects_unknown_source_format(source: Path) -> None:
-    with pytest.raises(InvalidInputError, match=".docx, .odt, .pdf"):
+    with pytest.raises(InvalidInputError, match=".doc, .docx, .odt, .pdf"):
         ConversionRequest.from_source(source)
+
+
+def test_request_infers_legacy_doc_source_format() -> None:
+    request = ConversionRequest.from_source(Path("臺灣 文件.doc"))
+
+    assert request.source_format is SourceFormat.DOC
+    assert request.artifacts == (ArtifactType.PDF,)
 
 
 def test_request_rejects_duplicate_artifacts() -> None:

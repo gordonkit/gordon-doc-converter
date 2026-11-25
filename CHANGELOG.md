@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Legacy `.doc` input. LibreOffice upgrades it to a temporary DOCX, which then follows the DOCX
+  route, so PDF, DOCX, ODT, Markdown, and the other artifacts are available. The HTTP API still
+  accepts DOCX only.
 - The documentation site is also available in Australian English (`/en-AU/`), matching
   gordonkit.com. It is the English text with a few Australian spellings, derived when the site
   is built, so there is no second copy of the content to keep in step.
